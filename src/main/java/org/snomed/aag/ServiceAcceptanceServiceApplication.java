@@ -1,10 +1,9 @@
-package org.snomed.sas;
+package org.snomed.aag;
 
+import org.snomed.aag.config.Config;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
-public class ServiceAcceptanceServiceApplication {
+public class ServiceAcceptanceServiceApplication extends Config {
 
 	public static void main(String[] args) {
 		SpringApplication.run(ServiceAcceptanceServiceApplication.class, args);

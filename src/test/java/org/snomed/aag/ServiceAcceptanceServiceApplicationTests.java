@@ -1,4 +1,4 @@
-package org.snomed.sas;
+package org.snomed.aag;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
