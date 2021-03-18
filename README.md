@@ -1,4 +1,4 @@
-# Service Acceptance Gateway 
+# Authoring Acceptance Gateway 
 Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.
 
 
