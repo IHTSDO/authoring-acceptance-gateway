@@ -7,6 +7,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
+import static java.lang.String.format;
+
 @Service
 public class CriteriaItemService {
 
@@ -21,4 +25,19 @@ public class CriteriaItemService {
 		return repository.findAll(pageRequest);
 	}
 
+	public CriteriaItem findOrThrow(String id) {
+		final Optional<CriteriaItem> itemOptional = repository.findById(id);
+		if (itemOptional.isEmpty()) {
+			throw new NotFoundException(format("Criteria Item with id '%s' not found.", id));
+		}
+		return itemOptional.get();
+	}
+
+	public CriteriaItem update(CriteriaItem item) {
+		return repository.save(item);
+	}
+
+	public void delete(CriteriaItem item) {
+		repository.delete(item);
+	}
 }

@@ -5,6 +5,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
+import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 
 @Document(indexName = "criteria-item")
@@ -12,9 +13,11 @@ public class CriteriaItem {
 
 	@Id
 	@Field(type = FieldType.Keyword)
+	@NotBlank
 	private String id;
 
 	@Field(type = FieldType.Text)
+	@NotBlank
 	private String label;
 
 	@Field(type = FieldType.Text)
