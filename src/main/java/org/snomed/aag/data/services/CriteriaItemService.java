@@ -27,7 +27,7 @@ public class CriteriaItemService {
 
 	public CriteriaItem findOrThrow(String id) {
 		final Optional<CriteriaItem> itemOptional = repository.findById(id);
-		if (itemOptional.isEmpty()) {
+		if (!itemOptional.isPresent()) {
 			throw new NotFoundException(format("Criteria Item with id '%s' not found.", id));
 		}
 		return itemOptional.get();
