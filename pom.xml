@@ -43,6 +43,20 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>ihtsdo-spring-sso</artifactId>
+			<version>2.1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ihtsdo.otf.common</groupId>
+			<artifactId>otf-common</artifactId>
+			<version>4.3.0</version>
+		</dependency>
+		<dependency>
 			<!-- Snomed International Fork with modifications for index name prefix -->
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>spring-data-elasticsearch</artifactId>
@@ -52,6 +66,11 @@
 			<groupId>com.github.awslabs</groupId>
 			<artifactId>aws-request-signing-apache-interceptor</artifactId>
 			<version>b3772780da</version>
+		</dependency>
+		<dependency>
+			<groupId>io.kaicode</groupId>
+			<artifactId>branch-path-uri-rewrite-filter</artifactId>
+			<version>2.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.springfox</groupId>

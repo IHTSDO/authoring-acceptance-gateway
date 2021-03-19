@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.services.NotFoundException;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -53,6 +54,16 @@ public class RestControllerAdvice {
 		result.put("error", HttpStatus.NOT_FOUND);
 		result.put("message", exception.getMessage());
 		logger.debug("Not Found {}", exception.getMessage(), exception);
+		return result;
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	@ResponseStatus(HttpStatus.FORBIDDEN)
+	@ResponseBody
+	public Map<String,Object> handleAccessDeniedException(AccessDeniedException exception) {
+		HashMap<String, Object> result = new HashMap<>();
+		result.put("error", HttpStatus.FORBIDDEN);
+		result.put("message", exception.getMessage());
 		return result;
 	}
 

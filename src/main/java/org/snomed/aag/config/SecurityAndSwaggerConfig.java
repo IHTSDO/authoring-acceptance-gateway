@@ -1,9 +1,18 @@
 package org.snomed.aag.config;
 
+import org.ihtsdo.sso.integration.RequestHeaderAuthenticationDecorator;
+import org.snomed.aag.rest.security.RequestHeaderAuthenticationDecoratorWithRequiredRole;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.ExpressionUrlAuthorizationConfigurer;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.Contact;
@@ -15,10 +24,20 @@ import static com.google.common.base.Predicates.not;
 import static springfox.documentation.builders.PathSelectors.regex;
 
 @Configuration
-public class SecurityAndSwaggerConfig {
+@EnableWebSecurity
+public class SecurityAndSwaggerConfig extends WebSecurityConfigurerAdapter {
 
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
+
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		http.csrf().disable();// lgtm [java/spring-disabled-csrf-protection]
+
+		http
+				.authorizeRequests()
+				.anyRequest().permitAll();
+	}
 
 	@Bean
 	// Swagger config
@@ -38,6 +57,24 @@ public class SecurityAndSwaggerConfig {
 				.paths(not(regex("/")));
 
 		return apiSelectorBuilder.build();
+	}
+
+	@Bean
+	public FilterRegistrationBean<RequestHeaderAuthenticationDecorator> getSingleSignOnFilter() {
+		FilterRegistrationBean<RequestHeaderAuthenticationDecorator> filterRegistrationBean = new FilterRegistrationBean<>(
+				new RequestHeaderAuthenticationDecorator());
+		filterRegistrationBean.setOrder(1);
+		return filterRegistrationBean;
+	}
+
+	@Bean
+	public FilterRegistrationBean<RequestHeaderAuthenticationDecoratorWithRequiredRole> getRequiredRoleFilter(@Value("${ims-security.required-role}") String requiredRole) {
+		FilterRegistrationBean<RequestHeaderAuthenticationDecoratorWithRequiredRole> filterRegistrationBean = new FilterRegistrationBean<>(
+				new RequestHeaderAuthenticationDecoratorWithRequiredRole(requiredRole)
+						.addExcludedPath("/webjars/springfox-swagger-ui")
+		);
+		filterRegistrationBean.setOrder(2);
+		return filterRegistrationBean;
 	}
 
 }
