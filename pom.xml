@@ -15,7 +15,7 @@
 	<name>Authoring Acceptance Gateway</name>
 	<description>Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.</description>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>8</java.version>
 		<packageName>${project.artifactId}</packageName>
 		<!-- Elasticsearch version is controlled via the spring-data-elasticsearch dependency -->
 		<elasticsearch.version>7.7.0</elasticsearch.version>
