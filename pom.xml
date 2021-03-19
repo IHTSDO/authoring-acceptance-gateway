@@ -55,6 +55,13 @@
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
 			<version>4.3.0</version>
+			<exclusions>
+				<!-- Prevent multiple versions of Jackson on the classpath -->
+				<exclusion>
+					<groupId>org.json</groupId>
+					<artifactId>json</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<!-- Snomed International Fork with modifications for index name prefix -->
