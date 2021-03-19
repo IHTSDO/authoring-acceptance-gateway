@@ -38,6 +38,9 @@ public class ElasticsearchConfig {
 	@Value("${elasticsearch.index.prefix}")
 	private String indexNamePrefix;
 
+	@Value("${elasticsearch.index.app.prefix}")
+	private String indexNameApplicationPrefix;
+
 	@Value("${elasticsearch.index.shards}")
 	private short indexShards;
 
@@ -56,6 +59,7 @@ public class ElasticsearchConfig {
 			logger.info("Elasticsearch host: {}", url);
 		}
 		logger.info("Elasticsearch index prefix: {}", indexNamePrefix);
+		logger.info("Elasticsearch index application prefix: {}", indexNameApplicationPrefix);
 
 		RestClientBuilder restClientBuilder = RestClient.builder(getHttpHosts(urls));
 		restClientBuilder.setRequestConfigCallback(builder -> {
@@ -100,7 +104,8 @@ public class ElasticsearchConfig {
 
 	@Bean
 	public ElasticsearchConverter elasticsearchConverter() {
-		SimpleElasticsearchMappingContext mappingContext = new OTFElasticsearchMappingContext(new IndexConfig(indexNamePrefix, indexShards, indexReplicas));
+		final String prefix = this.indexNamePrefix + this.indexNameApplicationPrefix;
+		SimpleElasticsearchMappingContext mappingContext = new OTFElasticsearchMappingContext(new IndexConfig(prefix, indexShards, indexReplicas));
 		MappingElasticsearchConverter elasticsearchConverter = new MappingElasticsearchConverter(mappingContext);
 		elasticsearchConverter.setConversions(elasticsearchCustomConversions());
 		return elasticsearchConverter;
