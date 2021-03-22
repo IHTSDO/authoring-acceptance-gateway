@@ -1,8 +1,8 @@
 package org.snomed.aag.rest;
 
 import io.swagger.annotations.Api;
+import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.services.CriteriaItemService;
-import org.snomed.aag.domain.CriteriaItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,7 +15,7 @@ import javax.validation.Valid;
 @RestController
 @Api(tags = "Criteria Item Library", description = "-")
 @RequestMapping(value = "/criteria-items", produces = "application/json")
-public class CriteriaItemController {
+public class CriteriaItemLibraryController {
 
 	@Autowired
 	private CriteriaItemService service;

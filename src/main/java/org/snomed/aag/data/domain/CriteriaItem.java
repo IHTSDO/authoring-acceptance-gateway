@@ -1,4 +1,4 @@
-package org.snomed.aag.domain;
+package org.snomed.aag.data.domain;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;

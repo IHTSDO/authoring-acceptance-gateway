@@ -1,4 +1,4 @@
-package org.snomed.aag.domain;
+package org.snomed.aag.data.domain;
 
 public enum AuthoringLevel {
 

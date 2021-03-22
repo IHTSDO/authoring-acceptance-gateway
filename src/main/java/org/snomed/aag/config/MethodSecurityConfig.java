@@ -14,6 +14,7 @@ import org.springframework.security.access.expression.method.MethodSecurityExpre
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.method.configuration.GlobalMethodSecurityConfiguration;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.io.Serializable;
 
@@ -44,7 +45,7 @@ public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
 				}
 				try {
 					return securityService.currentUserHasRoleOnBranch((String) role, BranchPathUriUtil.decodePath((String) branchPath));
-				} catch (RestClientException e) {
+				} catch (RestClientException | ResourceAccessException e) {
 					throw new AccessDeniedException("Could not ascertain user roles: Failed to communication with Snowstorm.", e);
 				}
 			}
@@ -56,4 +57,3 @@ public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
 		};
 	}
 }
-

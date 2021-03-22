@@ -8,11 +8,12 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.annotation.web.configurers.ExpressionUrlAuthorizationConfigurer;
+import org.springframework.security.web.firewall.DefaultHttpFirewall;
+import org.springframework.security.web.firewall.HttpFirewall;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.service.Contact;
@@ -29,6 +30,18 @@ public class SecurityAndSwaggerConfig extends WebSecurityConfigurerAdapter {
 
 	@Autowired(required = false)
 	private BuildProperties buildProperties;
+
+	@Bean
+	public HttpFirewall allowUrlEncodedSlashHttpFirewall() {
+		DefaultHttpFirewall firewall = new DefaultHttpFirewall();
+		firewall.setAllowUrlEncodedSlash(true);
+		return firewall;
+	}
+
+	@Override
+	public void configure(WebSecurity web) {
+		web.httpFirewall(allowUrlEncodedSlashHttpFirewall());
+	}
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
