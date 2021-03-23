@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import org.snomed.aag.rest.pojo.BuildVersion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +18,7 @@ public class VersionController {
 	private BuildProperties buildProperties;
 
 	@ApiOperation("Software build version and timestamp.")
-	@RequestMapping(value = "/version", method = RequestMethod.GET, produces = "application/json")
+	@GetMapping(value = "/version", produces = "application/json")
 	public BuildVersion getBuildInformation() {
 	    if (buildProperties == null) {
 	        throw new IllegalStateException("Build properties are not present.");
