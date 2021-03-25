@@ -6,13 +6,15 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
 
 @Service
 public class SecurityService {
 
 	// This factory produces clients authenticated as the current user, it has its own client cache.
 	private final SnowstormRestClientFactory snowstormRestClientFactory;
+
+	@Value("${ims-security.roles.enabled}")
+	private boolean rolesEnabled;
 
 	public SecurityService(@Value("${snowstorm.url}") String snowstormUrl) {
 		snowstormRestClientFactory = new SnowstormRestClientFactory(snowstormUrl, null);
@@ -23,6 +25,10 @@ public class SecurityService {
 	}
 
 	public boolean currentUserHasRoleOnBranch(String role, String branchPath) throws RestClientException {
+		if (!rolesEnabled) {
+			return true;
+		}
+
 		if (branchPath.equals("global")) {
 			return getBranchOrThrow("MAIN").getGlobalUserRoles().contains(role);
 		} else {
@@ -30,7 +36,7 @@ public class SecurityService {
 		}
 	}
 
-	private Branch getBranchOrThrow(String branchPath) throws RestClientException {
+	public Branch getBranchOrThrow(String branchPath) throws RestClientException {
 		final Branch branch = snowstormRestClientFactory.getClient().getBranch(branchPath);
 		if (branch == null) {
 			throw new AccessDeniedException("Branch does not exist.");

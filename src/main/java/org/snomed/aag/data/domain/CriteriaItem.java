@@ -100,6 +100,10 @@ public class CriteriaItem {
 		return manual;
 	}
 
+	public boolean isNotManual() {
+		return !this.isManual();
+	}
+
 	public void setManual(boolean manual) {
 		this.manual = manual;
 	}
