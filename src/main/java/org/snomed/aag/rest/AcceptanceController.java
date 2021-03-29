@@ -1,6 +1,6 @@
 package org.snomed.aag.rest;
 
-import io.swagger.annotations.Api;
+import io.swagger.annotations.*;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
@@ -37,8 +37,16 @@ public class AcceptanceController {
         this.securityService = securityService;
     }
 
+    @ApiOperation(value = "Manually accept a Criteria Item.",
+            notes = "This request will mark a Criteria Item as accepted for a given branch.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "&bull; When the Criteria Item cannot be found from the given identifier"),
+            @ApiResponse(code = 403, message = "&bull; When the Criteria Item cannot be accepted manually, or <br /> &bull; When the user does not have the desired role, or <br/> &bull; When the Branch cannot be found from the given branch path."),
+            @ApiResponse(code = 200, message = "When the Criteria Item has been accepted successfully.", response = CriteriaItemSignOff.class)
+    })
     @PostMapping("/{branch}/item/{item-id}/accept")
-    public ResponseEntity<?> signOffCriteriaItem(@PathVariable(name = "branch") String branchPath, @PathVariable(name = "item-id") String itemId) throws RestClientException {
+    public ResponseEntity<?> signOffCriteriaItem(@ApiParam("The branch path.") @PathVariable(name = "branch") String branchPath,
+                                                 @ApiParam("The identifier of the CriteriaItem to accept.") @PathVariable(name = "item-id") String itemId) throws RestClientException {
         //Verify CriteriaItems
         CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
         criteriaItemService.verifyManual(criteriaItem, true);
