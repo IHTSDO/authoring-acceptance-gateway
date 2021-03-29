@@ -7,14 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
+import org.snomed.aag.data.services.BranchService;
 import org.snomed.aag.data.services.CriteriaItemService;
 import org.snomed.aag.data.services.CriteriaItemSignOffService;
-import org.snomed.aag.data.services.NotFoundException;
 import org.snomed.aag.data.services.SecurityService;
-import org.snomed.aag.rest.pojo.ErrorMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,52 +25,26 @@ public class AcceptanceController {
     private static final Logger LOGGER = LoggerFactory.getLogger(AcceptanceController.class);
 
     private final CriteriaItemService criteriaItemService;
-    private final SecurityService securityService;
+    private final BranchService branchService;
     private final CriteriaItemSignOffService criteriaItemSignOffService;
+    private final SecurityService securityService;
 
-    public AcceptanceController(CriteriaItemService criteriaItemService, SecurityService securityService,
-                                CriteriaItemSignOffService criteriaItemSignOffService) {
+    public AcceptanceController(CriteriaItemService criteriaItemService, BranchService branchService,
+                                CriteriaItemSignOffService criteriaItemSignOffService, SecurityService securityService) {
         this.criteriaItemService = criteriaItemService;
-        this.securityService = securityService;
+        this.branchService = branchService;
         this.criteriaItemSignOffService = criteriaItemSignOffService;
+        this.securityService = securityService;
     }
 
     @PostMapping("/{branch}/item/{item-id}/accept")
     public ResponseEntity<?> signOffCriteriaItem(@PathVariable(name = "branch") String branchPath, @PathVariable(name = "item-id") String itemId) throws RestClientException {
         //Verify CriteriaItems
-        CriteriaItem criteriaItem;
-        try {
-            criteriaItem = criteriaItemService.findOrThrow(itemId);
-        } catch (NotFoundException e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.toString(), e.getMessage()));
-        }
+        CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
+        criteriaItemService.verifyManual(criteriaItem, true);
 
-        if (!criteriaItem.isManual()) {
-            LOGGER.error("User attempted to sign off non-manual CriteriaItem ({}).", itemId);
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorMessage(HttpStatus.FORBIDDEN.toString(), "Criteria Item cannot be changed manually."));
-        }
-
-        //Verify Branch
-        String requiredRole = criteriaItem.getRequiredRole();
-        boolean currentUserHasRoleOnBranch;
-        try {
-            currentUserHasRoleOnBranch = securityService.currentUserHasRoleOnBranch(requiredRole, branchPath);
-        } catch (AccessDeniedException e) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorMessage(HttpStatus.NOT_FOUND.toString(), e.getMessage()));
-        }
-
-        if (!currentUserHasRoleOnBranch) {
-            LOGGER.error("User does not have desired role of {}.", requiredRole);
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorMessage(HttpStatus.FORBIDDEN.toString(), "User does not have desired role."));
-        }
+        //Verify branch
+        branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
 
         //Verification complete; add record.
         CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(new CriteriaItemSignOff(

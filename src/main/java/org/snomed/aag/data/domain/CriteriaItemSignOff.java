@@ -43,6 +43,14 @@ public class CriteriaItemSignOff {
     @NotBlank
     private final Long branchHeadTimestamp;
 
+    public CriteriaItemSignOff() {
+        this.criteriaItemId = null;
+        this.branch = null;
+        this.userId = null;
+        this.timestamp = null;
+        this.branchHeadTimestamp = null;
+    }
+
     public CriteriaItemSignOff(String criteriaItemId, String branch, Long branchHeadTimestamp, String userId) {
         this.criteriaItemId = criteriaItemId;
         this.branch = branch;

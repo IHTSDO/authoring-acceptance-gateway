@@ -1,5 +1,7 @@
 package org.snomed.aag.data.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -8,6 +10,7 @@ import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -16,6 +19,7 @@ import static java.lang.String.format;
 
 @Service
 public class CriteriaItemService {
+	private static final Logger LOGGER = LoggerFactory.getLogger(CriteriaItemService.class);
 
 	@Autowired
 	private CriteriaItemRepository repository;
@@ -50,5 +54,18 @@ public class CriteriaItemService {
 		}
 
 		repository.delete(item);
+	}
+
+	/**
+	 * Verify whether the CriteriaItem has the given value.
+	 *
+	 * @param criteriaItem CriteriaItem to check
+	 * @throws AccessDeniedException When CriteriaItem does not have expected state.
+	 */
+	public void verifyManual(CriteriaItem criteriaItem, boolean expectedManual) {
+		if (criteriaItem.isManual() != expectedManual) {
+			LOGGER.error("User attempted to sign off non-manual CriteriaItem ({}).", criteriaItem.getId());
+			throw new AccessDeniedException("Criteria Item cannot be changed manually.");
+		}
 	}
 }

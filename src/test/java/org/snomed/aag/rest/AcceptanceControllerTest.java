@@ -1,21 +1,29 @@
 package org.snomed.aag.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
+import org.snomed.aag.TestConfig;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
-import org.snomed.aag.rest.pojo.ErrorMessage;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,132 +31,215 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
 class AcceptanceControllerTest extends AbstractTest {
-    private AcceptanceController target;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final String BRANCH_PATH = "MAIN";
+
+    private AcceptanceController controller;
+    private MockMvc mockMvc;
 
     @BeforeEach
     public void setUp() {
-        this.target = new AcceptanceController(
+        this.controller = new AcceptanceController(
                 criteriaItemService,
-                securityServiceMock,
-                criteriaItemSignOffService
+                branchService,
+                criteriaItemSignOffService,
+                securityService
         );
+        this.mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new RestControllerAdvice())
+                .build();
     }
 
     @AfterEach
     public void tearDown() {
-        this.target = null;
+        this.controller = null;
+        this.mockMvc = null;
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeFoundFromId() throws RestClientException {
+    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
         //given
-        String branchPath = "MAIN";
         String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(criteriaItemId);
 
         //when
-        ResponseEntity<?> result = target.signOffCriteriaItem(branchPath, criteriaItemId);
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
 
         //then
-        assertEquals(result.getStatusCode(), HttpStatus.NOT_FOUND);
+        assertResponseStatus(resultActions, 404);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.NOT_FOUND, "Criteria Item with id '" + criteriaItemId + "' not found."));
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeModified() throws RestClientException {
+    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeModified() throws Exception {
         //given
-        String branchPath = "MAIN";
         String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(criteriaItemId);
+
         givenCriteriaItemExists(criteriaItemId, false);
 
         //when
-        ResponseEntity<?> result = target.signOffCriteriaItem(branchPath, criteriaItemId);
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
 
         //then
-        assertEquals(result.getStatusCode(), HttpStatus.FORBIDDEN);
-        assertEquals(result.getBody().toString(), new ErrorMessage(HttpStatus.FORBIDDEN.toString(), "Criteria Item cannot be changed manually.").toString());
+        assertResponseStatus(resultActions, 403);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.FORBIDDEN, "Criteria Item cannot be changed manually."));
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenBranchDoesNotExist() throws RestClientException {
+    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenBranchDoesNotExist() throws Exception {
         //given
-        String branchPath = "MAIN";
         String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(criteriaItemId);
+
         givenCriteriaItemExists(criteriaItemId, true);
         givenBranchDoesNotExist();
 
         //when
-        ResponseEntity<?> result = target.signOffCriteriaItem(branchPath, criteriaItemId);
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
 
         //then
-        assertEquals(result.getStatusCode(), HttpStatus.NOT_FOUND);
+        assertResponseStatus(resultActions, 403);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.FORBIDDEN, "Branch does not exist."));
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenUserDoesNotHaveDesiredRole() throws RestClientException {
+    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenUserDoesNotHaveDesiredRole() throws Exception {
         //given
-        String branchPath = "MAIN";
         String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(criteriaItemId);
+
         givenCriteriaItemExists(criteriaItemId, true);
-        givenUserDoesNotHaveDesiredRole();
+        givenUserDoesNotHavePermissionForBranch();
 
         //when
-        ResponseEntity<?> result = target.signOffCriteriaItem(branchPath, criteriaItemId);
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
 
         //then
-        assertEquals(result.getStatusCode(), HttpStatus.FORBIDDEN);
-        assertEquals(result.getBody().toString(), new ErrorMessage(HttpStatus.FORBIDDEN.toString(), "User does not have desired role.").toString());
+        assertResponseStatus(resultActions, 403);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.FORBIDDEN, "User does not have desired role."));
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenSuccessfullySigningOffCriteriaItem() throws RestClientException {
+    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
-        String branchPath = "MAIN";
         String criteriaItemId = UUID.randomUUID().toString();
-        String username = "AcceptanceControllerTest";
-        long branchHeadTimestamp = System.currentTimeMillis();
+        String requestUrl = signOffCriteriaItem(criteriaItemId);
 
         givenCriteriaItemExists(criteriaItemId, true);
-        givenUserDoesHaveDesiredRole();
-        givenBranchExists(branchHeadTimestamp);
+        givenUserDoesHavePermissionForBranch();
+        givenBranchDoesExist(System.currentTimeMillis());
+
+        //when
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 200);
+    }
+
+    @Test
+    public void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
+        //given
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        long timestamp = System.currentTimeMillis();
+        String username = "AcceptanceControllerTest";
+
+        givenCriteriaItemExists(criteriaItemId, true);
+        givenUserDoesHavePermissionForBranch();
+        givenBranchDoesExist(timestamp);
         givenAuthenticatedUser(username);
 
         //when
-        ResponseEntity<?> result = target.signOffCriteriaItem(branchPath, criteriaItemId);
-        CriteriaItemSignOff body = (CriteriaItemSignOff) result.getBody();
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
+        CriteriaItemSignOff criteriaItemSignOff = OBJECT_MAPPER.readValue(getResponseBody(resultActions), CriteriaItemSignOff.class);
 
         //then
-        assertEquals(result.getStatusCode(), HttpStatus.OK);
-        assertEquals(body.getCriteriaItemId(), criteriaItemId);
-        assertEquals(body.getBranch(), branchPath);
-        assertEquals(body.getBranchHeadTimestamp(), branchHeadTimestamp);
-        assertEquals(body.getUserId(), username);
+        assertEquals(criteriaItemId, criteriaItemSignOff.getCriteriaItemId());
+        assertEquals(BRANCH_PATH, criteriaItemSignOff.getBranch());
+        assertEquals(timestamp, criteriaItemSignOff.getBranchHeadTimestamp());
+        assertEquals(username, criteriaItemSignOff.getUserId());
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldAddRecordToStore_WhenSuccessfullySigningOffCriteriaItem() throws RestClientException {
+    public void signOffCriteriaItem_ShouldAddRecordToStore_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
-        String branchPath = "MAIN";
         String criteriaItemId = UUID.randomUUID().toString();
-        long branchHeadTimestamp = System.currentTimeMillis();
+        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        long timestamp = System.currentTimeMillis();
+        String username = "AcceptanceControllerTest";
 
         givenCriteriaItemExists(criteriaItemId, true);
-        givenUserDoesHaveDesiredRole();
-        givenBranchExists(branchHeadTimestamp);
+        givenUserDoesHavePermissionForBranch();
+        givenBranchDoesExist(timestamp);
+        givenAuthenticatedUser(username);
 
-        ResponseEntity<?> responseEntity = target.signOffCriteriaItem(branchPath, criteriaItemId);
-        CriteriaItemSignOff responseEntityBody = (CriteriaItemSignOff) responseEntity.getBody();
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
+        CriteriaItemSignOff criteriaItemSignOff = OBJECT_MAPPER.readValue(getResponseBody(resultActions), CriteriaItemSignOff.class);
 
         //when
-        CriteriaItem result = criteriaItemService.findOrThrow(responseEntityBody.getCriteriaItemId());
+        CriteriaItem result = criteriaItemService.findOrThrow(criteriaItemSignOff.getCriteriaItemId());
 
         //then
         assertNotNull(result);
     }
 
+    private String signOffCriteriaItem(String criteriaItemId) {
+        return "/acceptance/" + BRANCH_PATH + "/item/" + criteriaItemId + "/accept";
+    }
+
+    private String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", error);
+        response.put("message", message);
+
+        return OBJECT_MAPPER.writeValueAsString(response);
+    }
+
+    private void assertResponseStatus(ResultActions result, int expectedResponseStatus) throws Exception {
+        result.andExpect(status().is(expectedResponseStatus));
+    }
+
+    private void assertResponseBody(ResultActions result, String expectedResponseBody) throws Exception {
+        result.andExpect(content().string(expectedResponseBody));
+    }
+
+    private void givenCriteriaItemExists(String criteriaItemId, boolean manual) {
+        CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
+        criteriaItem.setManual(manual);
+        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+
+        criteriaItemRepository.save(criteriaItem);
+    }
+
+    private void givenBranchDoesNotExist() throws RestClientException {
+        when(securityService.currentUserHasRoleOnBranch(any(), any())).thenThrow(new AccessDeniedException("Branch does not exist."));
+    }
+
+    private void givenUserDoesNotHavePermissionForBranch() throws RestClientException {
+        when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(false);
+    }
+
+    private void givenUserDoesHavePermissionForBranch() throws RestClientException {
+        when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
+    }
+
+    private void givenBranchDoesExist(long timestamp) throws RestClientException {
+        Branch branch = new Branch();
+        branch.setHeadTimestamp(timestamp);
+
+        when(securityService.getBranchOrThrow(any())).thenReturn(branch);
+    }
+
     private void givenAuthenticatedUser(String username) {
-        //given
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(username);
 
@@ -158,34 +249,7 @@ class AcceptanceControllerTest extends AbstractTest {
         SecurityContextHolder.setContext(securityContext);
     }
 
-    private void givenBranchExists(long timestamp) throws RestClientException {
-        //given
-        Branch branch = new Branch();
-        branch.setHeadTimestamp(timestamp);
-
-        when(securityServiceMock.getBranchOrThrow(any())).thenReturn(branch);
-    }
-
-    private void givenBranchDoesNotExist() throws RestClientException {
-        //given
-        when(securityServiceMock.currentUserHasRoleOnBranch(any(), any())).thenThrow(new AccessDeniedException("Branch does not exist."));
-    }
-
-    private void givenUserDoesHaveDesiredRole() throws RestClientException {
-        //given
-        when(securityServiceMock.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
-    }
-
-    private void givenUserDoesNotHaveDesiredRole() throws RestClientException {
-        //given
-        when(securityServiceMock.currentUserHasRoleOnBranch(any(), any())).thenReturn(false);
-    }
-
-    private void givenCriteriaItemExists(String id, boolean manual) {
-        //given
-        CriteriaItem criteriaItem = new CriteriaItem(id);
-        criteriaItem.setManual(manual);
-
-        criteriaItemService.create(criteriaItem);
+    private String getResponseBody(ResultActions resultActions) throws UnsupportedEncodingException {
+        return resultActions.andReturn().getResponse().getContentAsString();
     }
 }
