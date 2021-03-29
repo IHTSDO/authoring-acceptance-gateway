@@ -13,9 +13,6 @@ public class SecurityService {
 	// This factory produces clients authenticated as the current user, it has its own client cache.
 	private final SnowstormRestClientFactory snowstormRestClientFactory;
 
-	@Value("${ims-security.roles.enabled}")
-	private boolean rolesEnabled;
-
 	public SecurityService(@Value("${snowstorm.url}") String snowstormUrl) {
 		snowstormRestClientFactory = new SnowstormRestClientFactory(snowstormUrl, null);
 	}
@@ -25,10 +22,6 @@ public class SecurityService {
 	}
 
 	public boolean currentUserHasRoleOnBranch(String role, String branchPath) throws RestClientException {
-		if (!rolesEnabled) {
-			return true;
-		}
-
 		if (branchPath.equals("global")) {
 			return getBranchOrThrow("MAIN").getGlobalUserRoles().contains(role);
 		} else {
