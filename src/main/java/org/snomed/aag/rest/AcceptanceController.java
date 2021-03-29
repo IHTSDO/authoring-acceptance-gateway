@@ -49,7 +49,7 @@ public class AcceptanceController {
                     .body(new ErrorMessage(HttpStatus.NOT_FOUND.toString(), e.getMessage()));
         }
 
-        if (criteriaItem.isNotManual()) {
+        if (!criteriaItem.isManual()) {
             LOGGER.error("User attempted to sign off non-manual CriteriaItem ({}).", itemId);
             return ResponseEntity
                     .status(HttpStatus.FORBIDDEN)
