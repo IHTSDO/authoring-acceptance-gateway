@@ -6,7 +6,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
 
 @Service
 public class SecurityService {
@@ -30,7 +29,7 @@ public class SecurityService {
 		}
 	}
 
-	private Branch getBranchOrThrow(String branchPath) throws RestClientException {
+	public Branch getBranchOrThrow(String branchPath) throws RestClientException {
 		final Branch branch = snowstormRestClientFactory.getClient().getBranch(branchPath);
 		if (branch == null) {
 			throw new AccessDeniedException("Branch does not exist.");

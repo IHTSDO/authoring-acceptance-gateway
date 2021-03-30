@@ -28,14 +28,14 @@ public class CriteriaItemLibraryController {
 		return service.findAll(PageRequest.of(page, size));
 	}
 
-	@PutMapping
+	@PostMapping
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
 	public ResponseEntity<Void> createCriteriaItem(@RequestBody @Valid CriteriaItem item) {
 		service.create(item);
 		return ControllerHelper.getCreatedResponse(item.getId());
 	}
 
-	@PostMapping(value = "/{id}")
+	@PutMapping(value = "/{id}")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
 	public CriteriaItem updateCriteriaItem(@PathVariable String id, @RequestBody @Valid CriteriaItem item) {
 		if (!id.equals(item.getId())) {

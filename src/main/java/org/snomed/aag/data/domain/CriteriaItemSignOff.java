@@ -1,0 +1,85 @@
+package org.snomed.aag.data.domain;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
+
+import javax.validation.constraints.NotBlank;
+
+@Document(indexName = "criteria-item-sign-off")
+public class CriteriaItemSignOff {
+    public interface Fields {
+        String ID = "id";
+        String CRITERIA_ITEM_ID = "criteriaItemId";
+        String TIMESTAMP = "timestamp";
+        String BRANCH = "branch";
+        String BRANCH_HEAD_TIMESTAMP = "branchHeadTimestamp";
+        String USER_ID = "userId";
+    }
+
+    @Id
+    @Field(type = FieldType.Keyword)
+    @NotBlank
+    private String id;
+
+    @Field(type = FieldType.Text)
+    @NotBlank
+    private final String criteriaItemId;
+
+    @Field(type = FieldType.Text)
+    @NotBlank
+    private final String branch;
+
+    @Field(type = FieldType.Text)
+    @NotBlank
+    private final String userId;
+
+    @Field(type = FieldType.Long)
+    @NotBlank
+    private final Long timestamp;
+
+    @Field(type = FieldType.Long)
+    @NotBlank
+    private final Long branchHeadTimestamp;
+
+    public CriteriaItemSignOff() {
+        this.criteriaItemId = null;
+        this.branch = null;
+        this.userId = null;
+        this.timestamp = null;
+        this.branchHeadTimestamp = null;
+    }
+
+    public CriteriaItemSignOff(String criteriaItemId, String branch, Long branchHeadTimestamp, String userId) {
+        this.criteriaItemId = criteriaItemId;
+        this.branch = branch;
+        this.userId = userId;
+        this.timestamp = System.currentTimeMillis();
+        this.branchHeadTimestamp = branchHeadTimestamp;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getCriteriaItemId() {
+        return criteriaItemId;
+    }
+
+    public String getBranch() {
+        return branch;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public Long getTimestamp() {
+        return timestamp;
+    }
+
+    public Long getBranchHeadTimestamp() {
+        return branchHeadTimestamp;
+    }
+}
