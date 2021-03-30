@@ -39,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
 class AcceptanceControllerTest extends AbstractTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final String BRANCH_PATH = "MAIN";
 
     private AcceptanceController controller;
     private MockMvc mockMvc;
@@ -68,7 +67,7 @@ class AcceptanceControllerTest extends AbstractTest {
     public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
 
         //when
         ResultActions resultActions = mockMvc.perform(post(requestUrl));
@@ -82,7 +81,7 @@ class AcceptanceControllerTest extends AbstractTest {
     public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeModified() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
 
         givenCriteriaItemExists(criteriaItemId, false);
 
@@ -98,7 +97,7 @@ class AcceptanceControllerTest extends AbstractTest {
     public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenBranchDoesNotExist() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
 
         givenCriteriaItemExists(criteriaItemId, true);
         givenBranchDoesNotExist();
@@ -115,7 +114,7 @@ class AcceptanceControllerTest extends AbstractTest {
     public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenUserDoesNotHaveDesiredRole() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
 
         givenCriteriaItemExists(criteriaItemId, true);
         givenUserDoesNotHavePermissionForBranch();
@@ -132,7 +131,7 @@ class AcceptanceControllerTest extends AbstractTest {
     public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
 
         givenCriteriaItemExists(criteriaItemId, true);
         givenUserDoesHavePermissionForBranch();
@@ -149,7 +148,7 @@ class AcceptanceControllerTest extends AbstractTest {
     public void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
         long timestamp = System.currentTimeMillis();
         String username = "AcceptanceControllerTest";
 
@@ -164,7 +163,55 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertEquals(criteriaItemId, criteriaItemSignOff.getCriteriaItemId());
-        assertEquals(BRANCH_PATH, criteriaItemSignOff.getBranch());
+        assertEquals("MAIN", criteriaItemSignOff.getBranch());
+        assertEquals(timestamp, criteriaItemSignOff.getBranchHeadTimestamp());
+        assertEquals(username, criteriaItemSignOff.getUserId());
+    }
+
+    @Test
+    public void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItemOnProjectBranch() throws Exception {
+        //given
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(withPipeInsteadOfSlash("MAIN/projectA"), criteriaItemId);
+        long timestamp = System.currentTimeMillis();
+        String username = "AcceptanceControllerTest";
+
+        givenCriteriaItemExists(criteriaItemId, true);
+        givenUserDoesHavePermissionForBranch();
+        givenBranchDoesExist(timestamp);
+        givenAuthenticatedUser(username);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
+        CriteriaItemSignOff criteriaItemSignOff = OBJECT_MAPPER.readValue(getResponseBody(resultActions), CriteriaItemSignOff.class);
+
+        //then
+        assertEquals(criteriaItemId, criteriaItemSignOff.getCriteriaItemId());
+        assertEquals("MAIN/projectA", criteriaItemSignOff.getBranch());
+        assertEquals(timestamp, criteriaItemSignOff.getBranchHeadTimestamp());
+        assertEquals(username, criteriaItemSignOff.getUserId());
+    }
+
+    @Test
+    public void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItemOnTaskBranch() throws Exception {
+        //given
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(withPipeInsteadOfSlash("MAIN/projectA/taskB"), criteriaItemId);
+        long timestamp = System.currentTimeMillis();
+        String username = "AcceptanceControllerTest";
+
+        givenCriteriaItemExists(criteriaItemId, true);
+        givenUserDoesHavePermissionForBranch();
+        givenBranchDoesExist(timestamp);
+        givenAuthenticatedUser(username);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(post(requestUrl));
+        CriteriaItemSignOff criteriaItemSignOff = OBJECT_MAPPER.readValue(getResponseBody(resultActions), CriteriaItemSignOff.class);
+
+        //then
+        assertEquals(criteriaItemId, criteriaItemSignOff.getCriteriaItemId());
+        assertEquals("MAIN/projectA/taskB", criteriaItemSignOff.getBranch());
         assertEquals(timestamp, criteriaItemSignOff.getBranchHeadTimestamp());
         assertEquals(username, criteriaItemSignOff.getUserId());
     }
@@ -173,7 +220,7 @@ class AcceptanceControllerTest extends AbstractTest {
     public void signOffCriteriaItem_ShouldAddRecordToStore_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem(criteriaItemId);
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
         long timestamp = System.currentTimeMillis();
         String username = "AcceptanceControllerTest";
 
@@ -192,8 +239,8 @@ class AcceptanceControllerTest extends AbstractTest {
         assertNotNull(result);
     }
 
-    private String signOffCriteriaItem(String criteriaItemId) {
-        return "/acceptance/" + BRANCH_PATH + "/item/" + criteriaItemId + "/accept";
+    private String signOffCriteriaItem(String branchPath, String criteriaItemId) {
+        return "/acceptance/" + branchPath + "/item/" + criteriaItemId + "/accept";
     }
 
     private String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
@@ -251,5 +298,14 @@ class AcceptanceControllerTest extends AbstractTest {
 
     private String getResponseBody(ResultActions resultActions) throws UnsupportedEncodingException {
         return resultActions.andReturn().getResponse().getContentAsString();
+    }
+
+    /*
+     * MockMvc doesn't follow re-directs. Instead of sending a request
+     * where a branch has a slash (which relies on BranchPathUriRewriteFilter),
+     * send a request with the branch already decoded.
+     * */
+    private String withPipeInsteadOfSlash(String branch) {
+        return branch.replaceAll("/", "|");
     }
 }

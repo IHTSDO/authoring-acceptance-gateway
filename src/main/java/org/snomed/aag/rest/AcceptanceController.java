@@ -1,5 +1,6 @@
 package org.snomed.aag.rest;
 
+import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
 import io.swagger.annotations.*;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.sso.integration.SecurityUtil;
@@ -47,6 +48,8 @@ public class AcceptanceController {
     @PostMapping("/{branch}/item/{item-id}/accept")
     public ResponseEntity<?> signOffCriteriaItem(@ApiParam("The branch path.") @PathVariable(name = "branch") String branchPath,
                                                  @ApiParam("The identifier of the CriteriaItem to accept.") @PathVariable(name = "item-id") String itemId) throws RestClientException {
+        branchPath = BranchPathUriUtil.decodePath(branchPath);
+
         //Verify CriteriaItems
         CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
         criteriaItemService.verifyManual(criteriaItem, true);
