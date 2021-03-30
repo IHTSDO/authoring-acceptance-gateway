@@ -25,12 +25,13 @@ public class SnowstormAccessValidator implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        LOGGER.info("Confirming access to Snowstorm...");
+        snowstormUrl = snowstormUrl + "/version";
+        LOGGER.info("Confirming access to Snowstorm. (Snowstorm URL: {})", snowstormUrl);
         try {
             this.restTemplate.getForObject(snowstormUrl, String.class);
             LOGGER.info("Successfully confirmed access to Snowstorm.");
         } catch (Exception e) {
-            LOGGER.warn("Cannot access Snowstorm at {}. Is Snowstorm accessible?", snowstormUrl);
+            LOGGER.warn("Cannot access Snowstorm. (Error: {})", e.getMessage());
         }
     }
 
