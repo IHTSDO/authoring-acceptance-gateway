@@ -134,7 +134,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>org.snomed.aag.ServiceAcceptanceServiceApplication</mainClass>
+					<mainClass>org.snomed.aag.AuthoringAcceptanceGatewayApplication</mainClass>
 				</configuration>
 				<executions>
 					<execution>
