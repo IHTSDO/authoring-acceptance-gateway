@@ -7,7 +7,6 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import javax.validation.constraints.NotBlank;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Document(indexName = "project-criteria")
@@ -55,5 +54,13 @@ public class ProjectAcceptanceCriteria {
 
 	public void setSelectedTaskCriteriaIds(Set<String> selectedTaskCriteriaIds) {
 		this.selectedTaskCriteriaIds = selectedTaskCriteriaIds;
+	}
+
+	public Set<String> getAllCriteriaIdentifiers() {
+		Set<String> identifiers = new HashSet<>();
+		identifiers.addAll(selectedProjectCriteriaIds);
+		identifiers.addAll(selectedTaskCriteriaIds);
+
+		return identifiers;
 	}
 }
