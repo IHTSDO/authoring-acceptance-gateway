@@ -63,4 +63,10 @@ public class ProjectAcceptanceCriteria {
 
 		return identifiers;
 	}
+
+	public void addToSelectedProjectCriteria(CriteriaItem criteriaItem) {
+		if (AuthoringLevel.PROJECT.equals(criteriaItem.getAuthoringLevel())) {
+			this.selectedProjectCriteriaIds.add(criteriaItem.getId());
+		}
+	}
 }

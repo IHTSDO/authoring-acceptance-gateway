@@ -3,6 +3,7 @@ package org.snomed.aag.data.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.Constants;
+import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.CriteriaItemRepository;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 import static java.lang.String.format;
@@ -67,5 +69,17 @@ public class CriteriaItemService {
 			LOGGER.error("User attempted to sign off non-manual CriteriaItem ({}).", criteriaItem.getId());
 			throw new AccessDeniedException("Criteria Item cannot be changed manually.");
 		}
+	}
+
+	/**
+	 * Find Criteria Items matching on the Mandatory and Authoring Level fields.
+	 *
+	 * @param mandatory      CriteriaItem field to match.
+	 * @param authoringLevel CriteriaItem field to match.
+	 * @return Criteria Items matching the query.
+	 */
+	public List<CriteriaItem> findAllByMandatoryAndAuthoringLevel(boolean mandatory, AuthoringLevel authoringLevel) {
+		LOGGER.info("Querying for Criteria Items that have their Mandatory field set to {} and their Authoring Level field set to {}.", mandatory, authoringLevel);
+		return repository.findAllByMandatoryAndAuthoringLevel(mandatory, authoringLevel);
 	}
 }

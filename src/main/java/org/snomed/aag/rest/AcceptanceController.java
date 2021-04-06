@@ -94,7 +94,7 @@ public class AcceptanceController {
         securityService.getBranchOrThrow(branchPath);
         LOGGER.debug("Branch {} exists.", branchPath);
 
-        Set<String> allCriteriaIdentifiers = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath).getAllCriteriaIdentifiers();
+        Set<String> allCriteriaIdentifiers = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath, true).getAllCriteriaIdentifiers();
         LOGGER.debug("Found {} Criteria Items for {}.", allCriteriaIdentifiers.size(), branchPath);
         Set<CriteriaItemDTO> criteriaItems = new HashSet<>();
         for (String criteriaIdentifier : allCriteriaIdentifiers) {

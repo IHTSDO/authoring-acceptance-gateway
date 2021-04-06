@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
+import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -372,6 +373,36 @@ class AcceptanceControllerTest extends AbstractTest {
         assertEquals(secondProjectCriteriaItemId, criteriaItems.get(5).getCriteriaItemId());
     }
 
+    @Test
+    public void viewCriteriaItems_ShouldIncludeGloballyRequiredCriteriaItems() throws Exception {
+        //given
+        String branchPath = "MAIN/projectA";
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String taskCriteriaItemId = UUID.randomUUID().toString();
+
+        givenBranchDoesExist(System.currentTimeMillis());
+        givenGloballyRequiredCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, false, 1);
+        givenCriteriaItemExists(taskCriteriaItemId, true, 2);
+        givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
+        givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        String responseBody = getResponseBody(resultActions);
+        ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = OBJECT_MAPPER.readValue(responseBody, ProjectAcceptanceCriteriaDTO.class);
+        List<CriteriaItemDTO> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
+
+        //then
+        assertEquals(branchPath, projectAcceptanceCriteriaDTO.getProjectKey());
+        assertEquals(3, criteriaItems.size());
+        assertEquals(globalCriteriaItemId, criteriaItems.get(0).getCriteriaItemId());
+        assertEquals(projectCriteriaItemId, criteriaItems.get(1).getCriteriaItemId());
+        assertEquals(taskCriteriaItemId, criteriaItems.get(2).getCriteriaItemId());
+    }
+
     private String signOffCriteriaItem(String branchPath, String criteriaItemId) {
         return "/acceptance/" + branchPath + "/item/" + criteriaItemId + "/accept";
     }
@@ -405,6 +436,17 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItem.setManual(manual);
         criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
         criteriaItem.setOrder(order);
+
+        criteriaItemRepository.save(criteriaItem);
+    }
+
+    private void givenGloballyRequiredCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
+        CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
+        criteriaItem.setManual(manual);
+        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setOrder(order);
+        criteriaItem.setMandatory(true);
+        criteriaItem.setAuthoringLevel(AuthoringLevel.PROJECT);
 
         criteriaItemRepository.save(criteriaItem);
     }
