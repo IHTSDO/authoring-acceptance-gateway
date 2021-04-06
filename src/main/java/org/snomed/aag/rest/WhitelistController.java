@@ -33,6 +33,11 @@ public class WhitelistController {
         return whitelistService.findAll(PageRequest.of(page, size));
     }
 
+    @PostMapping(value = "/bulk-validate")
+    public List <WhitelistItem> bulkValidate(@RequestBody Collection <String> componentIds) {
+        return whitelistService.findAllByComponentIdIn(componentIds);
+    }
+
     @PostMapping
     public ResponseEntity <WhitelistItem> addWhitelistItem(@RequestBody @Valid WhitelistItem whitelistItem) {
         WhitelistItem savedWhitelistItem = whitelistService.create(whitelistItem);
