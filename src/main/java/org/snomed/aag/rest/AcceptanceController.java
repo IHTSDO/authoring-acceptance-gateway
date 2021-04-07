@@ -9,14 +9,11 @@ import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.services.*;
-import org.snomed.aag.rest.pojo.CriteriaItemDTO;
-import org.snomed.aag.rest.pojo.CriteriaItemToCriteriaItemDTOConverter;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
 import java.util.Set;
 
 @RestController
@@ -30,17 +27,15 @@ public class AcceptanceController {
     private final CriteriaItemSignOffService criteriaItemSignOffService;
     private final SecurityService securityService;
     private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
-    private final CriteriaItemToCriteriaItemDTOConverter criteriaItemToCriteriaItemDTOConverter;
 
     public AcceptanceController(CriteriaItemService criteriaItemService, BranchService branchService,
                                 CriteriaItemSignOffService criteriaItemSignOffService, SecurityService securityService,
-                                ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService, CriteriaItemToCriteriaItemDTOConverter criteriaItemToCriteriaItemDTOConverter) {
+                                ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService) {
         this.criteriaItemService = criteriaItemService;
         this.branchService = branchService;
         this.criteriaItemSignOffService = criteriaItemSignOffService;
         this.securityService = securityService;
         this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
-        this.criteriaItemToCriteriaItemDTOConverter = criteriaItemToCriteriaItemDTOConverter;
     }
 
     @ApiOperation(value = "Manually accept a Criteria Item.",
@@ -96,21 +91,8 @@ public class AcceptanceController {
 
         Set<String> allCriteriaIdentifiers = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath, true).getAllCriteriaIdentifiers();
         LOGGER.debug("Found {} Criteria Items for {}.", allCriteriaIdentifiers.size(), branchPath);
-        Set<CriteriaItemDTO> criteriaItems = new HashSet<>();
-        for (String criteriaIdentifier : allCriteriaIdentifiers) {
-            CriteriaItemDTO criteriaItemDTO = criteriaItemToCriteriaItemDTOConverter.convert(
-                    criteriaItemService.findOrThrow(criteriaIdentifier)
-            );
-            criteriaItemSignOffService
-                    .findByBranchAndCriteriaItemId(branchPath, criteriaIdentifier)
-                    .ifPresent(criteriaItemSignOff -> {
-                        LOGGER.debug("Criteria Item {} for {} is being marked as completed.", criteriaIdentifier, branchPath);
-                        if (criteriaItemDTO != null) {
-                            criteriaItemDTO.setCompleted(true);
-                        }
-                    });
-            criteriaItems.add(criteriaItemDTO);
-        }
+        Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(allCriteriaIdentifiers);
+        criteriaItemSignOffService.findAllByBranchAndIdentifier(branchPath, criteriaItems);
 
         ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = new ProjectAcceptanceCriteriaDTO(branchPath, criteriaItems);
         LOGGER.info(

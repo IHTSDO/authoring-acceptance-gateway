@@ -14,8 +14,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.lang.String.format;
 
@@ -43,6 +45,17 @@ public class CriteriaItemService {
 			throw new NotFoundException(format("Criteria Item with id '%s' not found.", id));
 		}
 		return itemOptional.get();
+	}
+
+	/**
+	 * Find Criteria Items from the given identifiers.
+	 *
+	 * @param criteriaItemIdentifiers Identifiers to search for.
+	 * @return Collection of found Criteria Items.
+	 */
+	public Set<CriteriaItem> findAllByIdentifiers(Collection<String> criteriaItemIdentifiers) {
+		LOGGER.info("Finding Criteria Items {}.", criteriaItemIdentifiers);
+		return repository.findAllByIdIn(criteriaItemIdentifiers);
 	}
 
 	public CriteriaItem update(CriteriaItem item) {

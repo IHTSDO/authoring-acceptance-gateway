@@ -13,7 +13,6 @@ import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
-import org.snomed.aag.rest.pojo.CriteriaItemDTO;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -29,8 +28,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -55,8 +53,7 @@ class AcceptanceControllerTest extends AbstractTest {
                 branchService,
                 criteriaItemSignOffService,
                 securityService,
-                projectAcceptanceCriteriaService,
-                criteriaItemToCriteriaItemDTOConverter
+                projectAcceptanceCriteriaService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
                 projectAcceptanceCriteriaService
@@ -362,15 +359,15 @@ class AcceptanceControllerTest extends AbstractTest {
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
         String responseBody = getResponseBody(resultActions);
         ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = OBJECT_MAPPER.readValue(responseBody, ProjectAcceptanceCriteriaDTO.class);
-        List<CriteriaItemDTO> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
+        List<CriteriaItem> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
 
         //then
-        assertEquals(firstTaskCriteriaItemId, criteriaItems.get(0).getCriteriaItemId());
-        assertEquals(secondTaskCriteriaItemId, criteriaItems.get(1).getCriteriaItemId());
-        assertEquals(thirdTaskCriteriaItemId, criteriaItems.get(2).getCriteriaItemId());
-        assertEquals(fourthTaskCriteriaItemId, criteriaItems.get(3).getCriteriaItemId());
-        assertEquals(firstProjectCriteriaItemId, criteriaItems.get(4).getCriteriaItemId());
-        assertEquals(secondProjectCriteriaItemId, criteriaItems.get(5).getCriteriaItemId());
+        assertEquals(firstTaskCriteriaItemId, criteriaItems.get(0).getId());
+        assertEquals(secondTaskCriteriaItemId, criteriaItems.get(1).getId());
+        assertEquals(thirdTaskCriteriaItemId, criteriaItems.get(2).getId());
+        assertEquals(fourthTaskCriteriaItemId, criteriaItems.get(3).getId());
+        assertEquals(firstProjectCriteriaItemId, criteriaItems.get(4).getId());
+        assertEquals(secondProjectCriteriaItemId, criteriaItems.get(5).getId());
     }
 
     @Test
@@ -393,14 +390,42 @@ class AcceptanceControllerTest extends AbstractTest {
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
         String responseBody = getResponseBody(resultActions);
         ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = OBJECT_MAPPER.readValue(responseBody, ProjectAcceptanceCriteriaDTO.class);
-        List<CriteriaItemDTO> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
+        List<CriteriaItem> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
 
         //then
         assertEquals(branchPath, projectAcceptanceCriteriaDTO.getProjectKey());
         assertEquals(3, criteriaItems.size());
-        assertEquals(globalCriteriaItemId, criteriaItems.get(0).getCriteriaItemId());
-        assertEquals(projectCriteriaItemId, criteriaItems.get(1).getCriteriaItemId());
-        assertEquals(taskCriteriaItemId, criteriaItems.get(2).getCriteriaItemId());
+        assertEquals(globalCriteriaItemId, criteriaItems.get(0).getId());
+        assertEquals(projectCriteriaItemId, criteriaItems.get(1).getId());
+        assertEquals(taskCriteriaItemId, criteriaItems.get(2).getId());
+    }
+
+    @Test
+    public void viewCriteriaItems_ShouldReturnCompleteCriteriaItem_WhenCriteriaItemHasBeenSignedOff() throws Exception {
+        //given
+        String branchPath = "MAIN/projectA";
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String taskCriteriaItemId = UUID.randomUUID().toString();
+
+        givenBranchDoesExist(System.currentTimeMillis());
+        givenGloballyRequiredCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, false, 1);
+        givenCriteriaItemExists(taskCriteriaItemId, true, 2);
+        givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
+        givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
+        givenCriteriaItemSignOffExists("MAIN", taskCriteriaItemId); //shouldn't be return from ES query
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        String responseBody = getResponseBody(resultActions);
+        ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = OBJECT_MAPPER.readValue(responseBody, ProjectAcceptanceCriteriaDTO.class);
+        List<CriteriaItem> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
+
+        //then
+        assertEquals(3, criteriaItems.size());
+        assertTrue(criteriaItems.get(2).isComplete());
     }
 
     private String signOffCriteriaItem(String branchPath, String criteriaItemId) {
