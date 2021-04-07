@@ -1,5 +1,6 @@
 package org.snomed.aag.data.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -56,6 +57,7 @@ public class ProjectAcceptanceCriteria {
 		this.selectedTaskCriteriaIds = selectedTaskCriteriaIds;
 	}
 
+	@JsonIgnore
 	public Set<String> getAllCriteriaIdentifiers() {
 		Set<String> identifiers = new HashSet<>();
 		identifiers.addAll(selectedProjectCriteriaIds);
