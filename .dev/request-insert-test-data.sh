@@ -3,7 +3,7 @@
 # ----------------------------------------
 
 # ----------------------------------------
-# Criteria Items
+# Criteria Items (Globally required)
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
@@ -35,6 +35,24 @@ curl --header "Content-Type: application/json" \
   }' \
   http://localhost:8090/authoring-acceptance-gateway/criteria-items
 
+# ----------------------------------------
+# Criteria Items (Optional)
+# ----------------------------------------
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "authoringLevel": "PROJECT",
+    "description": "Update documentation.",
+    "expiresOnCommit": true,
+    "id": "ihtsdo-aag-project-update-documentation",
+    "label": "Update project documentation",
+    "mandatory": false,
+    "manual": true,
+    "order": 1,
+    "requiredRole": "AUTHOR"
+  }' \
+  http://localhost:8090/authoring-acceptance-gateway/criteria-items
+
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
@@ -50,7 +68,7 @@ curl --header "Content-Type: application/json" \
   }' \
   http://localhost:8090/authoring-acceptance-gateway/criteria-items
 
-  curl --header "Content-Type: application/json" \
+curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
     "authoringLevel": "TASK",
@@ -73,8 +91,7 @@ curl --header "Content-Type: application/json" \
   --data '{
   "branchPath": "MAIN",
   "selectedProjectCriteriaIds": [
-    "ihtsdo-aag-project-run-validation",
-    "ihtsdo-aag-project-run-classification"
+    "ihtsdo-aag-project-update-documentation"
   ],
   "selectedTaskCriteriaIds": [
     "ihtsdo-aag-task-review-changes",
