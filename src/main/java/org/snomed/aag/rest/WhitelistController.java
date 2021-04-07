@@ -15,31 +15,29 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @Api(tags = "Whitelist")
 @RequestMapping(value = "/whitelist-items", produces = "application/json")
 public class WhitelistController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(WhitelistController.class);
 
     @Autowired
     private WhitelistService whitelistService;
 
     @GetMapping
-    public Page <WhitelistItem> findWhitelistItems(
+    public Page<WhitelistItem> findWhitelistItems(
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "100") int size) {
         return whitelistService.findAll(PageRequest.of(page, size));
     }
 
     @PostMapping(value = "/bulk-validate")
-    public List <WhitelistItem> bulkValidate(@RequestBody Collection <String> componentIds) {
+    public List<WhitelistItem> bulkValidate(@RequestBody Collection <String> componentIds) {
         return whitelistService.findAllByComponentIdIn(componentIds);
     }
 
     @PostMapping
-    public ResponseEntity <WhitelistItem> addWhitelistItem(@RequestBody @Valid WhitelistItem whitelistItem) {
+    public ResponseEntity<WhitelistItem> addWhitelistItem(@RequestBody @Valid WhitelistItem whitelistItem) {
         WhitelistItem savedWhitelistItem = whitelistService.create(whitelistItem);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -47,7 +45,7 @@ public class WhitelistController {
     }
 
     @PutMapping(value = "/{id}")
-    public ResponseEntity <WhitelistItem> updateWhitelistItem(@PathVariable String id, @RequestBody @Valid WhitelistItem whitelistItem) {
+    public ResponseEntity<WhitelistItem> updateWhitelistItem(@PathVariable String id, @RequestBody @Valid WhitelistItem whitelistItem) {
         whitelistService.findOrThrow(id);
         whitelistItem.setId(id);
         WhitelistItem savedWhitelistItem = whitelistService.update(whitelistItem);

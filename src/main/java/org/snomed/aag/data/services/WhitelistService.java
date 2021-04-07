@@ -19,16 +19,16 @@ public class WhitelistService {
 	@Autowired
 	private WhitelistItemRepository repository;
 
-	public Page <WhitelistItem> findAll(PageRequest pageRequest) {
+	public Page<WhitelistItem> findAll(PageRequest pageRequest) {
 		return repository.findAll(pageRequest);
 	}
 
-	public List <WhitelistItem> findAllByComponentIdIn(Collection <String> componentIds) {
+	public List<WhitelistItem> findAllByComponentIdIn(Collection<String> componentIds) {
 		return repository.findAllByComponentIdIn(componentIds);
 	}
 
 	public WhitelistItem findOrThrow(String id) {
-		final Optional <WhitelistItem> itemOptional = repository.findById(id);
+		final Optional<WhitelistItem> itemOptional = repository.findById(id);
 		if (!itemOptional.isPresent()) {
 			throw new NotFoundException(format("Whitelist Item with id '%s' not found.", id));
 		}

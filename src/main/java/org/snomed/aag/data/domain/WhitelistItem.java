@@ -7,7 +7,6 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import javax.validation.constraints.NotBlank;
 import java.util.Date;
-import java.util.Map;
 
 @Document(indexName = "whitelist-item")
 public class WhitelistItem {
@@ -16,18 +15,18 @@ public class WhitelistItem {
     @NotBlank
     private String id;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword )
     @NotBlank
     private String userId;
 
     @Field(type = FieldType.Long)
     private Date creationDate;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword)
     @NotBlank
     private String validationRuleId;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword)
     @NotBlank
     private String componentId;
 
@@ -35,12 +34,12 @@ public class WhitelistItem {
     @NotBlank
     private String conceptId;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword)
     @NotBlank
     private String branch;
 
-    @Field(type = FieldType.Object)
-    private Map <String, String> additionalFields;
+    @Field(type = FieldType.Keyword)
+    private String additionalFields;
 
     public String getId() {
         return id;
@@ -98,11 +97,11 @@ public class WhitelistItem {
         this.branch = branch;
     }
 
-    public Map <String, String> getAdditionalFields() {
+    public String getAdditionalFields() {
         return additionalFields;
     }
 
-    public void setAdditionalFields(Map <String, String> additionalFields) {
+    public void setAdditionalFields(String additionalFields) {
         this.additionalFields = additionalFields;
     }
 }
