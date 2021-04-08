@@ -4,7 +4,6 @@ import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
 import io.swagger.annotations.Api;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +17,11 @@ import javax.validation.Valid;
 @RequestMapping(value = "/criteria", produces = "application/json")
 public class AcceptanceCriteriaController {
 
-	@Autowired
-	private ProjectAcceptanceCriteriaService service;
+	private final ProjectAcceptanceCriteriaService service;
+
+	public AcceptanceCriteriaController(ProjectAcceptanceCriteriaService service) {
+		this.service = service;
+	}
 
 	@GetMapping
 	public Page<ProjectAcceptanceCriteria> findAll(

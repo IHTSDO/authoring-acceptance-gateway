@@ -8,16 +8,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
-import org.snomed.aag.data.services.BranchService;
-import org.snomed.aag.data.services.CriteriaItemService;
-import org.snomed.aag.data.services.CriteriaItemSignOffService;
-import org.snomed.aag.data.services.SecurityService;
+import org.snomed.aag.data.services.*;
+import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Set;
 
 @RestController
 @Api(tags = "Acceptance")
@@ -29,13 +26,16 @@ public class AcceptanceController {
     private final BranchService branchService;
     private final CriteriaItemSignOffService criteriaItemSignOffService;
     private final SecurityService securityService;
+    private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
 
     public AcceptanceController(CriteriaItemService criteriaItemService, BranchService branchService,
-                                CriteriaItemSignOffService criteriaItemSignOffService, SecurityService securityService) {
+                                CriteriaItemSignOffService criteriaItemSignOffService, SecurityService securityService,
+                                ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService) {
         this.criteriaItemService = criteriaItemService;
         this.branchService = branchService;
         this.criteriaItemSignOffService = criteriaItemSignOffService;
         this.securityService = securityService;
+        this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
     }
 
     @ApiOperation(value = "Manually accept a Criteria Item.",
@@ -71,5 +71,38 @@ public class AcceptanceController {
                 .status(HttpStatus.OK)
                 .header(CriteriaItemSignOff.Fields.ID, savedCriteriaItemSignOffId)
                 .body(savedCriteriaItemSignOff);
+    }
+
+    @ApiOperation(value = "View all Criteria Items for a branch.",
+            notes = "This request will retrieve all Criteria Items, both complete and incomplete, for a given branch.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "&bull; When the branch has no acceptance criteria."),
+            @ApiResponse(code = 403, message = "&bull; When the Branch cannot be found from the given branch path. <br/> &bull; When individual Criteria Items do not exist for the branch's expected acceptance criteria."),
+            @ApiResponse(code = 200, message = "When the branch has acceptance criteria.", response = ProjectAcceptanceCriteriaDTO.class)
+    })
+    @GetMapping("/{branch}")
+    public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch) throws RestClientException {
+        final String branchPath = BranchPathUriUtil.decodePath(branch);
+        LOGGER.info("Finding all Criteria Items for {}.", branchPath);
+
+        LOGGER.debug("Verifying branch {} exists.", branchPath);
+        securityService.getBranchOrThrow(branchPath);
+        LOGGER.debug("Branch {} exists.", branchPath);
+
+        Set<String> allCriteriaIdentifiers = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath, true).getAllCriteriaIdentifiers();
+        LOGGER.debug("Found {} Criteria Items for {}.", allCriteriaIdentifiers.size(), branchPath);
+        Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(allCriteriaIdentifiers);
+        criteriaItemSignOffService.findAllByBranchAndIdentifier(branchPath, criteriaItems);
+
+        ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = new ProjectAcceptanceCriteriaDTO(branchPath, criteriaItems);
+        LOGGER.info(
+                "Branch {} has {} Criteria Items remaining and {} Criteria Items completed.",
+                branchPath,
+                projectAcceptanceCriteriaDTO.getNumberOfCriteriaItemsWithCompletedValue(false),
+                projectAcceptanceCriteriaDTO.getNumberOfCriteriaItemsWithCompletedValue(true)
+        );
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(projectAcceptanceCriteriaDTO);
     }
 }

@@ -1,6 +1,7 @@
 package org.snomed.aag.data.services;
 
 import org.snomed.aag.data.Constants;
+import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
@@ -26,6 +27,9 @@ public class ProjectAcceptanceCriteriaService {
 
 	@Autowired
 	private ElasticsearchRestTemplate elasticsearchTemplate;
+
+	@Autowired
+	private CriteriaItemService criteriaItemService;
 
 	public Page<ProjectAcceptanceCriteria> findAll(PageRequest pageRequest) {
 		return repository.findAll(pageRequest);
@@ -80,6 +84,19 @@ public class ProjectAcceptanceCriteriaService {
 			throw new NotFoundException("No project acceptance criteria found for this branch path.");
 		}
 		return criteria;
+	}
+
+	public ProjectAcceptanceCriteria findByBranchPathOrThrow(String branch, boolean includeGloballyRequiredCriteriaItems) {
+		if (!includeGloballyRequiredCriteriaItems) {
+			return findByBranchPathOrThrow(branch);
+		}
+
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathOrThrow(branch);
+		for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
+			projectAcceptanceCriteria.addToSelectedProjectCriteria(criteriaItem);
+		}
+
+		return projectAcceptanceCriteria;
 	}
 
 	// This method is required because the default Repository implementation uses a multi-get request

@@ -23,15 +23,15 @@ public class CriteriaItemSignOff {
     @NotBlank
     private String id;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword)
     @NotBlank
     private final String criteriaItemId;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword)
     @NotBlank
     private final String branch;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword)
     @NotBlank
     private final String userId;
 

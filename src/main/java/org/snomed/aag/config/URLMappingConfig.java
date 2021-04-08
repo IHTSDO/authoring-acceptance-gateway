@@ -13,7 +13,8 @@ public class URLMappingConfig {
 		// Encode branch paths in uri to allow request mapping to work
 		return new FilterRegistrationBean<>(new BranchPathUriRewriteFilter(
 				"/criteria/(.*)",
-				"/acceptance/(.*)/item/.*/accept"
+				"/acceptance/(.*)/item/.*/accept",
+				"/acceptance/(.*)"
 		));
 	}
 

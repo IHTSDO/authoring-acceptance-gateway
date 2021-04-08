@@ -1,6 +1,7 @@
 package org.snomed.aag.data.domain;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -9,7 +10,7 @@ import javax.validation.constraints.NotBlank;
 import java.util.Objects;
 
 @Document(indexName = "criteria-item")
-public class CriteriaItem {
+public class CriteriaItem implements Comparable<CriteriaItem> {
 
 	@Id
 	@Field(type = FieldType.Keyword)
@@ -40,6 +41,9 @@ public class CriteriaItem {
 
 	@Field(type = FieldType.Keyword)
 	private String requiredRole;
+
+	@Transient
+	private boolean complete;
 
 	private CriteriaItem() {
 	}
@@ -120,6 +124,14 @@ public class CriteriaItem {
 		this.requiredRole = requiredRole;
 	}
 
+	public boolean isComplete() {
+		return complete;
+	}
+
+	public void setComplete(boolean complete) {
+		this.complete = complete;
+	}
+
 	@Override
 	public String toString() {
 		return "CriteriaItem{" +
@@ -150,5 +162,31 @@ public class CriteriaItem {
 	@Override
 	public int hashCode() {
 		return Objects.hash(id);
+	}
+
+	@Override
+	public int compareTo(CriteriaItem that) {
+		if (this.getId().equals(that.getId())) {
+			return 0;
+		}
+
+		int o1Order = this.getOrder();
+		int o2Order = that.getOrder();
+
+		if (o1Order > o2Order) {
+			return 1;
+		}
+
+		if (o1Order < o2Order) {
+			return -1;
+		}
+
+		String thisLabel = this.getLabel();
+		String thatLabel = that.getLabel();
+		if (Objects.nonNull(thisLabel) && Objects.nonNull(thatLabel)) {
+			return thisLabel.compareTo(thatLabel);
+		}
+
+		return this.getId().compareTo(that.getId());
 	}
 }
