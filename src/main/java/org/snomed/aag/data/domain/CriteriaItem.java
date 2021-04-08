@@ -181,12 +181,6 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 			return -1;
 		}
 
-		String thisLabel = this.getLabel();
-		String thatLabel = that.getLabel();
-		if (Objects.nonNull(thisLabel) && Objects.nonNull(thatLabel)) {
-			return thisLabel.compareTo(thatLabel);
-		}
-
 		return this.getId().compareTo(that.getId());
 	}
 }
