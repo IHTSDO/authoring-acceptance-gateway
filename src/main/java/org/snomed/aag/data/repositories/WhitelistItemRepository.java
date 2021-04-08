@@ -7,5 +7,5 @@ import java.util.Collection;
 import java.util.List;
 
 public interface WhitelistItemRepository extends ElasticsearchRepository<WhitelistItem, String> {
-    List<WhitelistItem> findAllByComponentIdIn(Collection<String> componentIds);
+    List<WhitelistItem> findAllByValidationRuleIdIn(Collection<String> validationRuleIds);
 }

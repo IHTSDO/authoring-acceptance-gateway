@@ -1,8 +1,9 @@
 package org.snomed.aag.rest;
 
 import io.swagger.annotations.Api;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.services.WhitelistService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @Api(tags = "Whitelist")
@@ -31,9 +32,13 @@ public class WhitelistController {
         return whitelistService.findAll(PageRequest.of(page, size));
     }
 
+    @ApiOperation(value = "Validate components against whitelist",
+            notes = "This will be checking components if they are still whitelisted")
+    @ApiResponses(value = { @ApiResponse(code = 200, message = "Return a list of valid components.")
+    })
     @PostMapping(value = "/bulk-validate")
-    public List<WhitelistItem> bulkValidate(@RequestBody Collection <String> componentIds) {
-        return whitelistService.findAllByComponentIdIn(componentIds);
+    public List<WhitelistItem> bulkValidate(@RequestBody Set<WhitelistItem> whitelistItems) {
+        return whitelistService.validateWhitelistComponents(whitelistItems);
     }
 
     @PostMapping

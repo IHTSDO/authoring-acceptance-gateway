@@ -6,16 +6,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
 @Service
 public class WhitelistService {
 
+	private static final Comparator<WhitelistItem> WHITELIST_ITEM_COMPARATOR = Comparator.comparing(WhitelistItem::getValidationRuleId)
+																		.thenComparing(WhitelistItem::getConceptId)
+																		.thenComparing(WhitelistItem::getComponentId)
+																		.thenComparing(WhitelistItem::getAdditionalFields);
 	@Autowired
 	private WhitelistItemRepository repository;
 
@@ -23,8 +27,24 @@ public class WhitelistService {
 		return repository.findAll(pageRequest);
 	}
 
-	public List<WhitelistItem> findAllByComponentIdIn(Collection<String> componentIds) {
-		return repository.findAllByComponentIdIn(componentIds);
+	public List<WhitelistItem> validateWhitelistComponents(Set<WhitelistItem> whitelistItems) {
+		if (CollectionUtils.isEmpty(whitelistItems)) {
+			return Collections.EMPTY_LIST;
+		}
+
+		List<WhitelistItem> validWhitelistItems = new ArrayList <>();
+		Set<String> validationRuleIds = whitelistItems.stream().map(WhitelistItem::getValidationRuleId).collect(Collectors.toSet());
+		List<WhitelistItem> persistedWhitelistItems = repository.findAllByValidationRuleIdIn(validationRuleIds);
+		for (WhitelistItem whitelistItemTobeCompared : whitelistItems) {
+			for (WhitelistItem persistedWhitelistItem : persistedWhitelistItems) {
+				if (WHITELIST_ITEM_COMPARATOR.compare(whitelistItemTobeCompared, persistedWhitelistItem) == 0) {
+					validWhitelistItems.add(whitelistItemTobeCompared);
+					break;
+				}
+			}
+		}
+
+		return validWhitelistItems;
 	}
 
 	public WhitelistItem findOrThrow(String id) {
