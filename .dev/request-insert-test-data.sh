@@ -3,99 +3,97 @@
 # ----------------------------------------
 
 # ----------------------------------------
+# Variables (Change as required)
+# ----------------------------------------
+aagUrl=http://localhost:8090/authoring-acceptance-gateway
+branchPath=MAIN
+
+# ----------------------------------------
 # Criteria Items (Globally required)
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
+    "id": "project-final-signoff",
+    "label": "Project Iteration Final Sign-off",
+    "description": "Final project iteration sign-off by a release lead.",
+    "order": 10,
     "authoringLevel": "PROJECT",
-    "description": "Ensure project successfully validates.",
-    "expiresOnCommit": true,
-    "id": "project-run-validation",
-    "label": "Run project validation",
     "mandatory": true,
     "manual": true,
-    "order": 0,
-    "requiredRole": "AUTHOR"
+    "expiresOnCommit": false,
+    "requiredRole": "RELEASE_LEAD",
+    "complete": false
   }' \
-  http://localhost:8090/authoring-acceptance-gateway/criteria-items
-
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{
-    "authoringLevel": "PROJECT",
-    "description": "Ensure project successfully classifies.",
-    "expiresOnCommit": true,
-    "id": "project-run-classification",
-    "label": "Run project classification",
-    "mandatory": true,
-    "manual": true,
-    "order": 1,
-    "requiredRole": "AUTHOR"
-  }' \
-  http://localhost:8090/authoring-acceptance-gateway/criteria-items
+  ${aagUrl}/criteria-items
 
 # ----------------------------------------
-# Criteria Items (Optional)
+# Criteria Items (Optional Task Level)
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
-    "authoringLevel": "PROJECT",
-    "description": "Update documentation.",
-    "expiresOnCommit": true,
-    "id": "project-update-documentation",
-    "label": "Update project documentation",
+     "id": "task-clean-classification",
+     "label": "Classified content",
+     "description": "All axiom changes and concept inactivations must be classified.",
+     "order": 1,
+     "authoringLevel": "TASK",
+     "mandatory": true,
+     "manual": false,
+     "expiresOnCommit": true,
+     "requiredRole": "AUTHOR",
+     "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "task-manual-spellcheck",
+    "label": "Manual Spellchecking",
+    "description": "Check spellings of new descriptions manually.",
+    "order": 2,
+    "authoringLevel": "TASK",
     "mandatory": false,
     "manual": true,
-    "order": 1,
-    "requiredRole": "AUTHOR"
-  }' \
-  http://localhost:8090/authoring-acceptance-gateway/criteria-items
+    "expiresOnCommit": false,
+    "requiredRole": "AUTHOR",
+    "complete": false
+    }' \
+  ${aagUrl}/criteria-items
 
+# ----------------------------------------
+# Criteria Items (Optional Project Level)
+# ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
-    "authoringLevel": "TASK",
-    "description": "Review changes with another author.",
-    "expiresOnCommit": true,
-    "id": "task-review-changes",
-    "label": "Review changes.",
-    "mandatory": true,
-    "manual": true,
-    "order": 1,
-    "requiredRole": "AUTHOR"
+     "id": "project-clean-classification",
+     "label": "Classified content",
+     "description": "All axiom changes and concept inactivations must be classified.",
+     "order": 1,
+     "authoringLevel": "PROJECT",
+     "mandatory": true,
+     "manual": false,
+     "expiresOnCommit": true,
+     "requiredRole": "AUTHOR",
+     "complete": false
   }' \
-  http://localhost:8090/authoring-acceptance-gateway/criteria-items
-
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{
-    "authoringLevel": "TASK",
-    "description": "Send email to project lead with latest changes.",
-    "expiresOnCommit": true,
-    "id": "task-email-project-lead",
-    "label": "Inform project lead.",
-    "mandatory": true,
-    "manual": false,
-    "order": 2,
-    "requiredRole": "AUTHOR"
-  }' \
-  http://localhost:8090/authoring-acceptance-gateway/criteria-items
+  ${aagUrl}/criteria-items
 
 # ----------------------------------------
 # Criteria
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
-  --data '{
-  "branchPath": "MAIN",
-  "selectedProjectCriteriaIds": [
-    "project-update-documentation"
+  --data "{
+  \"branchPath\": \"$branchPath\",
+  \"selectedProjectCriteriaIds\": [
+    \"project-clean-classification\"
   ],
-  "selectedTaskCriteriaIds": [
-    "task-review-changes",
-    "task-email-project-lead"
+  \"selectedTaskCriteriaIds\": [
+    \"task-clean-classification\",
+    \"task-manual-spellcheck\"
   ]
-  }' \
-  http://localhost:8090/authoring-acceptance-gateway/criteria
+  }" \
+  ${aagUrl}/criteria
