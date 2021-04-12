@@ -32,6 +32,12 @@ public class WhitelistController {
         return whitelistService.findAll(PageRequest.of(page, size));
     }
 
+    @ApiOperation(value = "Find whitelist items by validation rule ID")
+    @GetMapping(value = "/validation-rule/{validationRuleId}")
+    public List<WhitelistItem> findWhitelistItemsByValidationRuleId(@PathVariable String validationRuleId) {
+        return whitelistService.findAllByValidationRuleId(validationRuleId);
+    }
+
     @ApiOperation(value = "Validate components against whitelist",
             notes = "This will be checking components if they are still whitelisted")
     @ApiResponses(value = { @ApiResponse(code = 200, message = "Return a list of valid components.")

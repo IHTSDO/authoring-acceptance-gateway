@@ -27,6 +27,10 @@ public class WhitelistService {
 		return repository.findAll(pageRequest);
 	}
 
+	public List<WhitelistItem> findAllByValidationRuleId(String validationRuleId) {
+		return repository.findAllByValidationRuleIdIn(Collections.singleton(validationRuleId));
+	}
+
 	public List<WhitelistItem> validateWhitelistComponents(Set<WhitelistItem> whitelistItems) {
 		if (CollectionUtils.isEmpty(whitelistItems)) {
 			return Collections.EMPTY_LIST;
@@ -66,4 +70,6 @@ public class WhitelistService {
 	public void delete(WhitelistItem item) {
 		repository.delete(item);
 	}
+
+
 }
