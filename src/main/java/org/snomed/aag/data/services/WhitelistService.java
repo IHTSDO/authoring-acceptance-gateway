@@ -1,5 +1,6 @@
 package org.snomed.aag.data.services;
 
+import org.ihtsdo.sso.integration.SecurityUtil;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.repositories.WhitelistItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,9 @@ public class WhitelistService {
 	}
 
 	public WhitelistItem create(WhitelistItem whitelistItem) {
+		whitelistItem.setId(UUID.randomUUID().toString());
+		whitelistItem.setUserId(SecurityUtil.getUsername());
+		whitelistItem.setCreationDate(new Date());
 		return repository.save(whitelistItem);
 	}
 

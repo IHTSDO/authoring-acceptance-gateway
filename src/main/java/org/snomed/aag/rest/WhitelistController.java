@@ -54,7 +54,7 @@ public class WhitelistController {
     }
 
     @PostMapping
-    public ResponseEntity<WhitelistItem> addWhitelistItem(@RequestBody @Valid WhitelistItem whitelistItem) {
+    public ResponseEntity<WhitelistItem> addWhitelistItem(@RequestBody WhitelistItem whitelistItem) {
         WhitelistItem savedWhitelistItem = whitelistService.create(whitelistItem);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -62,10 +62,15 @@ public class WhitelistController {
     }
 
     @PutMapping(value = "/{id}")
-    public ResponseEntity<WhitelistItem> updateWhitelistItem(@PathVariable String id, @RequestBody @Valid WhitelistItem whitelistItem) {
-        whitelistService.findOrThrow(id);
-        whitelistItem.setId(id);
-        WhitelistItem savedWhitelistItem = whitelistService.update(whitelistItem);
+    public ResponseEntity<WhitelistItem> updateWhitelistItem(@PathVariable String id, @RequestBody WhitelistItem whitelistItem) {
+        WhitelistItem persistedWhitelistItem = whitelistService.findOrThrow(id);
+        persistedWhitelistItem.setAdditionalFields(whitelistItem.getAdditionalFields());
+        persistedWhitelistItem.setBranch(whitelistItem.getBranch());
+        persistedWhitelistItem.setComponentId(whitelistItem.getComponentId());
+        persistedWhitelistItem.setConceptId(whitelistItem.getConceptId());
+        persistedWhitelistItem.setValidationRuleId(whitelistItem.getValidationRuleId());
+
+        WhitelistItem savedWhitelistItem = whitelistService.update(persistedWhitelistItem);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(savedWhitelistItem);
