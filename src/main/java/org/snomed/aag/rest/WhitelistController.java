@@ -33,9 +33,15 @@ public class WhitelistController {
     }
 
     @ApiOperation(value = "Find whitelist items by validation rule ID")
-    @GetMapping(value = "/validation-rule/{validationRuleId}")
+    @GetMapping(value = "/validation-rules/{validationRuleId}")
     public List<WhitelistItem> findWhitelistItemsByValidationRuleId(@PathVariable String validationRuleId) {
         return whitelistService.findAllByValidationRuleId(validationRuleId);
+    }
+
+    @ApiOperation(value = "Find whitelist items by list of validation rule ID")
+    @PostMapping(value = "/validation-rules")
+    public List<WhitelistItem> findWhitelistItemsByValidationRuleIds(@RequestBody Set<String> validationRuleIds) {
+        return whitelistService.findAllByValidationRuleIds(validationRuleIds);
     }
 
     @ApiOperation(value = "Validate components against whitelist",
