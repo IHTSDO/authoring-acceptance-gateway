@@ -4,9 +4,9 @@ This guide will help you in getting started with the Authoring Acceptance Gatewa
 ## Prerequisites
 Before you can use AAG, please ensure you have installed & configured the services listed below.
 
-- [Docker](https://www.docker.com/)
 - [Elasticsearch](https://www.elastic.co/elasticsearch/)
 - [Snowstorm](https://github.com/IHTSDO/snowstorm)
+- [Docker](https://www.docker.com/) (required if building from source)
 
 ## Installation
 There are two approaches to installing AAG; both of which require running an executable JAR. 
