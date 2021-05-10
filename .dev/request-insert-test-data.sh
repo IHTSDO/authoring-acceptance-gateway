@@ -9,7 +9,7 @@ aagUrl=http://localhost:8090/authoring-acceptance-gateway
 branchPath=MAIN
 
 # ----------------------------------------
-# Criteria Items (Globally required)
+# Criteria Items (Globally required as mandatory)
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
@@ -19,6 +19,22 @@ curl --header "Content-Type: application/json" \
     "description": "Final project iteration sign-off by a release lead.",
     "order": 10,
     "authoringLevel": "PROJECT",
+    "mandatory": true,
+    "manual": true,
+    "expiresOnCommit": false,
+    "requiredRole": "RELEASE_LEAD",
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "task-release-notes-produced",
+    "label": "Release Notes Produced",
+    "description": "Release notes for task have been produced.",
+    "order": 9,
+    "authoringLevel": "TASK",
     "mandatory": true,
     "manual": true,
     "expiresOnCommit": false,
@@ -38,7 +54,7 @@ curl --header "Content-Type: application/json" \
      "description": "All axiom changes and concept inactivations must be classified.",
      "order": 1,
      "authoringLevel": "TASK",
-     "mandatory": true,
+     "mandatory": false,
      "manual": false,
      "expiresOnCommit": true,
      "requiredRole": "AUTHOR",
@@ -73,7 +89,7 @@ curl --header "Content-Type: application/json" \
      "description": "All axiom changes and concept inactivations must be classified.",
      "order": 1,
      "authoringLevel": "PROJECT",
-     "mandatory": true,
+     "mandatory": false,
      "manual": false,
      "expiresOnCommit": true,
      "requiredRole": "AUTHOR",
