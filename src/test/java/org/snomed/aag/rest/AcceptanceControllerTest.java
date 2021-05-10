@@ -275,6 +275,23 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
+    public void viewCriteriaItems_ShouldReturnExpectedResponse_WhenBranchAndParentBranchHasNoCriteria() throws Exception {
+        //given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch));
+
+        givenBranchDoesExist(System.currentTimeMillis());
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 404);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.NOT_FOUND, "No project acceptance criteria found for this branch path."));
+    }
+
+    @Test
     public void viewCriteriaItems_ShouldReturnExpectedStatus_WhenBranchHasCriteria() throws Exception {
         //given
         String branchPath = "MAIN/projectA";
@@ -375,14 +392,16 @@ class AcceptanceControllerTest extends AbstractTest {
         //given
         String branchPath = "MAIN/projectA";
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
-        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String globalProjectLevelCriteriaItemId = UUID.randomUUID().toString();
+        String globalTaskLevelCriteriaItemId = UUID.randomUUID().toString();
         String projectCriteriaItemId = UUID.randomUUID().toString();
         String taskCriteriaItemId = UUID.randomUUID().toString();
 
         givenBranchDoesExist(System.currentTimeMillis());
-        givenGloballyRequiredCriteriaItemExists(globalCriteriaItemId, true, 0);
-        givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
-        givenCriteriaItemExists(taskCriteriaItemId, true, 2, taskCriteriaItemId);
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalProjectLevelCriteriaItemId, true, 0);
+        givenGloballyRequiredTaskLevelCriteriaItemExists(globalTaskLevelCriteriaItemId, true, 1);
+        givenCriteriaItemExists(projectCriteriaItemId, false, 2, projectCriteriaItemId);
+        givenCriteriaItemExists(taskCriteriaItemId, true, 3, taskCriteriaItemId);
         givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
 
@@ -394,10 +413,11 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertEquals(branchPath, projectAcceptanceCriteriaDTO.getProjectKey());
-        assertEquals(3, criteriaItems.size());
-        assertEquals(globalCriteriaItemId, criteriaItems.get(0).getId());
-        assertEquals(projectCriteriaItemId, criteriaItems.get(1).getId());
-        assertEquals(taskCriteriaItemId, criteriaItems.get(2).getId());
+        assertEquals(4, criteriaItems.size());
+        assertEquals(globalProjectLevelCriteriaItemId, criteriaItems.get(0).getId());
+        assertEquals(globalTaskLevelCriteriaItemId, criteriaItems.get(1).getId());
+        assertEquals(projectCriteriaItemId, criteriaItems.get(2).getId());
+        assertEquals(taskCriteriaItemId, criteriaItems.get(3).getId());
     }
 
     @Test
@@ -410,7 +430,7 @@ class AcceptanceControllerTest extends AbstractTest {
         String taskCriteriaItemId = UUID.randomUUID().toString();
 
         givenBranchDoesExist(System.currentTimeMillis());
-        givenGloballyRequiredCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
         givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
         givenCriteriaItemExists(taskCriteriaItemId, true, 2, taskCriteriaItemId);
         givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
@@ -438,7 +458,7 @@ class AcceptanceControllerTest extends AbstractTest {
         String taskCriteriaItemId = "C";
 
         givenBranchDoesExist(System.currentTimeMillis());
-        givenGloballyRequiredCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
         givenCriteriaItemExists(projectCriteriaItemId, false, 2, "duplicate-label");
         givenCriteriaItemExists(taskCriteriaItemId, true, 2, "duplicate-label");
         givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
@@ -456,6 +476,51 @@ class AcceptanceControllerTest extends AbstractTest {
         assertEquals(globalCriteriaItemId, criteriaItems.get(0).getId());
         assertEquals(projectCriteriaItemId, criteriaItems.get(1).getId());
         assertEquals(taskCriteriaItemId, criteriaItems.get(2).getId());
+    }
+
+    @Test
+    public void viewCriteriaItems_ShouldReturnCriteriaItemsFromParentBranch_WhenGivenBranchHasNoAcceptanceCriteria() throws Exception {
+        //given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch));
+
+        givenBranchDoesExist(System.currentTimeMillis());
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
+        givenAcceptanceCriteriaExists(projectBranch, Collections.singleton(projectCriteriaItemId), Collections.emptySet());
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        String responseBody = getResponseBody(resultActions);
+        ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = OBJECT_MAPPER.readValue(responseBody, ProjectAcceptanceCriteriaDTO.class);
+        List<CriteriaItem> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
+
+        //then
+        assertEquals(2, criteriaItems.size());
+    }
+
+    @Test
+    public void viewCriteriaItems_ShouldReturnExpectedStatus_WhenGivenBranchHasNoAcceptanceCriteriaButParentDoes() throws Exception {
+        //given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch));
+
+        givenBranchDoesExist(System.currentTimeMillis());
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
+        givenAcceptanceCriteriaExists(projectBranch, Collections.singleton(projectCriteriaItemId), Collections.emptySet());
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 200);
     }
 
     private String signOffCriteriaItem(String branchPath, String criteriaItemId) {
@@ -496,13 +561,24 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItemRepository.save(criteriaItem);
     }
 
-    private void givenGloballyRequiredCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
+    private void givenGloballyRequiredProjectLevelCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
         criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
         criteriaItem.setOrder(order);
         criteriaItem.setMandatory(true);
         criteriaItem.setAuthoringLevel(AuthoringLevel.PROJECT);
+
+        criteriaItemRepository.save(criteriaItem);
+    }
+
+    private void givenGloballyRequiredTaskLevelCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
+        CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
+        criteriaItem.setManual(manual);
+        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setOrder(order);
+        criteriaItem.setMandatory(true);
+        criteriaItem.setAuthoringLevel(AuthoringLevel.TASK);
 
         criteriaItemRepository.save(criteriaItem);
     }

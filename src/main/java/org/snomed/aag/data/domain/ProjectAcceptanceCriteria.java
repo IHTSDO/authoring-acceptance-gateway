@@ -71,4 +71,10 @@ public class ProjectAcceptanceCriteria {
 			this.selectedProjectCriteriaIds.add(criteriaItem.getId());
 		}
 	}
+
+	public void addToSelectedTaskCriteria(CriteriaItem criteriaItem) {
+		if (AuthoringLevel.TASK.equals(criteriaItem.getAuthoringLevel())) {
+			this.selectedProjectCriteriaIds.add(criteriaItem.getId());
+		}
+	}
 }

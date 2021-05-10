@@ -17,6 +17,7 @@
 	<properties>
 		<java.version>8</java.version>
 		<packageName>${project.artifactId}</packageName>
+		<elasticvc.version>3.0.4</elasticvc.version>
 		<!-- Elasticsearch version is controlled via the spring-data-elasticsearch dependency -->
 		<elasticsearch.version>7.7.0</elasticsearch.version>
 	</properties>
@@ -78,6 +79,12 @@
 			<groupId>io.kaicode</groupId>
 			<artifactId>branch-path-uri-rewrite-filter</artifactId>
 			<version>2.0.0</version>
+		</dependency>
+		<dependency>
+			<!-- Branching and Version Control on top of Elasticsearch -->
+			<groupId>io.kaicode</groupId>
+			<artifactId>elasticvc</artifactId>
+			<version>${elasticvc.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.springfox</groupId>

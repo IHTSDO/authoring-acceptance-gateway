@@ -74,11 +74,13 @@ public class AcceptanceController {
     }
 
     @ApiOperation(value = "View all Criteria Items for a branch.",
-            notes = "This request will retrieve all Criteria Items, both complete and incomplete, for a given branch.")
+            notes = "This request will retrieve all Criteria Items, both complete and incomplete, for a given branch. " +
+                    "If the branch does not have any Criteria Items, the branch's parent will be checked."
+    )
     @ApiResponses(value = {
             @ApiResponse(code = 404, message = "&bull; When the branch has no acceptance criteria."),
             @ApiResponse(code = 403, message = "&bull; When the Branch cannot be found from the given branch path. <br/> &bull; When individual Criteria Items do not exist for the branch's expected acceptance criteria."),
-            @ApiResponse(code = 200, message = "When the branch has acceptance criteria.", response = ProjectAcceptanceCriteriaDTO.class)
+            @ApiResponse(code = 200, message = "When the branch (or its parent) has acceptance criteria.", response = ProjectAcceptanceCriteriaDTO.class)
     })
     @GetMapping("/{branch}")
     public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch) throws RestClientException {
@@ -89,7 +91,7 @@ public class AcceptanceController {
         securityService.getBranchOrThrow(branchPath);
         LOGGER.debug("Branch {} exists.", branchPath);
 
-        Set<String> allCriteriaIdentifiers = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath, true).getAllCriteriaIdentifiers();
+        Set<String> allCriteriaIdentifiers = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath, true, true).getAllCriteriaIdentifiers();
         LOGGER.debug("Found {} Criteria Items for {}.", allCriteriaIdentifiers.size(), branchPath);
         Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(allCriteriaIdentifiers);
         criteriaItemSignOffService.findAllByBranchAndIdentifier(branchPath, criteriaItems);
