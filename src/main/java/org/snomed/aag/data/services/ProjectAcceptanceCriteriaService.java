@@ -1,6 +1,5 @@
 package org.snomed.aag.data.services;
 
-import io.kaicode.elasticvc.api.PathUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.Constants;
@@ -8,6 +7,7 @@ import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
+import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
