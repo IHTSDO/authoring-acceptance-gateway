@@ -96,40 +96,43 @@ public class ProjectAcceptanceCriteriaService {
 	 * subsequently be searched.
 	 *
 	 * @param branch                               Branch to look for ProjectAcceptanceCriteria.
-	 * @param includeGloballyRequiredCriteriaItems Flag to indicate whether to include mandatory Project level Criteria Items.
+	 * @param includeGloballyRequiredCriteriaItems Flag to indicate whether to include mandatory Project and Task level Criteria Items.
 	 * @param checkParent                          Flag to indicate whether to check parent branch for ProjectAcceptanceCriteria.
 	 * @return ProjectAcceptanceCriteria for given branch.
 	 * @throws NotFoundException If ProjectAcceptanceCriteria cannot be found for branch.
 	 */
 	public ProjectAcceptanceCriteria findByBranchPathOrThrow(String branch, boolean includeGloballyRequiredCriteriaItems, boolean checkParent) {
-		try {
-			if (!includeGloballyRequiredCriteriaItems) {
-				return findByBranchPathOrThrow(branch);
-			}
-
-			ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathOrThrow(branch);
-			for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
-				projectAcceptanceCriteria.addToSelectedProjectCriteria(criteriaItem);
-			}
-			for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
-				projectAcceptanceCriteria.addToSelectedTaskCriteria(criteriaItem);
-			}
-
-			return projectAcceptanceCriteria;
-		} catch (NotFoundException e) {
-			LOGGER.info("No ProjectAcceptanceCriteria found for '{}'.", branch);
-			if (checkParent) {
-				LOGGER.info("Looking for ProjectAcceptanceCriteria for parent of '{}'.", branch);
-				String parentPath = PathUtil.getParentPath(branch);
-				if (parentPath.equals(branch)) {
-					LOGGER.debug("Branch '{}' does not have parent.", branch);
-					throw e;
-				}
-				return findByBranchPathOrThrow(parentPath, includeGloballyRequiredCriteriaItems, false); //Not recursive
-			}
-			LOGGER.debug("Flag to check parent is false; throwing exception.");
-			throw e;
+		if (!includeGloballyRequiredCriteriaItems) {
+			return findByBranchPathOrThrow(branch);
 		}
+
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPath(branch);
+		if (projectAcceptanceCriteria == null) {
+			LOGGER.info("No ProjectAcceptanceCriteria found for '{}'.", branch);
+			if (!checkParent) {
+				LOGGER.debug("Flag to check parent is false; throwing exception.");
+				throw new NotFoundException("No project acceptance criteria found for this branch path.");
+			}
+
+			LOGGER.info("Looking for ProjectAcceptanceCriteria for parent of '{}'.", branch);
+			String parentPath = PathUtil.getParentPath(branch);
+			if (parentPath == null || parentPath.equals(branch)) {
+				LOGGER.debug("Branch '{}' does not have parent.", branch);
+				throw new NotFoundException("No project acceptance criteria found for this branch path.");
+			}
+
+			return findByBranchPathOrThrow(parentPath, includeGloballyRequiredCriteriaItems, false); //Not recursive
+		}
+
+		for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
+			projectAcceptanceCriteria.addToSelectedProjectCriteria(criteriaItem);
+		}
+
+		for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
+			projectAcceptanceCriteria.addToSelectedTaskCriteria(criteriaItem);
+		}
+
+		return projectAcceptanceCriteria;
 	}
 
 	// This method is required because the default Repository implementation uses a multi-get request
