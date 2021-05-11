@@ -1,10 +1,13 @@
 package org.snomed.aag.data.services;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
+import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +24,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Service
 public class ProjectAcceptanceCriteriaService {
+	private final Logger LOGGER = LoggerFactory.getLogger(ProjectAcceptanceCriteriaService.class);
 
 	@Autowired
 	private ProjectAcceptanceCriteriaRepository repository;
@@ -86,14 +90,46 @@ public class ProjectAcceptanceCriteriaService {
 		return criteria;
 	}
 
-	public ProjectAcceptanceCriteria findByBranchPathOrThrow(String branch, boolean includeGloballyRequiredCriteriaItems) {
+	/**
+	 * Find ProjectAcceptanceCriteria for the given branch. If the appropriate flag is set and no
+	 * ProjectAcceptanceCriteria exists for the given branch, then the given branch's parent will
+	 * subsequently be searched.
+	 *
+	 * @param branch                               Branch to look for ProjectAcceptanceCriteria.
+	 * @param includeGloballyRequiredCriteriaItems Flag to indicate whether to include mandatory Project and Task level Criteria Items.
+	 * @param checkParent                          Flag to indicate whether to check parent branch for ProjectAcceptanceCriteria.
+	 * @return ProjectAcceptanceCriteria for given branch.
+	 * @throws NotFoundException If ProjectAcceptanceCriteria cannot be found for branch.
+	 */
+	public ProjectAcceptanceCriteria findByBranchPathOrThrow(String branch, boolean includeGloballyRequiredCriteriaItems, boolean checkParent) {
 		if (!includeGloballyRequiredCriteriaItems) {
 			return findByBranchPathOrThrow(branch);
 		}
 
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathOrThrow(branch);
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPath(branch);
+		if (projectAcceptanceCriteria == null) {
+			LOGGER.info("No ProjectAcceptanceCriteria found for '{}'.", branch);
+			if (!checkParent) {
+				LOGGER.debug("Flag to check parent is false; throwing exception.");
+				throw new NotFoundException("No project acceptance criteria found for this branch path.");
+			}
+
+			LOGGER.info("Looking for ProjectAcceptanceCriteria for parent of '{}'.", branch);
+			String parentPath = PathUtil.getParentPath(branch);
+			if (parentPath == null || parentPath.equals(branch)) {
+				LOGGER.debug("Branch '{}' does not have parent.", branch);
+				throw new NotFoundException("No project acceptance criteria found for this branch path.");
+			}
+
+			return findByBranchPathOrThrow(parentPath, includeGloballyRequiredCriteriaItems, false); //Not recursive
+		}
+
 		for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
 			projectAcceptanceCriteria.addToSelectedProjectCriteria(criteriaItem);
+		}
+
+		for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
+			projectAcceptanceCriteria.addToSelectedTaskCriteria(criteriaItem);
 		}
 
 		return projectAcceptanceCriteria;
