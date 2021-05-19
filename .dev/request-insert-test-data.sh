@@ -104,6 +104,7 @@ curl --header "Content-Type: application/json" \
   --request POST \
   --data "{
   \"branchPath\": \"$branchPath\",
+  \"projectIteration\": 1,
   \"selectedProjectCriteriaIds\": [
     \"project-clean-classification\"
   ],
