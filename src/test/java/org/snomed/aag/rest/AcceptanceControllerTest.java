@@ -135,6 +135,28 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
+    void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenTryingToSignOffCriteriaItemTwice() throws Exception {
+        //given
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
+        String expectedErrorMessage = String.format("Criteria Item %s has already been signed off for branch %s and project iteration %d", criteriaItemId, "MAIN", 1);
+
+        givenProjectAcceptanceCriteriaExists("MAIN", 1);
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenUserDoesHavePermissionForBranch();
+        givenBranchDoesExist(System.currentTimeMillis());
+
+        mockMvc.perform(post(requestUrl)); //first attempt
+
+        //when
+        ResultActions resultActions = mockMvc.perform(post(requestUrl)); //second attempt
+
+        //then
+        assertResponseStatus(resultActions, HttpStatus.CONFLICT.value());
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.CONFLICT.value(), expectedErrorMessage));
+    }
+
+    @Test
     void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();

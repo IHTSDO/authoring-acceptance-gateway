@@ -6,6 +6,7 @@ import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.repositories.CriteriaItemSignOffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,7 +29,17 @@ public class CriteriaItemSignOffService {
      * @throws ServiceRuntimeException If there is already a CriteriaItemSignOff entry in database.
      */
     public CriteriaItemSignOff create(CriteriaItemSignOff criteriaItemSignOff) {
-        LOGGER.info("{} signing off {} for {}.", criteriaItemSignOff.getUserId(), criteriaItemSignOff.getCriteriaItemId(), criteriaItemSignOff.getBranch());
+        String criteriaItemId = criteriaItemSignOff.getCriteriaItemId();
+        String branch = criteriaItemSignOff.getBranch();
+        Integer projectIteration = criteriaItemSignOff.getProjectIteration();
+
+        //Cannot have multiple CriteriaItemSignOff with same branch and project iteration
+        Optional<CriteriaItemSignOff> existingCriteriaItemSignOff = findBy(criteriaItemId, branch, projectIteration);
+        if (existingCriteriaItemSignOff.isPresent()) {
+            String message = String.format("Criteria Item %s has already been signed off for branch %s and project iteration %d", criteriaItemId, branch, projectIteration);
+            throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
+        }
+
         return repository.save(criteriaItemSignOff);
     }
 

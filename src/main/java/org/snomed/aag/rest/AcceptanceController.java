@@ -65,19 +65,11 @@ public class AcceptanceController {
             throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
         }
 
-        //Confirm whether entry already exists
-        Integer latest = latestProjectIteration.get();
-        Optional<CriteriaItemSignOff> existingCriteriaItemSignOff = criteriaItemSignOffService.findBy(itemId, branchPath, latest);
-        if (existingCriteriaItemSignOff.isPresent()) {
-            String message = String.format("Criteria Item %s has already been signed off for branch %s and project iteration %d", itemId, branchPath, latest);
-            throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
-        }
-
         //Verification complete; add record.
         CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(new CriteriaItemSignOff(
                 itemId,
                 branchPath,
-                latest,
+                latestProjectIteration.get(),
                 securityService.getBranchOrThrow(branchPath).getHeadTimestamp(),
                 SecurityUtil.getUsername()
         ));
