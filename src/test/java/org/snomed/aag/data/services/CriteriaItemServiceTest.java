@@ -46,7 +46,7 @@ class CriteriaItemServiceTest extends AbstractTest {
 
 		assertEquals(1, service.findAll(PAGE_OF_ONE).getTotalElements());
 
-		final ProjectAcceptanceCriteria criteria = new ProjectAcceptanceCriteria("A");
+		final ProjectAcceptanceCriteria criteria = new ProjectAcceptanceCriteria("A", 1);
 		criteria.getSelectedTaskCriteriaIds().add(thing.getId());
 		projectAcceptanceCriteriaService.create(criteria);
 
