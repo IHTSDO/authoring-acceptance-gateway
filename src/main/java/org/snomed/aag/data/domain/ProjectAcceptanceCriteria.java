@@ -100,13 +100,19 @@ public class ProjectAcceptanceCriteria {
 
 	public void addToSelectedProjectCriteria(CriteriaItem criteriaItem) {
 		if (AuthoringLevel.PROJECT.equals(criteriaItem.getAuthoringLevel())) {
+			if (this.selectedProjectCriteriaIds == null) {
+				this.selectedProjectCriteriaIds = new HashSet<>();
+			}
 			this.selectedProjectCriteriaIds.add(criteriaItem.getId());
 		}
 	}
 
 	public void addToSelectedTaskCriteria(CriteriaItem criteriaItem) {
 		if (AuthoringLevel.TASK.equals(criteriaItem.getAuthoringLevel())) {
-			this.selectedProjectCriteriaIds.add(criteriaItem.getId());
+			if (this.selectedTaskCriteriaIds == null) {
+				this.selectedTaskCriteriaIds = new HashSet<>();
+			}
+			this.selectedTaskCriteriaIds.add(criteriaItem.getId());
 		}
 	}
 }
