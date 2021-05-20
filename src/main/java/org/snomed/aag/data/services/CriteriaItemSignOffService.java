@@ -103,11 +103,7 @@ public class CriteriaItemSignOffService {
             return false;
         }
 
-        try {
-            repository.deleteByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        repository.deleteByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration);
+        return true;
     }
 }
