@@ -32,8 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -72,7 +71,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
@@ -86,7 +85,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeModified() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeModified() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
@@ -102,7 +101,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenBranchDoesNotExist() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenBranchDoesNotExist() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
@@ -119,7 +118,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenUserDoesNotHaveDesiredRole() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenUserDoesNotHaveDesiredRole() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
@@ -136,11 +135,34 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenTryingToSignOffCriteriaItemTwice() throws Exception {
+        //given
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
+        String expectedErrorMessage = String.format("Criteria Item %s has already been signed off for branch %s and project iteration %d", criteriaItemId, "MAIN", 1);
+
+        givenProjectAcceptanceCriteriaExists("MAIN", 1);
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenUserDoesHavePermissionForBranch();
+        givenBranchDoesExist(System.currentTimeMillis());
+
+        mockMvc.perform(post(requestUrl)); //first attempt
+
+        //when
+        ResultActions resultActions = mockMvc.perform(post(requestUrl)); //second attempt
+
+        //then
+        assertResponseStatus(resultActions, HttpStatus.CONFLICT.value());
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.CONFLICT.value(), expectedErrorMessage));
+    }
+
+    @Test
+    void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
 
+        givenProjectAcceptanceCriteriaExists("MAIN", 1);
         givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
         givenUserDoesHavePermissionForBranch();
         givenBranchDoesExist(System.currentTimeMillis());
@@ -153,7 +175,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
@@ -161,6 +183,7 @@ class AcceptanceControllerTest extends AbstractTest {
         String username = "AcceptanceControllerTest";
 
         givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenProjectAcceptanceCriteriaExists("MAIN", 1);
         givenUserDoesHavePermissionForBranch();
         givenBranchDoesExist(timestamp);
         givenAuthenticatedUser(username);
@@ -177,14 +200,15 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItemOnProjectBranch() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItemOnProjectBranch() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem(withPipeInsteadOfSlash("MAIN/projectA"), criteriaItemId);
         long timestamp = System.currentTimeMillis();
         String username = "AcceptanceControllerTest";
 
-        givenCriteriaItemExists(criteriaItemId, true, 0,  criteriaItemId);
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenProjectAcceptanceCriteriaExists("MAIN/projectA", 1);
         givenUserDoesHavePermissionForBranch();
         givenBranchDoesExist(timestamp);
         givenAuthenticatedUser(username);
@@ -201,7 +225,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItemOnTaskBranch() throws Exception {
+    void signOffCriteriaItem_ShouldReturnExpectedBody_WhenSuccessfullySigningOffCriteriaItemOnTaskBranch() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem(withPipeInsteadOfSlash("MAIN/projectA/taskB"), criteriaItemId);
@@ -209,6 +233,7 @@ class AcceptanceControllerTest extends AbstractTest {
         String username = "AcceptanceControllerTest";
 
         givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenProjectAcceptanceCriteriaExists("MAIN/projectA/taskB", 1);
         givenUserDoesHavePermissionForBranch();
         givenBranchDoesExist(timestamp);
         givenAuthenticatedUser(username);
@@ -225,7 +250,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void signOffCriteriaItem_ShouldAddRecordToStore_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
+    void signOffCriteriaItem_ShouldAddRecordToStore_WhenSuccessfullySigningOffCriteriaItem() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
@@ -233,6 +258,7 @@ class AcceptanceControllerTest extends AbstractTest {
         String username = "AcceptanceControllerTest";
 
         givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenProjectAcceptanceCriteriaExists("MAIN", 1);
         givenUserDoesHavePermissionForBranch();
         givenBranchDoesExist(timestamp);
         givenAuthenticatedUser(username);
@@ -248,7 +274,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnExpectedResponse_WhenBranchNotFound() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedResponse_WhenBranchNotFound() throws Exception {
         //given
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash("MAIN/projectA"));
         givenBranchDoesNotExist();
@@ -261,7 +287,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnExpectedResponse_WhenBranchHasNoCriteria() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedResponse_WhenBranchHasNoCriteria() throws Exception {
         //given
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash("MAIN/projectA"));
         givenBranchDoesExist(System.currentTimeMillis());
@@ -275,7 +301,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnExpectedResponse_WhenBranchAndParentBranchHasNoCriteria() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedResponse_WhenBranchAndParentBranchHasNoCriteria() throws Exception {
         //given
         String projectBranch = "MAIN/projectA";
         String taskBranch = projectBranch + "/taskA";
@@ -292,7 +318,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnExpectedStatus_WhenBranchHasCriteria() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedStatus_WhenBranchHasCriteria() throws Exception {
         //given
         String branchPath = "MAIN/projectA";
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
@@ -302,7 +328,7 @@ class AcceptanceControllerTest extends AbstractTest {
         givenBranchDoesExist(System.currentTimeMillis());
         givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
         givenCriteriaItemExists(taskCriteriaItemId, true, 0, taskCriteriaItemId);
-        givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
+        givenAcceptanceCriteriaExists(branchPath, 1, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
 
         //when
@@ -313,7 +339,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnExpectedBody_WhenBranchHasCriteria() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedBody_WhenBranchHasCriteria() throws Exception {
         //given
         String branchPath = "MAIN/projectA";
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
@@ -323,7 +349,7 @@ class AcceptanceControllerTest extends AbstractTest {
         givenBranchDoesExist(System.currentTimeMillis());
         givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
         givenCriteriaItemExists(taskCriteriaItemId, true, 0, taskCriteriaItemId);
-        givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
+        givenAcceptanceCriteriaExists(branchPath, 1, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
 
         //when
@@ -337,7 +363,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnCriteriaItemsInCorrectOrder() throws Exception {
+    void viewCriteriaItems_ShouldReturnCriteriaItemsInCorrectOrder() throws Exception {
         //given
         String branchPath = "MAIN/projectA";
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
@@ -369,7 +395,7 @@ class AcceptanceControllerTest extends AbstractTest {
         givenCriteriaItemExists(secondTaskCriteriaItemId, true, 1, secondTaskCriteriaItemId);
         givenCriteriaItemExists(thirdTaskCriteriaItemId, true, 2, thirdTaskCriteriaItemId);
         givenCriteriaItemExists(fourthTaskCriteriaItemId, true, 3, fourthTaskCriteriaItemId);
-        givenAcceptanceCriteriaExists(branchPath, projectCriteriaItemIdentifiers, taskCriteriaItemIdentifiers);
+        givenAcceptanceCriteriaExists(branchPath, 1, projectCriteriaItemIdentifiers, taskCriteriaItemIdentifiers);
         givenCriteriaItemSignOffExists(branchPath, firstTaskCriteriaItemId);
 
         //when
@@ -388,7 +414,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldIncludeGloballyRequiredCriteriaItems() throws Exception {
+    void viewCriteriaItems_ShouldIncludeGloballyRequiredCriteriaItems() throws Exception {
         //given
         String branchPath = "MAIN/projectA";
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
@@ -402,7 +428,7 @@ class AcceptanceControllerTest extends AbstractTest {
         givenGloballyRequiredTaskLevelCriteriaItemExists(globalTaskLevelCriteriaItemId, true, 1);
         givenCriteriaItemExists(projectCriteriaItemId, false, 2, projectCriteriaItemId);
         givenCriteriaItemExists(taskCriteriaItemId, true, 3, taskCriteriaItemId);
-        givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
+        givenAcceptanceCriteriaExists(branchPath, 1, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
 
         //when
@@ -421,7 +447,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnCompleteCriteriaItem_WhenCriteriaItemHasBeenSignedOff() throws Exception {
+    void viewCriteriaItems_ShouldReturnCompleteCriteriaItem_WhenCriteriaItemHasBeenSignedOff() throws Exception {
         //given
         String branchPath = "MAIN/projectA";
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
@@ -433,8 +459,9 @@ class AcceptanceControllerTest extends AbstractTest {
         givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
         givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
         givenCriteriaItemExists(taskCriteriaItemId, true, 2, taskCriteriaItemId);
-        givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
+        givenAcceptanceCriteriaExists(branchPath, 1, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
+        givenAcceptanceCriteriaExists("MAIN", 1, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists("MAIN", taskCriteriaItemId); //shouldn't be return from ES query
 
         //when
@@ -449,7 +476,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnExpectedCriteriaItems_WhenMultipleCriteriaItemsHaveSameLabel() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedCriteriaItems_WhenMultipleCriteriaItemsHaveSameLabel() throws Exception {
         //given
         String branchPath = "MAIN/projectA";
         String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
@@ -461,8 +488,9 @@ class AcceptanceControllerTest extends AbstractTest {
         givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
         givenCriteriaItemExists(projectCriteriaItemId, false, 2, "duplicate-label");
         givenCriteriaItemExists(taskCriteriaItemId, true, 2, "duplicate-label");
-        givenAcceptanceCriteriaExists(branchPath, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
+        givenAcceptanceCriteriaExists(branchPath, 1, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists(branchPath, taskCriteriaItemId);
+        givenAcceptanceCriteriaExists("MAIN", 1, Collections.singleton(projectCriteriaItemId), Collections.singleton(taskCriteriaItemId));
         givenCriteriaItemSignOffExists("MAIN", taskCriteriaItemId); //shouldn't be return from ES query
 
         //when
@@ -479,7 +507,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnCriteriaItemsFromParentBranch_WhenGivenBranchHasNoAcceptanceCriteria() throws Exception {
+    void viewCriteriaItems_ShouldReturnCriteriaItemsFromParentBranch_WhenGivenBranchHasNoAcceptanceCriteria() throws Exception {
         //given
         String projectBranch = "MAIN/projectA";
         String taskBranch = projectBranch + "/taskA";
@@ -490,7 +518,7 @@ class AcceptanceControllerTest extends AbstractTest {
         givenBranchDoesExist(System.currentTimeMillis());
         givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
         givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
-        givenAcceptanceCriteriaExists(projectBranch, Collections.singleton(projectCriteriaItemId), Collections.emptySet());
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Collections.emptySet());
 
         //when
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
@@ -503,7 +531,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    public void viewCriteriaItems_ShouldReturnExpectedStatus_WhenGivenBranchHasNoAcceptanceCriteriaButParentDoes() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedStatus_WhenGivenBranchHasNoAcceptanceCriteriaButParentDoes() throws Exception {
         //given
         String projectBranch = "MAIN/projectA";
         String taskBranch = projectBranch + "/taskA";
@@ -514,13 +542,158 @@ class AcceptanceControllerTest extends AbstractTest {
         givenBranchDoesExist(System.currentTimeMillis());
         givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
         givenCriteriaItemExists(projectCriteriaItemId, false, 1, projectCriteriaItemId);
-        givenAcceptanceCriteriaExists(projectBranch, Collections.singleton(projectCriteriaItemId), Collections.emptySet());
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Collections.emptySet());
 
         //when
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
 
         //then
         assertResponseStatus(resultActions, 200);
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldReturnExpectedStatus_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(delete(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 404);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.NOT_FOUND, "Criteria Item with id '" + criteriaItemId + "' not found."));
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldReturnExpectedResponse_WhenCriteriaItemCannotBeModified() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        givenCriteriaItemExists(criteriaItemId, false, 0, criteriaItemId);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(delete(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 403);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.FORBIDDEN, "Criteria Item cannot be changed manually."));
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldReturnExpectedResponse_WhenBranchDoesNotExist() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenBranchDoesNotExist();
+
+        //when
+        ResultActions resultActions = mockMvc.perform(delete(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 403);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.FORBIDDEN, "Branch does not exist."));
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldReturnExpectedResponse_WhenUserDoesNotHaveDesiredRole() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenUserDoesNotHavePermissionForBranch();
+
+        //when
+        ResultActions resultActions = mockMvc.perform(delete(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 403);
+        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.FORBIDDEN, "User does not have desired role."));
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldReturnExpectedResponse_WhenBranchHasNoAcceptanceCriteria() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenUserDoesHavePermissionForBranch();
+
+        //when
+        ResultActions resultActions = mockMvc.perform(delete(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 404);
+        assertResponseBody(resultActions, buildErrorResponse(404, String.format("Branch %s does not have any acceptance criteria.", branchPath)));
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldReturnExpectedResponse_WhenThereIsNothingToDelete() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenUserDoesHavePermissionForBranch();
+        givenProjectAcceptanceCriteriaExists(branchPath, 67);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(delete(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 404);
+        assertResponseBody(resultActions, buildErrorResponse(404, String.format("Cannot delete %s for branch %s and project iteration %d", criteriaItemId, branchPath, 67)));
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldReturnExpectedResponse_WhenSuccessfullyRejectingItem() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenUserDoesHavePermissionForBranch();
+        givenProjectAcceptanceCriteriaExists(branchPath, 67);
+        givenCriteriaItemSignOffExists(branchPath, criteriaItemId);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(delete(requestUrl));
+
+        //then
+        assertResponseStatus(resultActions, 204);
+    }
+
+    @Test
+    void rejectCriteriaItem_ShouldRemoveEntryFromStore_WhenSuccessfullyRejectingItem() throws Exception {
+        //given
+        String branchPath = UUID.randomUUID().toString();
+        String criteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
+
+        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenUserDoesHavePermissionForBranch();
+        givenProjectAcceptanceCriteriaExists(branchPath, 89);
+        givenCriteriaItemSignOffExists(branchPath, criteriaItemId);
+
+        mockMvc.perform(delete(requestUrl));
+
+        //when
+        Optional<CriteriaItemSignOff> result = criteriaItemSignOffService.findBy(criteriaItemId, branchPath, 89);
+
+        //then
+        assertFalse(result.isPresent());
     }
 
     private String signOffCriteriaItem(String branchPath, String criteriaItemId) {
@@ -536,6 +709,14 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     private String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", error);
+        response.put("message", message);
+
+        return OBJECT_MAPPER.writeValueAsString(response);
+    }
+
+    private String buildErrorResponse(int error, String message) throws JsonProcessingException {
         Map<String, Object> response = new HashMap<>();
         response.put("error", error);
         response.put("message", message);
@@ -559,6 +740,12 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItem.setLabel(label);
 
         criteriaItemRepository.save(criteriaItem);
+    }
+
+    private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration) {
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
+
+        projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
     }
 
     private void givenGloballyRequiredProjectLevelCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
@@ -613,9 +800,9 @@ class AcceptanceControllerTest extends AbstractTest {
         SecurityContextHolder.setContext(securityContext);
     }
 
-    private void givenAcceptanceCriteriaExists(String branchPath, Set<String> selectedProjectCriteriaIds,
+    private void givenAcceptanceCriteriaExists(String branchPath, Integer projectIteration, Set<String> selectedProjectCriteriaIds,
                                                Set<String> selectedTaskCriteriaIds) throws Exception {
-        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath);
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
         projectAcceptanceCriteria.setSelectedProjectCriteriaIds(selectedProjectCriteriaIds);
         projectAcceptanceCriteria.setSelectedTaskCriteriaIds(selectedTaskCriteriaIds);
 

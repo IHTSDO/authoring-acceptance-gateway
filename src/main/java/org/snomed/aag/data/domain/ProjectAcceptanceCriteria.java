@@ -6,7 +6,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import javax.validation.constraints.NotBlank;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,8 +15,13 @@ public class ProjectAcceptanceCriteria {
 
 	@Id
 	@Field(type = FieldType.Keyword)
-	@NotBlank
+	private String key; //Composite of branchPath and projectIteration
+
+	@Field(type = FieldType.Keyword)
 	private String branchPath;
+
+	@Field(type = FieldType.Integer)
+	private Integer projectIteration;
 
 	@Field(type = FieldType.Keyword)
 	private Set<String> selectedProjectCriteriaIds;
@@ -29,8 +34,17 @@ public class ProjectAcceptanceCriteria {
 
 	public ProjectAcceptanceCriteria(String branchPath) {
 		this.branchPath = branchPath;
-		selectedProjectCriteriaIds = new HashSet<>();
-		selectedTaskCriteriaIds = new HashSet<>();
+		this.selectedProjectCriteriaIds = new HashSet<>();
+		this.selectedTaskCriteriaIds = new HashSet<>();
+		this.key = this.branchPath + "_" + this.projectIteration;
+	}
+
+	public ProjectAcceptanceCriteria(String branchPath, Integer projectIteration) {
+		this.branchPath = branchPath;
+		this.projectIteration = projectIteration;
+		this.selectedProjectCriteriaIds = new HashSet<>();
+		this.selectedTaskCriteriaIds = new HashSet<>();
+		this.key = this.branchPath + "_" + this.projectIteration;
 	}
 
 	public String getBranchPath() {
@@ -39,9 +53,23 @@ public class ProjectAcceptanceCriteria {
 
 	public void setBranchPath(String branchPath) {
 		this.branchPath = branchPath;
+		this.key = this.branchPath + "_"; //first half
+	}
+
+	public Integer getProjectIteration() {
+		return projectIteration;
+	}
+
+	public void setProjectIteration(Integer projectIteration) {
+		this.projectIteration = projectIteration;
+		this.key = this.key + this.projectIteration; //second half
 	}
 
 	public Set<String> getSelectedProjectCriteriaIds() {
+		if (selectedProjectCriteriaIds == null) {
+			return Collections.emptySet();
+		}
+
 		return selectedProjectCriteriaIds;
 	}
 
@@ -50,6 +78,10 @@ public class ProjectAcceptanceCriteria {
 	}
 
 	public Set<String> getSelectedTaskCriteriaIds() {
+		if (selectedTaskCriteriaIds == null) {
+			return Collections.emptySet();
+		}
+
 		return selectedTaskCriteriaIds;
 	}
 

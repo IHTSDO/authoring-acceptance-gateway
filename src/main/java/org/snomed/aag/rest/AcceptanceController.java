@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -57,10 +58,18 @@ public class AcceptanceController {
         //Verify branch
         branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
 
+        //Verify project acceptance criteria
+        Optional<Integer> latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
+        if (!latestProjectIteration.isPresent()) {
+            String message = String.format("Branch %s does not have any acceptance criteria.", branchPath);
+            throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
+        }
+
         //Verification complete; add record.
         CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(new CriteriaItemSignOff(
                 itemId,
                 branchPath,
+                latestProjectIteration.get(),
                 securityService.getBranchOrThrow(branchPath).getHeadTimestamp(),
                 SecurityUtil.getUsername()
         ));
@@ -69,7 +78,6 @@ public class AcceptanceController {
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .header(CriteriaItemSignOff.Fields.ID, savedCriteriaItemSignOffId)
                 .body(savedCriteriaItemSignOff);
     }
 
@@ -106,5 +114,46 @@ public class AcceptanceController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(projectAcceptanceCriteriaDTO);
+    }
+
+    @ApiOperation(value = "Manually reject a Criteria Item.",
+            notes = "This request will revert the signing off of a Criteria Item for a given branch.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "&bull; When the Criteria Item cannot be found from the given identifier, or <br /> &bull; When there is no Project Acceptance " +
+                    "Criteria for the given branch, or <br /> When the Criteria Item has not been previously signed off."),
+            @ApiResponse(code = 403, message = "&bull; When the Criteria Item cannot be unaccepted manually, or <br /> &bull; When the user does not have the desired role, or " +
+                    "<br/> &bull; When the Branch cannot be found from the given branch path."),
+            @ApiResponse(code = 200, message = "When the Criteria Item has been unaccepted successfully.", response = CriteriaItemSignOff.class)
+    })
+    @DeleteMapping("/{branch}/item/{item-id}/accept")
+    public ResponseEntity<?> rejectCriteriaItem(@ApiParam("The branch path.") @PathVariable(name = "branch") String branchPath,
+                                                @ApiParam("The identifier of the CriteriaItem to reject.") @PathVariable(name = "item-id") String itemId) {
+        branchPath = BranchPathUriUtil.decodePath(branchPath);
+
+        //Verify CriteriaItems
+        CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
+        criteriaItemService.verifyManual(criteriaItem, true);
+
+        //Verify branch
+        branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
+
+        //Verify project acceptance criteria
+        Optional<Integer> latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
+        if (!latestProjectIteration.isPresent()) {
+            String message = String.format("Branch %s does not have any acceptance criteria.", branchPath);
+            throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
+        }
+
+        //Verification complete; remove record
+        Integer latest = latestProjectIteration.get();
+        boolean deleted = criteriaItemSignOffService.deleteBy(itemId, branchPath, latest);
+        if (!deleted) {
+            String message = String.format("Cannot delete %s for branch %s and project iteration %d", itemId, branchPath, latest);
+            throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
     }
 }

@@ -3,7 +3,9 @@ package org.snomed.aag.rest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.services.NotFoundException;
+import org.snomed.aag.data.services.ServiceRuntimeException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -67,4 +69,16 @@ public class RestControllerAdvice {
 		return result;
 	}
 
+	@ExceptionHandler(ServiceRuntimeException.class)
+	public ResponseEntity<Map<String, Object>> handleServiceRuntimeException(ServiceRuntimeException exception) {
+		logger.error("ServiceRuntimeException caught; returning {} to client.", exception.getHttpStatus());
+		logger.debug("ServiceRuntimeException: " + exception.toString());
+		Map<String, Object> result = new HashMap<>();
+		result.put("error", exception.getHttpStatusCode());
+		result.put("message", exception.getMessage());
+
+		return ResponseEntity
+				.status(exception.getHttpStatus())
+				.body(result);
+	}
 }

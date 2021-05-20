@@ -62,7 +62,7 @@ public class AcceptanceCriteriaController {
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
 	public void deleteProjectCriteria(@PathVariable String branch) {
 		branch = BranchPathUriUtil.decodePath(branch);
-		final ProjectAcceptanceCriteria criteria = service.findOrThrow(branch);
+		final ProjectAcceptanceCriteria criteria = service.findByBranchPathOrThrow(branch);
 		service.delete(criteria);
 	}
 

@@ -14,6 +14,7 @@ public class CriteriaItemSignOff {
         String CRITERIA_ITEM_ID = "criteriaItemId";
         String TIMESTAMP = "timestamp";
         String BRANCH = "branch";
+        String PROJECT_ITERATION = "projectIteration";
         String BRANCH_HEAD_TIMESTAMP = "branchHeadTimestamp";
         String USER_ID = "userId";
     }
@@ -31,6 +32,9 @@ public class CriteriaItemSignOff {
     @NotBlank
     private final String branch;
 
+    @Field(type = FieldType.Integer)
+    private final Integer projectIteration;
+
     @Field(type = FieldType.Keyword)
     @NotBlank
     private final String userId;
@@ -46,14 +50,16 @@ public class CriteriaItemSignOff {
     public CriteriaItemSignOff() {
         this.criteriaItemId = null;
         this.branch = null;
+        this.projectIteration = null;
         this.userId = null;
         this.timestamp = null;
         this.branchHeadTimestamp = null;
     }
 
-    public CriteriaItemSignOff(String criteriaItemId, String branch, Long branchHeadTimestamp, String userId) {
+    public CriteriaItemSignOff(String criteriaItemId, String branch, Integer projectIteration, Long branchHeadTimestamp, String userId) {
         this.criteriaItemId = criteriaItemId;
         this.branch = branch;
+        this.projectIteration = projectIteration;
         this.userId = userId;
         this.timestamp = System.currentTimeMillis();
         this.branchHeadTimestamp = branchHeadTimestamp;
@@ -69,6 +75,10 @@ public class CriteriaItemSignOff {
 
     public String getBranch() {
         return branch;
+    }
+
+    public Integer getProjectIteration() {
+        return projectIteration;
     }
 
     public String getUserId() {
