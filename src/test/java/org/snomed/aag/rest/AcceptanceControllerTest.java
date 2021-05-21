@@ -691,7 +691,7 @@ class AcceptanceControllerTest extends AbstractTest {
         mockMvc.perform(delete(requestUrl));
 
         //when
-        Optional<CriteriaItemSignOff> result = criteriaItemSignOffService.findBy(criteriaItemId, branchPath, 89);
+        Optional<CriteriaItemSignOff> result = criteriaItemSignOffService.findByCriteriaItemIdAndBranchPathAndProjectIteration(criteriaItemId, branchPath, 89);
 
         //then
         assertFalse(result.isPresent());

@@ -112,7 +112,7 @@ public class AcceptanceController {
 
         ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathAndProjectIterationAndMandatoryOrThrow(branchPath, projectIteration, checkParent);
         Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(projectAcceptanceCriteria.getAllCriteriaIdentifiers());
-        criteriaItemSignOffService.setCompleteStatus(branchPath, projectIteration, criteriaItems);
+        criteriaItemSignOffService.findByBranchPathAndProjectIterationAndCriteriaItemId(branchPath, projectIteration, criteriaItems);
 
         ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = new ProjectAcceptanceCriteriaDTO(branchPath, criteriaItems);
         return ResponseEntity
@@ -149,7 +149,7 @@ public class AcceptanceController {
         }
 
         //Verification complete; remove record
-        boolean deleted = criteriaItemSignOffService.deleteBy(itemId, branchPath, latestProjectIteration);
+        boolean deleted = criteriaItemSignOffService.deleteByCriteriaItemIdAndBranchPathAndProjectIteration(itemId, branchPath, latestProjectIteration);
         if (!deleted) {
             String message = String.format("Cannot delete %s for branch %s and project iteration %d", itemId, branchPath, latestProjectIteration);
             throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
