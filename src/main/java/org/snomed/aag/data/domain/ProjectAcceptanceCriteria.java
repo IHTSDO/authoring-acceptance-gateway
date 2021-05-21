@@ -115,4 +115,15 @@ public class ProjectAcceptanceCriteria {
 			this.selectedTaskCriteriaIds.add(criteriaItem.getId());
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "ProjectAcceptanceCriteria{" +
+				"key='" + key + '\'' +
+				", branchPath='" + branchPath + '\'' +
+				", projectIteration=" + projectIteration +
+				", selectedProjectCriteriaIds=" + selectedProjectCriteriaIds +
+				", selectedTaskCriteriaIds=" + selectedTaskCriteriaIds +
+				'}';
+	}
 }
