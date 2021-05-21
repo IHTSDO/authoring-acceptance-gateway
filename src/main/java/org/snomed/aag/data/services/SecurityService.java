@@ -17,10 +17,6 @@ public class SecurityService {
 		snowstormRestClientFactory = new SnowstormRestClientFactory(snowstormUrl, null);
 	}
 
-	public boolean isGlobalAdmin() throws RestClientException {
-		return getBranchOrThrow("MAIN").getGlobalUserRoles().contains("ADMIN");
-	}
-
 	public boolean currentUserHasRoleOnBranch(String role, String branchPath) throws RestClientException {
 		if (branchPath.equals("global")) {
 			return getBranchOrThrow("MAIN").getGlobalUserRoles().contains(role);
