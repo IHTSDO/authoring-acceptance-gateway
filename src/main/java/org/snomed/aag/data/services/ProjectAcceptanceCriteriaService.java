@@ -53,6 +53,13 @@ public class ProjectAcceptanceCriteriaService {
         }
     }
 
+    /**
+     * Save entry in database.
+     *
+     * @param projectAcceptanceCriteria Entry to save in database.
+     * @throws IllegalArgumentException If entry is not valid.
+     * @throws ServiceRuntimeException  If similar entry exists in database.
+     */
     public void create(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
         projectAcceptanceCriteriaCreateValidator.validate(projectAcceptanceCriteria);
         String branchPath = projectAcceptanceCriteria.getBranchPath();
@@ -66,17 +73,41 @@ public class ProjectAcceptanceCriteriaService {
         repository.save(projectAcceptanceCriteria);
     }
 
+    /**
+     * Find entries in database matching page request, and return as new page.
+     *
+     * @param pageRequest Page configuration for database query.
+     * @return Entries in database matching page request.
+     */
     public Page<ProjectAcceptanceCriteria> findAll(PageRequest pageRequest) {
         verifyParams(pageRequest);
         return repository.findAll(pageRequest);
     }
 
+    /**
+     * Find entry in database with matching branchPath and projectIteration fields.
+     *
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @return Entry in database with matching branchPath and projectIteration fields.
+     * @throws IllegalArgumentException If arguments are invalid.
+     */
     public ProjectAcceptanceCriteria findByBranchPathAndProjectIteration(String branchPath, Integer projectIteration) {
         verifyParams(branchPath, projectIteration);
         return repository.findByBranchPathAndProjectIteration(branchPath, projectIteration);
     }
 
-    public ProjectAcceptanceCriteria findByBranchPathAndProjectIterationAndMandatoryOrThrow(String branchPath, Integer projectIteration) {
+    /**
+     * Find entry in database with matching branchPath and projectIteration fields. If no entry is found
+     * in database matching the query, then throw an exception.
+     *
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @return Entry in database with matching branchPath and projectIteration fields.
+     * @throws IllegalArgumentException If arguments are invalid.
+     * @throws ServiceRuntimeException  If no entry found in database matching query.
+     */
+    public ProjectAcceptanceCriteria findByBranchPathAndProjectIterationOrThrow(String branchPath, Integer projectIteration) {
         ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathAndProjectIteration(branchPath, projectIteration);
         if (projectAcceptanceCriteria == null) {
             throw new ServiceRuntimeException("Not found", HttpStatus.NOT_FOUND);
@@ -85,6 +116,18 @@ public class ProjectAcceptanceCriteriaService {
         return projectAcceptanceCriteria;
     }
 
+    /**
+     * Find entry in database with matching branchPath and projectIteration fields. Also, find all mandatory project/task
+     * Criteria Items and include in response. If no entry is found in database matching the query and the checkParent flag
+     * is set, then return the latest ProjectAcceptanceCriteria for the parent Branch. If no entry is found in database, then throw an exception.
+     *
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @param checkParent      Flag to indicate whether to get entry for parent Branch, if no entry found for given branch.
+     * @return Entry in database with matching branchPath and projectIteration, or latest entry for parent Branch.
+     * @throws IllegalArgumentException If arguments are invalid.
+     * @throws NotFoundException        If no entry found in database matching query, or no entry found for parent Branch.
+     */
     public ProjectAcceptanceCriteria findByBranchPathAndProjectIterationAndMandatoryOrThrow(String branchPath, Integer projectIteration, boolean checkParent) {
         ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathAndProjectIteration(branchPath, projectIteration);
         if (projectAcceptanceCriteria == null) {
@@ -112,6 +155,13 @@ public class ProjectAcceptanceCriteriaService {
         return projectAcceptanceCriteria;
     }
 
+    /**
+     * Find entry in database with the highest projectIteration for the given branchPath.
+     *
+     * @param branchPath Field to match in query.
+     * @return Entry in database with the highest projectIteration for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     */
     public ProjectAcceptanceCriteria getLatestProjectAcceptanceCriteria(String branchPath) {
         verifyParams(branchPath);
 
@@ -123,6 +173,14 @@ public class ProjectAcceptanceCriteriaService {
         return projectAcceptanceCriteria.get(0);
     }
 
+    /**
+     * Find entry in database with the highest projectIteration for the given branchPath. If no entry is found in
+     * database, then throw an exception.
+     *
+     * @param branchPath Field to match in query.
+     * @return Entry in database with the highest projectIteration for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     */
     public ProjectAcceptanceCriteria getLatestProjectAcceptanceCriteriaOrThrow(String branchPath) {
         ProjectAcceptanceCriteria latestProjectAcceptanceCriteria = getLatestProjectAcceptanceCriteria(branchPath);
         if (latestProjectAcceptanceCriteria == null) {
@@ -132,6 +190,13 @@ public class ProjectAcceptanceCriteriaService {
         return latestProjectAcceptanceCriteria;
     }
 
+    /**
+     * Find highest projectIteration in database for the given branchPath.
+     *
+     * @param branchPath Field to match in query.
+     * @return Highest projectIteration in database for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     */
     public Integer getLatestProjectIteration(String branchPath) {
         ProjectAcceptanceCriteria latestProjectAcceptanceCriteria = getLatestProjectAcceptanceCriteria(branchPath);
         if (latestProjectAcceptanceCriteria == null) {
@@ -141,6 +206,15 @@ public class ProjectAcceptanceCriteriaService {
         return latestProjectAcceptanceCriteria.getProjectIteration();
     }
 
+    /**
+     * Find highest projectIteration in database for the given branchPath. If no entry is found in database,
+     * then throw an exception.
+     *
+     * @param branchPath Field to match in query.
+     * @return Highest projectIteration for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     * @throws ServiceRuntimeException  If no entry found in database matching query.
+     */
     public Integer getLatestProjectIterationOrThrow(String branchPath) {
         Integer latestProjectIteration = getLatestProjectIteration(branchPath);
         if (latestProjectIteration == null) {
@@ -150,13 +224,29 @@ public class ProjectAcceptanceCriteriaService {
         return latestProjectIteration;
     }
 
+    /**
+     * Find entry in database with branchPath and projectIteration fields matching properties in
+     * given ProjectAcceptanceCriteria. If there is a matching entry, replace it with given ProjectAcceptanceCriteria.
+     *
+     * @param projectAcceptanceCriteria Entry to replace the existing one.
+     * @return Updated entry from database.
+     * @throws IllegalArgumentException If argument is invalid.
+     * @throws ServiceRuntimeException  If no entry found in database matching query.
+     */
     public ProjectAcceptanceCriteria update(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+        verifyParams(projectAcceptanceCriteria);
         // Must exist
-        findByBranchPathAndProjectIterationAndMandatoryOrThrow(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
+        findByBranchPathAndProjectIterationOrThrow(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
         projectAcceptanceCriteriaCreateValidator.validate(projectAcceptanceCriteria);
         return repository.save(projectAcceptanceCriteria);
     }
 
+    /**
+     * Delete entry in database with branchPath and projectIteration fields matching properties in
+     * given ProjectAcceptanceCriteria.
+     *
+     * @param projectAcceptanceCriteria Entry to delete from database.
+     */
     public void delete(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
         verifyParams(projectAcceptanceCriteria);
         repository.delete(projectAcceptanceCriteria);

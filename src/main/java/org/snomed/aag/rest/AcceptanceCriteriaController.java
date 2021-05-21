@@ -45,10 +45,10 @@ public class AcceptanceCriteriaController {
 		if (requestingLatestProjectIteration) {
 			LOGGER.debug("Optional parameter omitted; will find ProjectAcceptanceCriteria using latest project iteration.");
 			Integer latestProjectIteration = service.getLatestProjectIterationOrThrow(branch);
-			return service.findByBranchPathAndProjectIterationAndMandatoryOrThrow(branch, latestProjectIteration);
+			return service.findByBranchPathAndProjectIterationOrThrow(branch, latestProjectIteration);
 		}
 
-		return service.findByBranchPathAndProjectIterationAndMandatoryOrThrow(branch, projectIteration);
+		return service.findByBranchPathAndProjectIterationOrThrow(branch, projectIteration);
 	}
 
 	@PostMapping
@@ -87,7 +87,7 @@ public class AcceptanceCriteriaController {
 			LOGGER.debug("Optional parameter omitted; will delete ProjectAcceptanceCriteria using latest project iteration.");
 			projectAcceptanceCriteria = service.getLatestProjectAcceptanceCriteriaOrThrow(branch);
 		} else {
-			projectAcceptanceCriteria = service.findByBranchPathAndProjectIterationAndMandatoryOrThrow(branch, projectIteration);
+			projectAcceptanceCriteria = service.findByBranchPathAndProjectIterationOrThrow(branch, projectIteration);
 		}
 
 		service.delete(projectAcceptanceCriteria);
