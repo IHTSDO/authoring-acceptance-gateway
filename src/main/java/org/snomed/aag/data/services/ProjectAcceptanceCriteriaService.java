@@ -78,6 +78,7 @@ public class ProjectAcceptanceCriteriaService {
      *
      * @param pageRequest Page configuration for database query.
      * @return Entries in database matching page request.
+     * @throws IllegalArgumentException If argument is invalid.
      */
     public Page<ProjectAcceptanceCriteria> findAll(PageRequest pageRequest) {
         verifyParams(pageRequest);

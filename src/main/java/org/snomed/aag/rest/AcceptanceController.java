@@ -53,7 +53,7 @@ public class AcceptanceController {
         branchPath = BranchPathUriUtil.decodePath(branchPath);
 
         //Verify CriteriaItems
-        CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
+        CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(itemId);
         criteriaItemService.verifyManual(criteriaItem, true);
 
         //Verify branch
@@ -135,7 +135,7 @@ public class AcceptanceController {
         branchPath = BranchPathUriUtil.decodePath(branchPath);
 
         //Verify CriteriaItems
-        CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
+        CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(itemId);
         criteriaItemService.verifyManual(criteriaItem, true);
 
         //Verify branch

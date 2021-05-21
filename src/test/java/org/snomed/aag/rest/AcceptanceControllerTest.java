@@ -268,7 +268,7 @@ class AcceptanceControllerTest extends AbstractTest {
         CriteriaItemSignOff criteriaItemSignOff = OBJECT_MAPPER.readValue(getResponseBody(resultActions), CriteriaItemSignOff.class);
 
         //when
-        CriteriaItem result = criteriaItemService.findOrThrow(criteriaItemSignOff.getCriteriaItemId());
+        CriteriaItem result = criteriaItemService.findByIdOrThrow(criteriaItemSignOff.getCriteriaItemId());
 
         //then
         assertNotNull(result);

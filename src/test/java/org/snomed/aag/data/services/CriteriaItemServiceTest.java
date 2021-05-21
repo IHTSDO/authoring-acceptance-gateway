@@ -21,7 +21,7 @@ class CriteriaItemServiceTest extends AbstractTest {
 	private ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
 
 	@Test
-	public void testCreateLoad() {
+	void testCreateLoad() {
 		final CriteriaItem criteriaItem = new CriteriaItem("classification-clean");
 		criteriaItem.setLabel("Content has been classified.");
 		criteriaItem.setDescription("If there are any content changes requiring classification then classification must be run and the results saved.");
@@ -40,7 +40,7 @@ class CriteriaItemServiceTest extends AbstractTest {
 	}
 
 	@Test
-	public void testDelete() {
+	void testDelete() {
 		final CriteriaItem thing = new CriteriaItem("thing");
 		service.create(thing);
 
@@ -50,13 +50,13 @@ class CriteriaItemServiceTest extends AbstractTest {
 		criteria.getSelectedTaskCriteriaIds().add(thing.getId());
 		projectAcceptanceCriteriaService.create(criteria);
 
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {service.delete(thing);});
+		Assertions.assertThrows(ServiceRuntimeException.class, () -> {service.delete(thing);});
 
 		criteria.getSelectedTaskCriteriaIds().clear();
 		criteria.getSelectedProjectCriteriaIds().add(thing.getId());
 		projectAcceptanceCriteriaService.update(criteria);
 
-		Assertions.assertThrows(IllegalArgumentException.class, () -> {service.delete(thing);});
+		Assertions.assertThrows(ServiceRuntimeException.class, () -> {service.delete(thing);});
 
 		criteria.getSelectedProjectCriteriaIds().clear();
 		projectAcceptanceCriteriaService.update(criteria);

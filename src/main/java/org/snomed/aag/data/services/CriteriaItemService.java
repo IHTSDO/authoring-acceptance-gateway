@@ -1,7 +1,5 @@
 package org.snomed.aag.data.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
@@ -11,6 +9,7 @@ import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -23,7 +22,7 @@ import static java.lang.String.format;
 
 @Service
 public class CriteriaItemService {
-	private static final Logger LOGGER = LoggerFactory.getLogger(CriteriaItemService.class);
+	private static final String INVALID_PARAMETERS = "Invalid parameters.";
 
 	@Autowired
 	private CriteriaItemRepository repository;
@@ -31,15 +30,68 @@ public class CriteriaItemService {
 	@Autowired
 	private ProjectAcceptanceCriteriaRepository acceptanceCriteriaRepository;
 
+	private static void verifyParams(CriteriaItem criteriaItem) {
+		if (criteriaItem == null) {
+			throw new IllegalArgumentException(INVALID_PARAMETERS);
+		}
+	}
+
+	private static void verifyParams(PageRequest pageRequest) {
+		if (pageRequest == null) {
+			throw new IllegalArgumentException(INVALID_PARAMETERS);
+		}
+	}
+
+	private static void verifyParams(String id) {
+		if (id == null) {
+			throw new IllegalArgumentException(INVALID_PARAMETERS);
+		}
+	}
+
+	private static void verifyParams(Collection<String> criteriaItemIdentifiers) {
+		if (criteriaItemIdentifiers == null || criteriaItemIdentifiers.isEmpty()) {
+			throw new IllegalArgumentException(INVALID_PARAMETERS);
+		}
+	}
+
+	private static void verifyParams(AuthoringLevel authoringLevel) {
+		if (authoringLevel == null) {
+			throw new IllegalArgumentException(INVALID_PARAMETERS);
+		}
+	}
+
+	/**
+	 * Save entry in database.
+	 *
+	 * @param criteriaItem Entry to save in database.
+	 * @throws IllegalArgumentException If argument is invalid.
+	 */
 	public void create(CriteriaItem criteriaItem) {
+		verifyParams(criteriaItem);
 		repository.save(criteriaItem);
 	}
 
+	/**
+	 * Find entries in database matching page request, and return as new page.
+	 *
+	 * @param pageRequest Page configuration for database query.
+	 * @return Entries in database matching page request.
+	 * @throws IllegalArgumentException If argument is invalid.
+	 */
 	public Page<CriteriaItem> findAll(PageRequest pageRequest) {
+		verifyParams(pageRequest);
 		return repository.findAll(pageRequest);
 	}
 
-	public CriteriaItem findOrThrow(String id) {
+	/**
+	 * Find entry in database with matching id field.
+	 *
+	 * @param id Field to match in query.
+	 * @return Entry in database with matching id field.
+	 * @throws IllegalArgumentException If argument is invalid.
+	 */
+	public CriteriaItem findByIdOrThrow(String id) {
+		verifyParams(id);
 		final Optional<CriteriaItem> itemOptional = repository.findById(id);
 		if (!itemOptional.isPresent()) {
 			throw new NotFoundException(format("Criteria Item with id '%s' not found.", id));
@@ -48,51 +100,69 @@ public class CriteriaItemService {
 	}
 
 	/**
-	 * Find Criteria Items from the given identifiers.
+	 * Find entries in database with matching identifiers.
 	 *
-	 * @param criteriaItemIdentifiers Identifiers to search for.
-	 * @return Collection of found Criteria Items.
+	 * @param criteriaItemIdentifiers Potential identifiers to match in query.
+	 * @return Entries in database with matching identifiers.
+	 * @throws IllegalArgumentException If argument is invalid.
 	 */
 	public Set<CriteriaItem> findAllByIdentifiers(Collection<String> criteriaItemIdentifiers) {
-		LOGGER.info("Finding Criteria Items {}.", criteriaItemIdentifiers);
+		verifyParams(criteriaItemIdentifiers);
 		return repository.findAllByIdIn(criteriaItemIdentifiers);
 	}
 
-	public CriteriaItem update(CriteriaItem item) {
-		return repository.save(item);
-	}
-
-	public void delete(CriteriaItem item) {
-		final Page<ProjectAcceptanceCriteria> found = acceptanceCriteriaRepository.findAllBySelectedProjectCriteriaIdsOrSelectedTaskCriteriaIds(item.getId(), item.getId(), Constants.PAGE_OF_ONE);
-		if (!found.isEmpty()) {
-			throw new IllegalArgumentException(format("Criteria can not be deleted, it is used in %s project criteria.", found.getTotalElements()));
-		}
-
-		repository.delete(item);
+	/**
+	 * Find entries in database with matching mandatory and authoringLevel fields.
+	 *
+	 * @param mandatory      Field to match in query.
+	 * @param authoringLevel Field to match in query.
+	 * @return Entries in database with matching mandatory and authoringLevel fields.
+	 * @throws IllegalArgumentException If arguments are invalid.
+	 */
+	public List<CriteriaItem> findAllByMandatoryAndAuthoringLevel(boolean mandatory, AuthoringLevel authoringLevel) {
+		verifyParams(authoringLevel);
+		return repository.findAllByMandatoryAndAuthoringLevel(mandatory, authoringLevel);
 	}
 
 	/**
-	 * Verify whether the CriteriaItem has the given value.
+	 * Replace entry in database with given CriteriaItem.
 	 *
-	 * @param criteriaItem CriteriaItem to check
-	 * @throws AccessDeniedException When CriteriaItem does not have expected state.
+	 * @param criteriaItem Entry to replace the existing one with.
+	 * @return Updated entry from database.
+	 * @throws IllegalArgumentException If argument is invalid.
+	 */
+	public CriteriaItem update(CriteriaItem criteriaItem) {
+		verifyParams(criteriaItem);
+		return repository.save(criteriaItem);
+	}
+
+	/**
+	 * Delete given CriteriaItem from database.
+	 *
+	 * @param criteriaItem Entry to delete from database.
+	 * @throws IllegalArgumentException If argument is invalid.
+	 * @throws ServiceRuntimeException  If CriteriaItem is used in ProjectAcceptanceCriteria.
+	 */
+	public void delete(CriteriaItem criteriaItem) {
+		verifyParams(criteriaItem);
+		final Page<ProjectAcceptanceCriteria> found = acceptanceCriteriaRepository.findAllBySelectedProjectCriteriaIdsOrSelectedTaskCriteriaIds(criteriaItem.getId(), criteriaItem.getId(), Constants.PAGE_OF_ONE);
+		if (!found.isEmpty()) {
+			throw new ServiceRuntimeException(format("Criteria can not be deleted, it is used in %s project criteria.", found.getTotalElements()), HttpStatus.CONFLICT);
+		}
+
+		repository.delete(criteriaItem);
+	}
+
+	/**
+	 * Verify given CriteriaItem has the expected manual state.
+	 *
+	 * @param criteriaItem   CriteriaItem to verify.
+	 * @param expectedManual Expected state of given CriteriaItem's manual state.
+	 * @throws AccessDeniedException If CriteriaItem does not have expected state.
 	 */
 	public void verifyManual(CriteriaItem criteriaItem, boolean expectedManual) {
 		if (criteriaItem.isManual() != expectedManual) {
-			LOGGER.error("User attempted to sign off non-manual CriteriaItem ({}).", criteriaItem.getId());
 			throw new AccessDeniedException("Criteria Item cannot be changed manually.");
 		}
-	}
-
-	/**
-	 * Find Criteria Items matching on the Mandatory and Authoring Level fields.
-	 *
-	 * @param mandatory      CriteriaItem field to match.
-	 * @param authoringLevel CriteriaItem field to match.
-	 * @return Criteria Items matching the query.
-	 */
-	public List<CriteriaItem> findAllByMandatoryAndAuthoringLevel(boolean mandatory, AuthoringLevel authoringLevel) {
-		LOGGER.info("Querying for Criteria Items that have their Mandatory field set to {} and their Authoring Level field set to {}.", mandatory, authoringLevel);
-		return repository.findAllByMandatoryAndAuthoringLevel(mandatory, authoringLevel);
 	}
 }
