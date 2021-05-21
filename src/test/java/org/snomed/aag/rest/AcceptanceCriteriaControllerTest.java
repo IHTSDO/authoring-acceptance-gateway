@@ -1,13 +1,16 @@
 package org.snomed.aag.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.traceability.RestResponsePage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
+import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -17,15 +20,12 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
@@ -46,7 +46,8 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
                 projectAcceptanceCriteriaService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
-                projectAcceptanceCriteriaService
+                projectAcceptanceCriteriaService,
+                projectAcceptanceCriteriaUpdateValidator
         );
         this.mockMvc = MockMvcBuilders
                 .standaloneSetup(acceptanceCriteriaController, acceptanceController)
@@ -59,6 +60,132 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         this.acceptanceController = null;
         this.acceptanceCriteriaController = null;
         this.mockMvc = null;
+    }
+
+    @Test
+    void findAll_ShouldReturnExpectedResponseStatusCode() throws Exception {
+        // given
+        String requestUrl = findAll(0, 10);
+        givenAcceptanceCriteriaExists(UUID.randomUUID().toString(), 1);
+        givenAcceptanceCriteriaExists(UUID.randomUUID().toString(), 1);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        assertResponseStatus(resultActions, 200);
+    }
+
+    @Test
+    void findAll_ShouldReturnExpectedResponseBody() throws Exception {
+        // given
+        String requestUrl = findAll(0, 10);
+        givenAcceptanceCriteriaExists(UUID.randomUUID().toString(), 1);
+        givenAcceptanceCriteriaExists(UUID.randomUUID().toString(), 1);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+        List<ProjectAcceptanceCriteria> projectAcceptanceCriteria = toProjectAcceptCriterias(getResponseBody(resultActions));
+
+        // then
+        assertEquals(2, projectAcceptanceCriteria.size());
+    }
+
+    @Test
+    void findForBranch_ShouldReturnExpectedResponseStatusCode_WhenCannotFindForBranchAndProjectIteration() throws Exception {
+        // given
+        String requestUrl = findForBranch(UUID.randomUUID().toString(), 1);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        assertResponseStatus(resultActions, 404);
+        assertEquals(buildErrorResponse(404, "Not found"), getResponseBody(resultActions));
+    }
+
+    @Test
+    void findForBranch_ShouldReturnExpectedResponseStatusCode_WhenCannotFindForBranchAndLatestProjectIteration() throws Exception {
+        // given
+        String requestUrl = findForBranch(UUID.randomUUID().toString(), -1);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        assertResponseStatus(resultActions, 404);
+        assertEquals(buildErrorResponse(404, "Cannot find ProjectAcceptanceCriteria."), getResponseBody(resultActions));
+    }
+
+    @Test
+    void findForBranch_ShouldReturnExpectedResponseStatusCode_WhenCanFindForBranch() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = findForBranch(branchPath, -1);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenAcceptanceCriteriaExists(branchPath, 2);
+        givenAcceptanceCriteriaExists(branchPath, 3);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        assertResponseStatus(resultActions, 200);
+    }
+
+    @Test
+    void findForBranch_ShouldReturnExpectedResponseBody_WhenCanFindForBranchAndLatestProjectIteration() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = findForBranch(branchPath, -1);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenAcceptanceCriteriaExists(branchPath, 3);
+        givenAcceptanceCriteriaExists(branchPath, 2);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = toProjectAcceptCriteria(getResponseBody(resultActions));
+
+        // then
+        assertEquals(3, projectAcceptanceCriteria.getProjectIteration()); //latest expected as -1 projectIteration
+    }
+
+    @Test
+    void findForBranch_ShouldReturnExpectedResponseBody_WhenCanFindForBranchAndSpecificProjectIteration() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = findForBranch(branchPath, 1);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenAcceptanceCriteriaExists(branchPath, 3);
+        givenAcceptanceCriteriaExists(branchPath, 2);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = toProjectAcceptCriteria(getResponseBody(resultActions));
+
+        // then
+        assertEquals(1, projectAcceptanceCriteria.getProjectIteration());
+    }
+
+    @Test
+    void findForBranch_ShouldReturnExpectedResponseBody_WhenRequestingNegativeProjectIteration() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = findForBranch(branchPath, -5);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenAcceptanceCriteriaExists(branchPath, 3);
+        givenAcceptanceCriteriaExists(branchPath, 2);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        assertResponseStatus(resultActions, 400);
+        assertEquals(buildErrorResponse(HttpStatus.BAD_REQUEST, "Invalid parameters."), getResponseBody(resultActions));
     }
 
     @Test
@@ -96,7 +223,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         );
 
         // when
-        ProjectAcceptanceCriteria result = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath);
+        ProjectAcceptanceCriteria result = projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 23);
 
         // then
         assertNotNull(result);
@@ -226,8 +353,226 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
                 getResponseBody(resultActions));
     }
 
+    @Test
+    void updateProjectCriteria_ShouldReturnExpectedResponse_WhenAmbiguousBranchAndUpdatingLatestProjectAcceptanceCriteria() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(UUID.randomUUID().toString(), 2);
+        String requestUrl = updateProjectCriteria(branchPath, -1);
+
+        givenUserDoesHavePermissionForBranch();
+        givenAcceptanceCriteriaExists(branchPath, 2);
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(put(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(projectAcceptanceCriteria))
+                );
+
+        // then
+        assertResponseStatus(resultActions, 409);
+        assertEquals(buildErrorResponse(409, "Branch in URL does not match branch in criteria."), getResponseBody(resultActions));
+    }
+
+    @Test
+    void updateProjectCriteria_ShouldReturnExpectedResponse_WhenAmbiguousProjectIterationAndUpdatingLatestProjectAcceptanceCriteria() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, 3);
+        String requestUrl = updateProjectCriteria(branchPath, -1);
+
+        givenUserDoesHavePermissionForBranch();
+        givenAcceptanceCriteriaExists(branchPath, 2);
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(put(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(projectAcceptanceCriteria))
+                );
+
+        // then
+        assertResponseStatus(resultActions, 409);
+        assertEquals(buildErrorResponse(409, "Project Iteration in URL does not match Project Iteration in criteria."), getResponseBody(resultActions));
+    }
+
+    @Test
+    void updateProjectCriteria_ShouldReturnExpectedResponse_WhenNewCriteriaItemDoesNotExist() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, 2);
+        projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton("test-criteria-item"));
+        String requestUrl = updateProjectCriteria(branchPath, -1);
+
+        givenUserDoesHavePermissionForBranch();
+        givenAcceptanceCriteriaExists(branchPath, 2);
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(put(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(projectAcceptanceCriteria))
+                );
+
+        // then
+        assertResponseStatus(resultActions, 400);
+        assertEquals(buildErrorResponse(HttpStatus.BAD_REQUEST, "The following criteria items were not found: [test-criteria-item]"), getResponseBody(resultActions));
+    }
+
+    @Test
+    void updateProjectCriteria_ShouldReturnExpectedResponse_WhenSuccessfullyUpdating() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, 2);
+        projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton("test-criteria-item"));
+        String requestUrl = updateProjectCriteria(branchPath, -1);
+
+        givenUserDoesHavePermissionForBranch();
+        givenAcceptanceCriteriaExists(branchPath, 2);
+        givenCriteriaItemExists("test-criteria-item", true, 1, "An example Criteria Item.");
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(put(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(projectAcceptanceCriteria))
+                );
+        ProjectAcceptanceCriteria updatedProjectAcceptanceCriteria = toProjectAcceptCriteria(getResponseBody(resultActions));
+
+        // then
+        assertResponseStatus(resultActions, 200);
+        assertEquals(1, updatedProjectAcceptanceCriteria.getSelectedProjectCriteriaIds().size());
+    }
+
+    @Test
+    void deleteProjectCriteria_ShouldReturnExpectedResponse_WhenNoLatestProjectAcceptanceCriteriaCanBeFoundFromBranch() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = deleteProjectCriteria(branchPath, -1);
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(delete(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                );
+
+        // then
+        assertResponseStatus(resultActions, 404);
+        assertEquals(buildErrorResponse(404, "Not found"), getResponseBody(resultActions));
+    }
+
+    @Test
+    void deleteProjectCriteria_ShouldReturnExpectedResponse_WhenNoProjectAcceptanceCriteriaCanBeFoundFromBranch() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = deleteProjectCriteria(branchPath, 1);
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(delete(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                );
+
+        // then
+        assertResponseStatus(resultActions, 404);
+        assertEquals(buildErrorResponse(404, "Not found"), getResponseBody(resultActions));
+    }
+
+    @Test
+    void deleteProjectCriteria_ShouldReturnExpectedResponse_WhenDeletingLatestProjectAcceptanceCriteria() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = deleteProjectCriteria(branchPath, 1);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(delete(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                );
+
+        // then
+        assertResponseStatus(resultActions, 200);
+    }
+
+    @Test
+    void deleteProjectCriteria_ShouldReturnExpectedResponse_WhenDeletingSpecificProjectAcceptanceCriteria() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = deleteProjectCriteria(branchPath, 2);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenAcceptanceCriteriaExists(branchPath, 2);
+        givenAcceptanceCriteriaExists(branchPath, 3);
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(delete(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                );
+
+        // then
+        assertResponseStatus(resultActions, 200);
+    }
+
+    @Test
+    void deleteProjectCriteria_ShouldRemoveEntryFromDatabase_WhenDeletingSpecificProjectAcceptanceCriteria() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = deleteProjectCriteria(branchPath, 2);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenAcceptanceCriteriaExists(branchPath, 2);
+        givenAcceptanceCriteriaExists(branchPath, 3);
+
+        // when
+        mockMvc.perform(delete(requestUrl).contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        assertNull(projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 2));
+        assertNotNull(projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 1));
+        assertNotNull(projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 3));
+    }
+
+    @Test
+    void deleteProjectCriteria_ShouldRemoveEntryFromDatabase_WhenDeletingLatestProjectAcceptanceCriteria() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = deleteProjectCriteria(branchPath, -1);
+
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenAcceptanceCriteriaExists(branchPath, 2);
+        givenAcceptanceCriteriaExists(branchPath, 3);
+
+        // when
+        mockMvc.perform(delete(requestUrl).contentType(MediaType.APPLICATION_JSON));
+
+        // then
+        assertNull(projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 3));
+        assertNotNull(projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 1));
+        assertNotNull(projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 2));
+    }
+
+    private String deleteProjectCriteria(String branchPath, int projectIteration) {
+        return "/criteria/" + branchPath + "?projectIteration=" + projectIteration;
+    }
+
+    private String findAll(int page, int size) {
+        return "/criteria?page=" + page + "&size=" + size;
+    }
+
     private String createProjectCriteria() {
         return "/criteria/";
+    }
+
+    private String updateProjectCriteria(String branchPath, int projectIteration) {
+        return "/criteria/" + branchPath + "?projectIteration=" + projectIteration;
+    }
+
+    private String findForBranch(String branchPath, int projectIteration) {
+        return "/criteria/" + branchPath + "?projectIteration=" + projectIteration;
     }
 
     private void givenUserDoesHavePermissionForBranch() throws RestClientException {
@@ -236,6 +581,16 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
 
     private void givenAcceptanceCriteriaExists(String branchPath, int projectIteration) {
         projectAcceptanceCriteriaService.create(new ProjectAcceptanceCriteria(branchPath, projectIteration));
+    }
+
+    private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label) {
+        CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
+        criteriaItem.setManual(manual);
+        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CRITERIA_CONTROLLER_TEST");
+        criteriaItem.setOrder(order);
+        criteriaItem.setLabel(label);
+
+        criteriaItemRepository.save(criteriaItem);
     }
 
     private String asJson(Object input) throws JsonProcessingException {
@@ -264,5 +619,16 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         response.put("message", message);
 
         return OBJECT_MAPPER.writeValueAsString(response);
+    }
+
+    private List<ProjectAcceptanceCriteria> toProjectAcceptCriterias(String response) throws JsonProcessingException {
+        RestResponsePage<ProjectAcceptanceCriteria> restResponsePage = OBJECT_MAPPER.readValue(response, new TypeReference<RestResponsePage<ProjectAcceptanceCriteria>>() {
+        });
+        return restResponsePage.getContent();
+    }
+
+    private ProjectAcceptanceCriteria toProjectAcceptCriteria(String response) throws JsonProcessingException {
+        return OBJECT_MAPPER.readValue(response, new TypeReference<ProjectAcceptanceCriteria>() {
+        });
     }
 }

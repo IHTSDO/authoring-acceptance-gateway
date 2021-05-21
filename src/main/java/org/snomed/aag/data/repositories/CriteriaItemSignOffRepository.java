@@ -8,7 +8,7 @@ import java.util.Optional;
 
 
 public interface CriteriaItemSignOffRepository extends ElasticsearchRepository<CriteriaItemSignOff, String> {
-    List<CriteriaItemSignOff> findAllByBranchAndCriteriaItemIdIn(String branch, List<String> criteriaItemIdentifiers);
+    List<CriteriaItemSignOff> findAllByBranchAndProjectIterationAndCriteriaItemIdIn(String branch, Integer projectIteration, List<String> criteriaItemIdentifiers);
 
     void deleteByCriteriaItemIdAndBranchAndProjectIteration(String criteriaItemId, String branchPath, Integer projectIteration);
 

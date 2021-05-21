@@ -55,7 +55,8 @@ class AcceptanceControllerTest extends AbstractTest {
                 projectAcceptanceCriteriaService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
-                projectAcceptanceCriteriaService
+                projectAcceptanceCriteriaService,
+                projectAcceptanceCriteriaUpdateValidator
         );
         this.mockMvc = MockMvcBuilders
                 .standaloneSetup(acceptanceCriteriaController, acceptanceController)
@@ -297,7 +298,7 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.NOT_FOUND, "No project acceptance criteria found for this branch path."));
+        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find ProjectAcceptanceCriteria."));
     }
 
     @Test
@@ -314,7 +315,7 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.NOT_FOUND, "No project acceptance criteria found for this branch path."));
+        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find ProjectAcceptanceCriteria."));
     }
 
     @Test
