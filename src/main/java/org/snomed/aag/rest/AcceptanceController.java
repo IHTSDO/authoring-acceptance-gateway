@@ -93,12 +93,12 @@ public class AcceptanceController {
     })
     @GetMapping("/{branch}")
     public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch,
-                                               @RequestParam(required = false, defaultValue = "-1") Integer projectIteration) throws RestClientException {
+                                               @RequestParam(required = false) Integer projectIteration) throws RestClientException {
         String branchPath = BranchPathUriUtil.decodePath(branch);
         securityService.getBranchOrThrow(branchPath);
 
         boolean checkParent = true;
-        boolean requestingLatestProjectIteration = -1 == projectIteration;
+        boolean requestingLatestProjectIteration = projectIteration == null;
         if (requestingLatestProjectIteration) {
             projectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
 

@@ -38,10 +38,10 @@ public class AcceptanceCriteriaController {
 	}
 
 	@GetMapping("/{branch}")
-	public ProjectAcceptanceCriteria findForBranch(@PathVariable String branch, @RequestParam(required = false, defaultValue = "-1") int projectIteration) {
+	public ProjectAcceptanceCriteria findForBranch(@PathVariable String branch, @RequestParam(required = false) Integer projectIteration) {
 		branch = BranchPathUriUtil.decodePath(branch);
 		LOGGER.info("Finding ProjectAcceptanceCriteria for branch {}.", branch);
-		boolean requestingLatestProjectIteration = -1 == projectIteration;
+		boolean requestingLatestProjectIteration = projectIteration == null;
 		if (requestingLatestProjectIteration) {
 			LOGGER.debug("Optional parameter omitted; will find ProjectAcceptanceCriteria using latest project iteration.");
 			Integer latestProjectIteration = service.getLatestProjectIterationOrThrow(branch);
@@ -62,10 +62,11 @@ public class AcceptanceCriteriaController {
 
 	@PutMapping("/{branch}")
 	@PreAuthorize("hasPermission('PROJECT_MANAGER', #branch)")
-	public ProjectAcceptanceCriteria updateProjectCriteria(@PathVariable String branch, @RequestBody @Valid ProjectAcceptanceCriteria criteria, @RequestParam(required = false, defaultValue = "-1") int projectIteration) {
+	public ProjectAcceptanceCriteria updateProjectCriteria(@PathVariable String branch, @RequestBody @Valid ProjectAcceptanceCriteria criteria,
+														   @RequestParam(required = false) Integer projectIteration) {
 		branch = BranchPathUriUtil.decodePath(branch);
 		LOGGER.info("Updating ProjectAcceptanceCriteria for branch {}.", branch);
-		boolean requestingLatestProjectIteration = -1 == projectIteration;
+		boolean requestingLatestProjectIteration = projectIteration == null;
 		if (requestingLatestProjectIteration) {
 			LOGGER.debug("Optional parameter omitted; will update ProjectAcceptanceCriteria using latest project iteration.");
 			projectIteration = service.getLatestProjectIterationOrThrow(branch);
@@ -78,10 +79,10 @@ public class AcceptanceCriteriaController {
 
 	@DeleteMapping("/{branch}")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
-	public void deleteProjectCriteria(@PathVariable String branch, @RequestParam(required = false, defaultValue = "-1") int projectIteration) {
+	public void deleteProjectCriteria(@PathVariable String branch, @RequestParam(required = false) Integer projectIteration) {
 		branch = BranchPathUriUtil.decodePath(branch);
 		LOGGER.info("Deleting ProjectAcceptanceCriteria on branch {}.", branch);
-		boolean requestingLatestProjectIteration = -1 == projectIteration;
+		boolean requestingLatestProjectIteration = projectIteration == null;
 		ProjectAcceptanceCriteria projectAcceptanceCriteria;
 		if (requestingLatestProjectIteration) {
 			LOGGER.debug("Optional parameter omitted; will delete ProjectAcceptanceCriteria using latest project iteration.");

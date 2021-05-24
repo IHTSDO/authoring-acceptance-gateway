@@ -107,7 +107,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     @Test
     void findForBranch_ShouldReturnExpectedResponseStatusCode_WhenCannotFindForBranchAndLatestProjectIteration() throws Exception {
         // given
-        String requestUrl = findForBranch(UUID.randomUUID().toString(), -1);
+        String requestUrl = findForBranch(UUID.randomUUID().toString(), null);
 
         // when
         ResultActions resultActions = mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON));
@@ -121,7 +121,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     void findForBranch_ShouldReturnExpectedResponseStatusCode_WhenCanFindForBranch() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
-        String requestUrl = findForBranch(branchPath, -1);
+        String requestUrl = findForBranch(branchPath, null);
 
         givenAcceptanceCriteriaExists(branchPath, 1);
         givenAcceptanceCriteriaExists(branchPath, 2);
@@ -138,7 +138,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     void findForBranch_ShouldReturnExpectedResponseBody_WhenCanFindForBranchAndLatestProjectIteration() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
-        String requestUrl = findForBranch(branchPath, -1);
+        String requestUrl = findForBranch(branchPath, null);
 
         givenAcceptanceCriteriaExists(branchPath, 1);
         givenAcceptanceCriteriaExists(branchPath, 3);
@@ -149,7 +149,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         ProjectAcceptanceCriteria projectAcceptanceCriteria = toProjectAcceptCriteria(getResponseBody(resultActions));
 
         // then
-        assertEquals(3, projectAcceptanceCriteria.getProjectIteration()); //latest expected as -1 projectIteration
+        assertEquals(3, projectAcceptanceCriteria.getProjectIteration()); //latest expected as null projectIteration
     }
 
     @Test
@@ -358,7 +358,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         // given
         String branchPath = UUID.randomUUID().toString();
         ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(UUID.randomUUID().toString(), 2);
-        String requestUrl = updateProjectCriteria(branchPath, -1);
+        String requestUrl = updateProjectCriteria(branchPath, null);
 
         givenUserDoesHavePermissionForBranch();
         givenAcceptanceCriteriaExists(branchPath, 2);
@@ -380,7 +380,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         // given
         String branchPath = UUID.randomUUID().toString();
         ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, 3);
-        String requestUrl = updateProjectCriteria(branchPath, -1);
+        String requestUrl = updateProjectCriteria(branchPath, null);
 
         givenUserDoesHavePermissionForBranch();
         givenAcceptanceCriteriaExists(branchPath, 2);
@@ -403,7 +403,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         String branchPath = UUID.randomUUID().toString();
         ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, 2);
         projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton("test-criteria-item"));
-        String requestUrl = updateProjectCriteria(branchPath, -1);
+        String requestUrl = updateProjectCriteria(branchPath, null);
 
         givenUserDoesHavePermissionForBranch();
         givenAcceptanceCriteriaExists(branchPath, 2);
@@ -426,7 +426,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         String branchPath = UUID.randomUUID().toString();
         ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, 2);
         projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton("test-criteria-item"));
-        String requestUrl = updateProjectCriteria(branchPath, -1);
+        String requestUrl = updateProjectCriteria(branchPath, null);
 
         givenUserDoesHavePermissionForBranch();
         givenAcceptanceCriteriaExists(branchPath, 2);
@@ -449,7 +449,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     void deleteProjectCriteria_ShouldReturnExpectedResponse_WhenNoLatestProjectAcceptanceCriteriaCanBeFoundFromBranch() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
-        String requestUrl = deleteProjectCriteria(branchPath, -1);
+        String requestUrl = deleteProjectCriteria(branchPath, null);
 
         // when
         ResultActions resultActions = mockMvc
@@ -540,7 +540,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     void deleteProjectCriteria_ShouldRemoveEntryFromDatabase_WhenDeletingLatestProjectAcceptanceCriteria() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
-        String requestUrl = deleteProjectCriteria(branchPath, -1);
+        String requestUrl = deleteProjectCriteria(branchPath, null);
 
         givenAcceptanceCriteriaExists(branchPath, 1);
         givenAcceptanceCriteriaExists(branchPath, 2);
@@ -555,7 +555,11 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         assertNotNull(projectAcceptanceCriteriaService.findByBranchPathAndProjectIteration(branchPath, 2));
     }
 
-    private String deleteProjectCriteria(String branchPath, int projectIteration) {
+    private String deleteProjectCriteria(String branchPath, Integer projectIteration) {
+        if (projectIteration == null) {
+            return "/criteria/" + branchPath;
+        }
+
         return "/criteria/" + branchPath + "?projectIteration=" + projectIteration;
     }
 
@@ -567,11 +571,19 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         return "/criteria/";
     }
 
-    private String updateProjectCriteria(String branchPath, int projectIteration) {
+    private String updateProjectCriteria(String branchPath, Integer projectIteration) {
+        if (projectIteration == null) {
+            return "/criteria/" + branchPath;
+        }
+
         return "/criteria/" + branchPath + "?projectIteration=" + projectIteration;
     }
 
-    private String findForBranch(String branchPath, int projectIteration) {
+    private String findForBranch(String branchPath, Integer projectIteration) {
+        if (projectIteration == null) {
+            return "/criteria/" + branchPath;
+        }
+
         return "/criteria/" + branchPath + "?projectIteration=" + projectIteration;
     }
 
