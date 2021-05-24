@@ -18,10 +18,10 @@ import static java.lang.String.format;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
-public class ProjectAcceptanceCriteriaValidator {
+public class ProjectAcceptanceCriteriaCreateValidator {
     private final ElasticsearchRestTemplate elasticsearchRestTemplate;
 
-    public ProjectAcceptanceCriteriaValidator(ElasticsearchRestTemplate elasticsearchRestTemplate) {
+    public ProjectAcceptanceCriteriaCreateValidator(ElasticsearchRestTemplate elasticsearchRestTemplate) {
         this.elasticsearchRestTemplate = elasticsearchRestTemplate;
     }
 

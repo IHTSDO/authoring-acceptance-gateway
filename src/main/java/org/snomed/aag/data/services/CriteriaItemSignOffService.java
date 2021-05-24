@@ -1,7 +1,5 @@
 package org.snomed.aag.data.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.repositories.CriteriaItemSignOffRepository;
@@ -16,25 +14,45 @@ import java.util.stream.Collectors;
 
 @Service
 public class CriteriaItemSignOffService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CriteriaItemSignOffService.class);
+    private static final String INVALID_PARAMETERS = "Invalid parameters.";
 
     @Autowired
     private CriteriaItemSignOffRepository repository;
+
+    private static void verifyParams(CriteriaItemSignOff criteriaItemSignOff) {
+        if (criteriaItemSignOff == null) {
+            throw new IllegalArgumentException(INVALID_PARAMETERS);
+        }
+    }
+
+    private void verifyParams(String branchPath, Integer projectIteration, Set<CriteriaItem> criteriaItems) {
+        if (branchPath == null || projectIteration == null || projectIteration < 0 || criteriaItems == null || criteriaItems.isEmpty()) {
+            throw new IllegalArgumentException(INVALID_PARAMETERS);
+        }
+    }
+
+    private static void verifyParams(String criteriaItemId, String branchPath, Integer projectIteration) {
+        if (criteriaItemId == null || branchPath == null || projectIteration == null || projectIteration < 0) {
+            throw new IllegalArgumentException(INVALID_PARAMETERS);
+        }
+    }
 
     /**
      * Save entry in database.
      *
      * @param criteriaItemSignOff Entry to save in database.
      * @return Saved entry in database.
-     * @throws ServiceRuntimeException If there is already a CriteriaItemSignOff entry in database.
+     * @throws IllegalArgumentException If argument is invalid.
+     * @throws ServiceRuntimeException  If similar entry exists in database.
      */
     public CriteriaItemSignOff create(CriteriaItemSignOff criteriaItemSignOff) {
+        verifyParams(criteriaItemSignOff);
         String criteriaItemId = criteriaItemSignOff.getCriteriaItemId();
         String branch = criteriaItemSignOff.getBranch();
         Integer projectIteration = criteriaItemSignOff.getProjectIteration();
 
         //Cannot have multiple CriteriaItemSignOff with same branch and project iteration
-        Optional<CriteriaItemSignOff> existingCriteriaItemSignOff = findBy(criteriaItemId, branch, projectIteration);
+        Optional<CriteriaItemSignOff> existingCriteriaItemSignOff = findByCriteriaItemIdAndBranchPathAndProjectIteration(criteriaItemId, branch, projectIteration);
         if (existingCriteriaItemSignOff.isPresent()) {
             String message = String.format("Criteria Item %s has already been signed off for branch %s and project iteration %d", criteriaItemId, branch, projectIteration);
             throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
@@ -44,18 +62,19 @@ public class CriteriaItemSignOffService {
     }
 
     /**
-     * Find all CriteriaItemSignOff from the given branch and collection containing possible corresponding CriteriaItems.
-     * If there is a CriteriaItemSignOff record found, the corresponding CriteriaItem will be updated accordingly.
+     * Find entries in database with matching branchPath, projectIteration and criteriaItemId fields. For each entry found,
+     * update the complete flag.
      *
-     * @param branchPath    Branch to match against.
-     * @param criteriaItems Collection of possible matches.
-     * @return Collection of matched CriteriaItemSign.
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @param criteriaItems    Field to match in query.
+     * @return Entries in database with matching branchPath, projectIteration, and criteriaItemId fields.
+     * @throws IllegalArgumentException If arguments are invalid.
      */
-    public List<CriteriaItemSignOff> findAllByBranchAndIdentifier(String branchPath, Set<CriteriaItem> criteriaItems) {
+    public List<CriteriaItemSignOff> findByBranchPathAndProjectIterationAndCriteriaItemId(String branchPath, Integer projectIteration, Set<CriteriaItem> criteriaItems) {
+        verifyParams(branchPath, projectIteration, criteriaItems);
         List<String> criteriaItemIdentifiers = criteriaItems.stream().map(CriteriaItem::getId).collect(Collectors.toList());
-        LOGGER.info("Checking whether Criteria Items {} have been completed on branch {}.", criteriaItemIdentifiers, branchPath);
-
-        List<CriteriaItemSignOff> criteriaItemSignOffs = repository.findAllByBranchAndCriteriaItemIdIn(branchPath, criteriaItemIdentifiers);
+        List<CriteriaItemSignOff> criteriaItemSignOffs = repository.findAllByBranchAndProjectIterationAndCriteriaItemIdIn(branchPath, projectIteration, criteriaItemIdentifiers);
         for (CriteriaItemSignOff criteriaItemSignOff : criteriaItemSignOffs) {
             String criteriaItemSignOffId = criteriaItemSignOff.getCriteriaItemId();
             for (CriteriaItem criteriaItem : criteriaItems) {
@@ -65,22 +84,20 @@ public class CriteriaItemSignOffService {
             }
         }
 
-        LOGGER.debug("Branch {} has {} completed Criteria Items.", branchPath, criteriaItemSignOffs.size());
         return criteriaItemSignOffs;
     }
 
     /**
-     * Find entry in database where entry matches query.
+     * Find entry in database with matching criteriaItemId, branchPath and projectIteration fields.
      *
-     * @param criteriaItemId   Field used in query.
-     * @param branchPath       Field used in query.
-     * @param projectIteration Field used in query.
-     * @return Entry in database where entry matches query.
+     * @param criteriaItemId   Field to match in query.
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @return Entry in database with matching criteriaItemId, branchPath and projectIteration fields.
+     * @throws IllegalArgumentException If arguments are invalid.
      */
-    public Optional<CriteriaItemSignOff> findBy(String criteriaItemId, String branchPath, Integer projectIteration) {
-        if (criteriaItemId == null || branchPath == null || projectIteration == null || projectIteration < 0) {
-            throw new IllegalArgumentException();
-        }
+    public Optional<CriteriaItemSignOff> findByCriteriaItemIdAndBranchPathAndProjectIteration(String criteriaItemId, String branchPath, Integer projectIteration) {
+        verifyParams(criteriaItemId, branchPath, projectIteration);
 
         return repository.findByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration);
     }
@@ -92,13 +109,12 @@ public class CriteriaItemSignOffService {
      * @param branchPath       Field used in query.
      * @param projectIteration Field used in query.
      * @return Whether the entry in database matching query has been deleted from the database.
+     * @throws IllegalArgumentException If arguments are invalid.
      */
-    public boolean deleteBy(String criteriaItemId, String branchPath, Integer projectIteration) {
-        if (criteriaItemId == null || branchPath == null || projectIteration == null || projectIteration < 0) {
-            throw new IllegalArgumentException();
-        }
+    public boolean deleteByCriteriaItemIdAndBranchPathAndProjectIteration(String criteriaItemId, String branchPath, Integer projectIteration) {
+        verifyParams(criteriaItemId, branchPath, projectIteration);
 
-        Optional<CriteriaItemSignOff> existingCriteriaItemSignOff = findBy(criteriaItemId, branchPath, projectIteration);
+        Optional<CriteriaItemSignOff> existingCriteriaItemSignOff = findByCriteriaItemIdAndBranchPathAndProjectIteration(criteriaItemId, branchPath, projectIteration);
         if (!existingCriteriaItemSignOff.isPresent()) {
             return false;
         }

@@ -7,9 +7,9 @@ import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-class ProjectAcceptanceCriteriaValidatorTest {
+class ProjectAcceptanceCriteriaCreateValidatorTest {
     private final ElasticsearchRestTemplate elasticsearchRestTemplate = mock(ElasticsearchRestTemplate.class);
-    private final ProjectAcceptanceCriteriaValidator target = new ProjectAcceptanceCriteriaValidator(elasticsearchRestTemplate);
+    private final ProjectAcceptanceCriteriaCreateValidator target = new ProjectAcceptanceCriteriaCreateValidator(elasticsearchRestTemplate);
 
     @Test
     void validate_ShouldThrowException_WhenGivenNull() {

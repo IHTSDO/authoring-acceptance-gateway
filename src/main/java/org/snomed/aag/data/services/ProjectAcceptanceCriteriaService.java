@@ -1,12 +1,10 @@
 package org.snomed.aag.data.services;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
-import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaValidator;
+import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaCreateValidator;
 import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,176 +13,243 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 import static java.lang.String.format;
 
 @Service
 public class ProjectAcceptanceCriteriaService {
-	private static final Logger LOGGER = LoggerFactory.getLogger(ProjectAcceptanceCriteriaService.class);
+    private static final String INVALID_PARAMETERS = "Invalid parameters.";
 
-	@Autowired
-	private ProjectAcceptanceCriteriaRepository repository;
+    @Autowired
+    private ProjectAcceptanceCriteriaRepository repository;
 
-	@Autowired
-	private ProjectAcceptanceCriteriaValidator projectAcceptanceCriteriaValidator;
+    @Autowired
+    private ProjectAcceptanceCriteriaCreateValidator projectAcceptanceCriteriaCreateValidator;
 
-	@Autowired
-	private CriteriaItemService criteriaItemService;
+    @Autowired
+    private CriteriaItemService criteriaItemService;
 
-	/**
-	 * Save entry in database.
-	 *
-	 * @param projectAcceptanceCriteria The entry to save in database.
-	 * @throws IllegalArgumentException If the given ProjectAcceptanceCriteria is invalid.
-	 * @throws ServiceRuntimeException If there is already a ProjectAcceptanceCriteria entry in database.
-	 */
-	public void create(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
-		projectAcceptanceCriteriaValidator.validate(projectAcceptanceCriteria);
-		Optional<ProjectAcceptanceCriteria> existingProjectAcceptanceCriteria = repository.findByBranchPathAndProjectIteration(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
-		if (existingProjectAcceptanceCriteria.isPresent()) {
-			String message = format("Project Acceptance Criteria already exists for branch %s and iteration %d.", projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
-			throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
-		}
+    private static void verifyParams(String branchPath, Integer projectIteration) {
+        if (branchPath == null || projectIteration == null || projectIteration < 0) {
+            throw new IllegalArgumentException(INVALID_PARAMETERS);
+        }
+    }
 
-		repository.save(projectAcceptanceCriteria);
-	}
+    private static void verifyParams(PageRequest pageRequest) {
+        if (pageRequest == null) {
+            throw new IllegalArgumentException(INVALID_PARAMETERS);
+        }
+    }
 
-	/**
-	 * Find all entries in database.
-	 *
-	 * @param pageRequest The pageable configuration for this request.
-	 * @return All entries in database, paged.
-	 */
-	public Page<ProjectAcceptanceCriteria> findAll(PageRequest pageRequest) {
-		return repository.findAll(pageRequest);
-	}
+    private static void verifyParams(String branchPath) {
+        if (branchPath == null) {
+            throw new IllegalArgumentException(INVALID_PARAMETERS);
+        }
+    }
 
-	/**
-	 * Find entry in database matching query.
-	 *
-	 * @param branchPath Query will look for entries in database with the same branchPath value.
-	 * @return Entry in database matching query.
-	 */
-	public ProjectAcceptanceCriteria findByBranchPath(String branchPath) {
-		return repository.findByBranchPath(branchPath);
-	}
+    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+        if (projectAcceptanceCriteria == null) {
+            throw new IllegalArgumentException();
+        }
+    }
 
-	/**
-	 * Find entry in database matching query.
-	 *
-	 * @param branchPath       Field used in query.
-	 * @param projectIteration Field used in query.
-	 * @return Entry in database matching query.
-	 */
-	public Optional<ProjectAcceptanceCriteria> findBy(String branchPath, Integer projectIteration) {
-		if (branchPath == null || projectIteration == null || projectIteration < 0) {
-			return Optional.empty();
-		}
+    /**
+     * Save entry in database.
+     *
+     * @param projectAcceptanceCriteria Entry to save in database.
+     * @throws IllegalArgumentException If entry is not valid.
+     * @throws ServiceRuntimeException  If similar entry exists in database.
+     */
+    public void create(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+        projectAcceptanceCriteriaCreateValidator.validate(projectAcceptanceCriteria);
+        String branchPath = projectAcceptanceCriteria.getBranchPath();
+        Integer projectIteration = projectAcceptanceCriteria.getProjectIteration();
+        ProjectAcceptanceCriteria existing = repository.findByBranchPathAndProjectIteration(branchPath, projectIteration);
+        if (existing != null) {
+            String message = format("Project Acceptance Criteria already exists for branch %s and iteration %d.", branchPath, projectIteration);
+            throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
+        }
 
-		return repository.findByBranchPathAndProjectIteration(branchPath, projectIteration);
-	}
+        repository.save(projectAcceptanceCriteria);
+    }
 
-	/**
-	 * Find entry in database matching query, or throw exception if no entry found.
-	 *
-	 * @param branchPath Query will look for entries in database with the same branchPath value.
-	 * @return Entry in database matching query.
-	 * @throws NotFoundException If no entry found in database matching query.
-	 */
-	public ProjectAcceptanceCriteria findByBranchPathOrThrow(String branchPath) {
-		final ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPath(branchPath);
-		if (projectAcceptanceCriteria == null) {
-			throw new NotFoundException(format("No project acceptance criteria found for branch path '%s'.", branchPath));
-		}
-		return projectAcceptanceCriteria;
-	}
+    /**
+     * Find entries in database matching page request, and return as new page.
+     *
+     * @param pageRequest Page configuration for database query.
+     * @return Entries in database matching page request.
+     * @throws IllegalArgumentException If argument is invalid.
+     */
+    public Page<ProjectAcceptanceCriteria> findAll(PageRequest pageRequest) {
+        verifyParams(pageRequest);
+        return repository.findAll(pageRequest);
+    }
 
-	/**
-	 * Find ProjectAcceptanceCriteria for the given branch. If the appropriate flag is set and no
-	 * ProjectAcceptanceCriteria exists for the given branch, then the given branch's parent will
-	 * subsequently be searched.
-	 *
-	 * @param branch                               Branch to look for ProjectAcceptanceCriteria.
-	 * @param includeGloballyRequiredCriteriaItems Flag to indicate whether to include mandatory Project and Task level Criteria Items.
-	 * @param checkParent                          Flag to indicate whether to check parent branch for ProjectAcceptanceCriteria.
-	 * @return ProjectAcceptanceCriteria for given branch.
-	 * @throws NotFoundException If ProjectAcceptanceCriteria cannot be found for branch.
-	 */
-	public ProjectAcceptanceCriteria findByBranchPathOrThrow(String branch, boolean includeGloballyRequiredCriteriaItems, boolean checkParent) {
-		if (!includeGloballyRequiredCriteriaItems) {
-			return findByBranchPathOrThrow(branch);
-		}
+    /**
+     * Find entry in database with matching branchPath and projectIteration fields.
+     *
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @return Entry in database with matching branchPath and projectIteration fields.
+     * @throws IllegalArgumentException If arguments are invalid.
+     */
+    public ProjectAcceptanceCriteria findByBranchPathAndProjectIteration(String branchPath, Integer projectIteration) {
+        verifyParams(branchPath, projectIteration);
+        return repository.findByBranchPathAndProjectIteration(branchPath, projectIteration);
+    }
 
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPath(branch);
-		if (projectAcceptanceCriteria == null) {
-			LOGGER.info("No ProjectAcceptanceCriteria found for '{}'.", branch);
-			if (!checkParent) {
-				LOGGER.debug("Flag to check parent is false; throwing exception.");
-				throw new NotFoundException("No project acceptance criteria found for this branch path.");
-			}
+    /**
+     * Find entry in database with matching branchPath and projectIteration fields. If no entry is found
+     * in database matching the query, then throw an exception.
+     *
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @return Entry in database with matching branchPath and projectIteration fields.
+     * @throws IllegalArgumentException If arguments are invalid.
+     * @throws ServiceRuntimeException  If no entry found in database matching query.
+     */
+    public ProjectAcceptanceCriteria findByBranchPathAndProjectIterationOrThrow(String branchPath, Integer projectIteration) {
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathAndProjectIteration(branchPath, projectIteration);
+        if (projectAcceptanceCriteria == null) {
+            throw new ServiceRuntimeException("Not found", HttpStatus.NOT_FOUND);
+        }
 
-			LOGGER.info("Looking for ProjectAcceptanceCriteria for parent of '{}'.", branch);
-			String parentPath = PathUtil.getParentPath(branch);
-			if (parentPath == null || parentPath.equals(branch)) {
-				LOGGER.debug("Branch '{}' does not have parent.", branch);
-				throw new NotFoundException("No project acceptance criteria found for this branch path.");
-			}
+        return projectAcceptanceCriteria;
+    }
 
-			return findByBranchPathOrThrow(parentPath, includeGloballyRequiredCriteriaItems, false); //Not recursive
-		}
+    /**
+     * Find entry in database with matching branchPath and projectIteration fields. Also, find all mandatory project/task
+     * Criteria Items and include in response. If no entry is found in database matching the query and the checkParent flag
+     * is set, then return the latest ProjectAcceptanceCriteria for the parent Branch. If no entry is found in database, then throw an exception.
+     *
+     * @param branchPath       Field to match in query.
+     * @param projectIteration Field to match in query.
+     * @param checkParent      Flag to indicate whether to get entry for parent Branch, if no entry found for given branch.
+     * @return Entry in database with matching branchPath and projectIteration, or latest entry for parent Branch.
+     * @throws IllegalArgumentException If arguments are invalid.
+     * @throws NotFoundException        If no entry found in database matching query, or no entry found for parent Branch.
+     */
+    public ProjectAcceptanceCriteria findByBranchPathAndProjectIterationAndMandatoryOrThrow(String branchPath, Integer projectIteration, boolean checkParent) {
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathAndProjectIteration(branchPath, projectIteration);
+        if (projectAcceptanceCriteria == null) {
+            if (!checkParent) {
+                throw new NotFoundException("No project acceptance criteria found for this branch path.");
+            }
 
-		for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
-			projectAcceptanceCriteria.addToSelectedProjectCriteria(criteriaItem);
-		}
+            String parentPath = PathUtil.getParentPath(branchPath);
+            if (parentPath == null || parentPath.equals(branchPath)) {
+                throw new NotFoundException("No project acceptance criteria found for this branch path.");
+            }
 
-		for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
-			projectAcceptanceCriteria.addToSelectedTaskCriteria(criteriaItem);
-		}
+            Integer latestParentProjectIteration = getLatestProjectIterationOrThrow(parentPath);
+            return findByBranchPathAndProjectIterationAndMandatoryOrThrow(parentPath, latestParentProjectIteration, false); //Not recursive
+        }
 
-		return projectAcceptanceCriteria;
-	}
+        for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
+            projectAcceptanceCriteria.addToSelectedProjectCriteria(criteriaItem);
+        }
 
-	/**
-	 * Get the latest project iteration for the given branch path.
-	 *
-	 * @param branchPath Query will match on branchPath.
-	 * @return The latest project iteration for the given branch path.
-	 */
-	public Optional<Integer> getLatestProjectIteration(String branchPath) {
-		if (branchPath == null) {
-			throw new IllegalArgumentException();
-		}
+        for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
+            projectAcceptanceCriteria.addToSelectedTaskCriteria(criteriaItem);
+        }
 
-		List<ProjectAcceptanceCriteria> projectAcceptanceCriteria = repository.findAllByBranchPathOrderByProjectIterationDesc(branchPath);
-		if (projectAcceptanceCriteria == null || projectAcceptanceCriteria.isEmpty()) {
-			return Optional.empty();
-		}
+        return projectAcceptanceCriteria;
+    }
 
-		return Optional.of(projectAcceptanceCriteria.get(0).getProjectIteration());
-	}
+    /**
+     * Find entry in database with the highest projectIteration for the given branchPath.
+     *
+     * @param branchPath Field to match in query.
+     * @return Entry in database with the highest projectIteration for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     */
+    public ProjectAcceptanceCriteria getLatestProjectAcceptanceCriteria(String branchPath) {
+        verifyParams(branchPath);
 
-	/**
-	 * Update the entry in the database.
-	 *
-	 * @param projectAcceptanceCriteria The desired state of entry in database.
-	 * @return The updated entry from database.
-	 * @throws NotFoundException        If no entry found in database.
-	 * @throws IllegalArgumentException If the given ProjectAcceptanceCriteria is invalid.
-	 */
-	public ProjectAcceptanceCriteria update(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
-		// Must exist
-		findByBranchPathOrThrow(projectAcceptanceCriteria.getBranchPath());
-		projectAcceptanceCriteriaValidator.validate(projectAcceptanceCriteria);
-		return repository.save(projectAcceptanceCriteria);
-	}
+        List<ProjectAcceptanceCriteria> projectAcceptanceCriteria = repository.findAllByBranchPathOrderByProjectIterationDesc(branchPath);
+        if (projectAcceptanceCriteria == null || projectAcceptanceCriteria.isEmpty()) {
+            return null;
+        }
 
-	/**
-	 * Delete entry from database.
-	 *
-	 * @param projectAcceptanceCriteria The entry to remove from the database.
-	 */
-	public void delete(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
-		repository.delete(projectAcceptanceCriteria);
-	}
+        return projectAcceptanceCriteria.get(0);
+    }
+
+    /**
+     * Find entry in database with the highest projectIteration for the given branchPath. If no entry is found in
+     * database, then throw an exception.
+     *
+     * @param branchPath Field to match in query.
+     * @return Entry in database with the highest projectIteration for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     */
+    public ProjectAcceptanceCriteria getLatestProjectAcceptanceCriteriaOrThrow(String branchPath) {
+        ProjectAcceptanceCriteria latestProjectAcceptanceCriteria = getLatestProjectAcceptanceCriteria(branchPath);
+        if (latestProjectAcceptanceCriteria == null) {
+            throw new ServiceRuntimeException("Not found", HttpStatus.NOT_FOUND);
+        }
+
+        return latestProjectAcceptanceCriteria;
+    }
+
+    /**
+     * Find highest projectIteration in database for the given branchPath.
+     *
+     * @param branchPath Field to match in query.
+     * @return Highest projectIteration in database for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     */
+    public Integer getLatestProjectIteration(String branchPath) {
+        ProjectAcceptanceCriteria latestProjectAcceptanceCriteria = getLatestProjectAcceptanceCriteria(branchPath);
+        if (latestProjectAcceptanceCriteria == null) {
+            return null;
+        }
+
+        return latestProjectAcceptanceCriteria.getProjectIteration();
+    }
+
+    /**
+     * Find highest projectIteration in database for the given branchPath. If no entry is found in database,
+     * then throw an exception.
+     *
+     * @param branchPath Field to match in query.
+     * @return Highest projectIteration for the given branchPath.
+     * @throws IllegalArgumentException If argument is invalid.
+     * @throws ServiceRuntimeException  If no entry found in database matching query.
+     */
+    public Integer getLatestProjectIterationOrThrow(String branchPath) {
+        Integer latestProjectIteration = getLatestProjectIteration(branchPath);
+        if (latestProjectIteration == null) {
+            throw new ServiceRuntimeException("Cannot find ProjectAcceptanceCriteria.", HttpStatus.NOT_FOUND);
+        }
+
+        return latestProjectIteration;
+    }
+
+    /**
+     * Find entry in database with branchPath and projectIteration fields matching properties in
+     * given ProjectAcceptanceCriteria. If there is a matching entry, replace it with given ProjectAcceptanceCriteria.
+     *
+     * @param projectAcceptanceCriteria Entry to replace the existing one.
+     * @return Updated entry from database.
+     * @throws IllegalArgumentException If argument is invalid.
+     * @throws ServiceRuntimeException  If no entry found in database matching query.
+     */
+    public ProjectAcceptanceCriteria update(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+        verifyParams(projectAcceptanceCriteria);
+        // Must exist
+        findByBranchPathAndProjectIterationOrThrow(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
+        projectAcceptanceCriteriaCreateValidator.validate(projectAcceptanceCriteria);
+        return repository.save(projectAcceptanceCriteria);
+    }
+
+    /**
+     * Delete entry in database with branchPath and projectIteration fields matching properties in
+     * given ProjectAcceptanceCriteria.
+     *
+     * @param projectAcceptanceCriteria Entry to delete from database.
+     */
+    public void delete(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+        verifyParams(projectAcceptanceCriteria);
+        repository.delete(projectAcceptanceCriteria);
+    }
 }

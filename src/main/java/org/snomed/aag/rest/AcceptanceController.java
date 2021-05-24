@@ -8,13 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
+import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.services.*;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
+import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -52,15 +53,15 @@ public class AcceptanceController {
         branchPath = BranchPathUriUtil.decodePath(branchPath);
 
         //Verify CriteriaItems
-        CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
+        CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(itemId);
         criteriaItemService.verifyManual(criteriaItem, true);
 
         //Verify branch
         branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
 
         //Verify project acceptance criteria
-        Optional<Integer> latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
-        if (!latestProjectIteration.isPresent()) {
+        Integer latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
+        if (latestProjectIteration == null) {
             String message = String.format("Branch %s does not have any acceptance criteria.", branchPath);
             throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
         }
@@ -69,7 +70,7 @@ public class AcceptanceController {
         CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(new CriteriaItemSignOff(
                 itemId,
                 branchPath,
-                latestProjectIteration.get(),
+                latestProjectIteration,
                 securityService.getBranchOrThrow(branchPath).getHeadTimestamp(),
                 SecurityUtil.getUsername()
         ));
@@ -91,26 +92,29 @@ public class AcceptanceController {
             @ApiResponse(code = 200, message = "When the branch (or its parent) has acceptance criteria.", response = ProjectAcceptanceCriteriaDTO.class)
     })
     @GetMapping("/{branch}")
-    public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch) throws RestClientException {
-        final String branchPath = BranchPathUriUtil.decodePath(branch);
-        LOGGER.info("Finding all Criteria Items for {}.", branchPath);
-
-        LOGGER.debug("Verifying branch {} exists.", branchPath);
+    public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch,
+                                               @RequestParam(required = false) Integer projectIteration) throws RestClientException {
+        String branchPath = BranchPathUriUtil.decodePath(branch);
         securityService.getBranchOrThrow(branchPath);
-        LOGGER.debug("Branch {} exists.", branchPath);
 
-        Set<String> allCriteriaIdentifiers = projectAcceptanceCriteriaService.findByBranchPathOrThrow(branchPath, true, true).getAllCriteriaIdentifiers();
-        LOGGER.debug("Found {} Criteria Items for {}.", allCriteriaIdentifiers.size(), branchPath);
-        Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(allCriteriaIdentifiers);
-        criteriaItemSignOffService.findAllByBranchAndIdentifier(branchPath, criteriaItems);
+        boolean checkParent = true;
+        boolean requestingLatestProjectIteration = projectIteration == null;
+        if (requestingLatestProjectIteration) {
+            projectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
+
+            //If branch has no project iteration, check parent branch.
+            if (projectIteration == null) {
+                branchPath = PathUtil.getParentPath(branchPath);
+                projectIteration = projectAcceptanceCriteriaService.getLatestProjectIterationOrThrow(branchPath); //If parent branch has no project iteration, throw exception.
+                checkParent = false; //Already checked parent branch, don't need to do it again.
+            }
+        }
+
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathAndProjectIterationAndMandatoryOrThrow(branchPath, projectIteration, checkParent);
+        Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(projectAcceptanceCriteria.getAllCriteriaIdentifiers());
+        criteriaItemSignOffService.findByBranchPathAndProjectIterationAndCriteriaItemId(branchPath, projectIteration, criteriaItems);
 
         ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = new ProjectAcceptanceCriteriaDTO(branchPath, criteriaItems);
-        LOGGER.info(
-                "Branch {} has {} Criteria Items remaining and {} Criteria Items completed.",
-                branchPath,
-                projectAcceptanceCriteriaDTO.getNumberOfCriteriaItemsWithCompletedValue(false),
-                projectAcceptanceCriteriaDTO.getNumberOfCriteriaItemsWithCompletedValue(true)
-        );
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(projectAcceptanceCriteriaDTO);
@@ -131,24 +135,23 @@ public class AcceptanceController {
         branchPath = BranchPathUriUtil.decodePath(branchPath);
 
         //Verify CriteriaItems
-        CriteriaItem criteriaItem = criteriaItemService.findOrThrow(itemId);
+        CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(itemId);
         criteriaItemService.verifyManual(criteriaItem, true);
 
         //Verify branch
         branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
 
         //Verify project acceptance criteria
-        Optional<Integer> latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
-        if (!latestProjectIteration.isPresent()) {
+        Integer latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
+        if (latestProjectIteration == null) {
             String message = String.format("Branch %s does not have any acceptance criteria.", branchPath);
             throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
         }
 
         //Verification complete; remove record
-        Integer latest = latestProjectIteration.get();
-        boolean deleted = criteriaItemSignOffService.deleteBy(itemId, branchPath, latest);
+        boolean deleted = criteriaItemSignOffService.deleteByCriteriaItemIdAndBranchPathAndProjectIteration(itemId, branchPath, latestProjectIteration);
         if (!deleted) {
-            String message = String.format("Cannot delete %s for branch %s and project iteration %d", itemId, branchPath, latest);
+            String message = String.format("Cannot delete %s for branch %s and project iteration %d", itemId, branchPath, latestProjectIteration);
             throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
         }
 

@@ -55,7 +55,8 @@ class AcceptanceControllerTest extends AbstractTest {
                 projectAcceptanceCriteriaService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
-                projectAcceptanceCriteriaService
+                projectAcceptanceCriteriaService,
+                projectAcceptanceCriteriaUpdateValidator
         );
         this.mockMvc = MockMvcBuilders
                 .standaloneSetup(acceptanceCriteriaController, acceptanceController)
@@ -267,7 +268,7 @@ class AcceptanceControllerTest extends AbstractTest {
         CriteriaItemSignOff criteriaItemSignOff = OBJECT_MAPPER.readValue(getResponseBody(resultActions), CriteriaItemSignOff.class);
 
         //when
-        CriteriaItem result = criteriaItemService.findOrThrow(criteriaItemSignOff.getCriteriaItemId());
+        CriteriaItem result = criteriaItemService.findByIdOrThrow(criteriaItemSignOff.getCriteriaItemId());
 
         //then
         assertNotNull(result);
@@ -297,7 +298,7 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.NOT_FOUND, "No project acceptance criteria found for this branch path."));
+        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find ProjectAcceptanceCriteria."));
     }
 
     @Test
@@ -314,7 +315,7 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, buildErrorResponse(HttpStatus.NOT_FOUND, "No project acceptance criteria found for this branch path."));
+        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find ProjectAcceptanceCriteria."));
     }
 
     @Test
@@ -690,7 +691,7 @@ class AcceptanceControllerTest extends AbstractTest {
         mockMvc.perform(delete(requestUrl));
 
         //when
-        Optional<CriteriaItemSignOff> result = criteriaItemSignOffService.findBy(criteriaItemId, branchPath, 89);
+        Optional<CriteriaItemSignOff> result = criteriaItemSignOffService.findByCriteriaItemIdAndBranchPathAndProjectIteration(criteriaItemId, branchPath, 89);
 
         //then
         assertFalse(result.isPresent());

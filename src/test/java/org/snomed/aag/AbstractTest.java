@@ -6,6 +6,7 @@ import org.snomed.aag.data.repositories.CriteriaItemRepository;
 import org.snomed.aag.data.repositories.CriteriaItemSignOffRepository;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.services.*;
+import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaUpdateValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
@@ -37,6 +38,9 @@ public class AbstractTest {
 
 	@Autowired
 	protected ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
+
+	@Autowired
+	protected ProjectAcceptanceCriteriaUpdateValidator projectAcceptanceCriteriaUpdateValidator;
 
 	@MockBean
 	protected SecurityService securityService;

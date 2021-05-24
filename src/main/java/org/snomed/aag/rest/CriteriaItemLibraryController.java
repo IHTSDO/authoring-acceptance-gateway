@@ -47,7 +47,7 @@ public class CriteriaItemLibraryController {
 	@DeleteMapping(value = "/{id}")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
 	public void deleteCriteriaItem(@PathVariable String id) {
-		CriteriaItem item = service.findOrThrow(id);
+		CriteriaItem item = service.findByIdOrThrow(id);
 		service.delete(item);
 	}
 
