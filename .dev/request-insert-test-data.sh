@@ -98,6 +98,25 @@ curl --header "Content-Type: application/json" \
   ${aagUrl}/criteria-items
 
 # ----------------------------------------
+# Criteria Items (Purposely not in use)
+# ----------------------------------------
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+     "id": "project-update-documentation",
+     "label": "Update documentation",
+     "description": "Documentation must be updated to reflect change.",
+     "order": 1,
+     "authoringLevel": "PROJECT",
+     "mandatory": false,
+     "manual": true,
+     "expiresOnCommit": true,
+     "requiredRole": "AUTHOR",
+     "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+# ----------------------------------------
 # Criteria
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
