@@ -450,6 +450,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         // given
         String branchPath = UUID.randomUUID().toString();
         String requestUrl = deleteProjectCriteria(branchPath, null);
+        String expectedErrorMessage = String.format("Branch %s has no Acceptance Criteria.", branchPath);
 
         // when
         ResultActions resultActions = mockMvc
@@ -459,7 +460,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
 
         // then
         assertResponseStatus(resultActions, 404);
-        assertEquals(buildErrorResponse(404, "Not found"), getResponseBody(resultActions));
+        assertEquals(buildErrorResponse(404, expectedErrorMessage), getResponseBody(resultActions));
     }
 
     @Test
