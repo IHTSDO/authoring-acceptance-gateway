@@ -185,7 +185,8 @@ public class ProjectAcceptanceCriteriaService {
     public ProjectAcceptanceCriteria getLatestProjectAcceptanceCriteriaOrThrow(String branchPath) {
         ProjectAcceptanceCriteria latestProjectAcceptanceCriteria = getLatestProjectAcceptanceCriteria(branchPath);
         if (latestProjectAcceptanceCriteria == null) {
-            throw new ServiceRuntimeException("Not found", HttpStatus.NOT_FOUND);
+            String message = String.format("Branch %s has no Acceptance Criteria.", branchPath);
+            throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
         }
 
         return latestProjectAcceptanceCriteria;

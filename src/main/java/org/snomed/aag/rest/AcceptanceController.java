@@ -40,48 +40,6 @@ public class AcceptanceController {
         this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
     }
 
-    @ApiOperation(value = "Manually accept a Criteria Item.",
-            notes = "This request will mark a Criteria Item as accepted for a given branch.")
-    @ApiResponses(value = {
-            @ApiResponse(code = 404, message = "&bull; When the Criteria Item cannot be found from the given identifier"),
-            @ApiResponse(code = 403, message = "&bull; When the Criteria Item cannot be accepted manually, or <br /> &bull; When the user does not have the desired role, or <br/> &bull; When the Branch cannot be found from the given branch path."),
-            @ApiResponse(code = 200, message = "When the Criteria Item has been accepted successfully.", response = CriteriaItemSignOff.class)
-    })
-    @PostMapping("/{branch}/item/{item-id}/accept")
-    public ResponseEntity<?> signOffCriteriaItem(@ApiParam("The branch path.") @PathVariable(name = "branch") String branchPath,
-                                                 @ApiParam("The identifier of the CriteriaItem to accept.") @PathVariable(name = "item-id") String itemId) throws RestClientException {
-        branchPath = BranchPathUriUtil.decodePath(branchPath);
-
-        //Verify CriteriaItems
-        CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(itemId);
-        criteriaItemService.verifyManual(criteriaItem, true);
-
-        //Verify branch
-        branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
-
-        //Verify project acceptance criteria
-        Integer latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
-        if (latestProjectIteration == null) {
-            String message = String.format("Branch %s does not have any acceptance criteria.", branchPath);
-            throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
-        }
-
-        //Verification complete; add record.
-        CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(new CriteriaItemSignOff(
-                itemId,
-                branchPath,
-                latestProjectIteration,
-                securityService.getBranchOrThrow(branchPath).getHeadTimestamp(),
-                SecurityUtil.getUsername()
-        ));
-        String savedCriteriaItemSignOffId = savedCriteriaItemSignOff.getId();
-        LOGGER.info("Created CriteriaItemSignOff {} for {}.", savedCriteriaItemSignOffId, itemId);
-
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(savedCriteriaItemSignOff);
-    }
-
     @ApiOperation(value = "View all Criteria Items for a branch.",
             notes = "This request will retrieve all Criteria Items, both complete and incomplete, for a given branch. " +
                     "If the branch does not have any Criteria Items, the branch's parent will be checked."
@@ -95,29 +53,75 @@ public class AcceptanceController {
     public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch,
                                                @RequestParam(required = false) Integer projectIteration) throws RestClientException {
         String branchPath = BranchPathUriUtil.decodePath(branch);
+
+        //Verify branch
         securityService.getBranchOrThrow(branchPath);
 
+        //Find projectIteration for branch or parent
         boolean checkParent = true;
+        String targetBranch = branchPath;
         boolean requestingLatestProjectIteration = projectIteration == null;
         if (requestingLatestProjectIteration) {
             projectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
 
             //If branch has no project iteration, check parent branch.
             if (projectIteration == null) {
-                branchPath = PathUtil.getParentPath(branchPath);
-                projectIteration = projectAcceptanceCriteriaService.getLatestProjectIterationOrThrow(branchPath); //If parent branch has no project iteration, throw exception.
+                String parentPath = PathUtil.getParentPath(branchPath);
+                if (parentPath == null) {
+                    String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
+                    throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
+                }
+                projectIteration = projectAcceptanceCriteriaService.getLatestProjectIterationOrThrow(parentPath); //If parent branch has no project iteration, throw exception.
                 checkParent = false; //Already checked parent branch, don't need to do it again.
+                targetBranch = parentPath;
             }
         }
 
-        ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathAndProjectIterationAndMandatoryOrThrow(branchPath, projectIteration, checkParent);
+        //Find ProjectAcceptanceCriteria (including mandatory items)
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathAndProjectIterationAndMandatoryOrThrow(
+                targetBranch, //Current branch or parent branch
+                projectIteration,
+                checkParent
+        );
+
+        //Update complete flag for all Criteria Items on this branch
         Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(projectAcceptanceCriteria.getAllCriteriaIdentifiers());
         criteriaItemSignOffService.findByBranchPathAndProjectIterationAndCriteriaItemId(branchPath, projectIteration, criteriaItems);
 
-        ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = new ProjectAcceptanceCriteriaDTO(branchPath, criteriaItems);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(projectAcceptanceCriteriaDTO);
+                .body(new ProjectAcceptanceCriteriaDTO(branchPath, criteriaItems));
+    }
+
+    @ApiOperation(value = "Manually accept a Criteria Item.",
+            notes = "This request will mark a Criteria Item as accepted for a given branch.")
+    @ApiResponses(value = {
+            @ApiResponse(code = 404, message = "&bull; When the Criteria Item cannot be found from the given identifier"),
+            @ApiResponse(code = 403, message = "&bull; When the Criteria Item cannot be accepted manually, or <br /> &bull; When the user does not have the desired role, or <br/> &bull; When the Branch cannot be found from the given branch path."),
+            @ApiResponse(code = 200, message = "When the Criteria Item has been accepted successfully.", response = CriteriaItemSignOff.class)
+    })
+    @PostMapping("/{branch}/item/{item-id}/accept")
+    public ResponseEntity<?> signOffCriteriaItem(@ApiParam("The branch path.") @PathVariable(name = "branch") String branchPath,
+                                                 @ApiParam("The identifier of the CriteriaItem to accept.") @PathVariable(name = "item-id") String itemId) throws RestClientException {
+        branchPath = BranchPathUriUtil.decodePath(branchPath);
+
+        //Verify request.
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = getProjectAcceptanceCriteriaForAcceptRejectRequestOrThrow(branchPath, itemId);
+
+        //Verification complete; add record.
+        CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(new CriteriaItemSignOff(
+                itemId,
+                branchPath,
+                projectAcceptanceCriteria.getProjectIteration(),
+                securityService.getBranchOrThrow(branchPath).getHeadTimestamp(),
+                SecurityUtil.getUsername()
+        ));
+        String savedCriteriaItemSignOffId = savedCriteriaItemSignOff.getId();
+        LOGGER.info("Created CriteriaItemSignOff {} for {}.", savedCriteriaItemSignOffId, itemId);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(savedCriteriaItemSignOff);
     }
 
     @ApiOperation(value = "Manually reject a Criteria Item.",
@@ -134,29 +138,53 @@ public class AcceptanceController {
                                                 @ApiParam("The identifier of the CriteriaItem to reject.") @PathVariable(name = "item-id") String itemId) {
         branchPath = BranchPathUriUtil.decodePath(branchPath);
 
-        //Verify CriteriaItems
-        CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(itemId);
-        criteriaItemService.verifyManual(criteriaItem, true);
+        //Verify request.
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = getProjectAcceptanceCriteriaForAcceptRejectRequestOrThrow(branchPath, itemId);
 
-        //Verify branch
-        branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
-
-        //Verify project acceptance criteria
-        Integer latestProjectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
-        if (latestProjectIteration == null) {
-            String message = String.format("Branch %s does not have any acceptance criteria.", branchPath);
-            throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
-        }
-
-        //Verification complete; remove record
-        boolean deleted = criteriaItemSignOffService.deleteByCriteriaItemIdAndBranchPathAndProjectIteration(itemId, branchPath, latestProjectIteration);
+        //Verification complete; remove record.
+        Integer projectIteration = projectAcceptanceCriteria.getProjectIteration();
+        boolean deleted = criteriaItemSignOffService.deleteByCriteriaItemIdAndBranchPathAndProjectIteration(itemId, branchPath, projectIteration);
         if (!deleted) {
-            String message = String.format("Cannot delete %s for branch %s and project iteration %d", itemId, branchPath, latestProjectIteration);
+            String message = String.format("Cannot delete %s for branch %s and project iteration %d", itemId, branchPath, projectIteration);
             throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
         }
 
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
+    }
+
+    private ProjectAcceptanceCriteria getProjectAcceptanceCriteriaForAcceptRejectRequestOrThrow(String branchPath, String criteriaItemId) {
+        //Verify CriteriaItems
+        CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(criteriaItemId);
+        criteriaItemService.verifyManual(criteriaItem, true);
+
+        //Verify branch
+        branchService.verifyBranchPermission(branchPath, criteriaItem.getRequiredRole());
+
+        //Verify ProjectAcceptanceCriteria
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.getLatestProjectAcceptanceCriteria(branchPath);
+        if (projectAcceptanceCriteria == null) {
+            String parentPath = PathUtil.getParentPath(branchPath);
+            if (parentPath == null) {
+                String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
+                throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
+            }
+
+            projectAcceptanceCriteria = projectAcceptanceCriteriaService.getLatestProjectAcceptanceCriteria(parentPath);
+            if (projectAcceptanceCriteria == null) {
+                String message = String.format("Cannot find Acceptance Criteria for %s or %s.", branchPath, parentPath);
+                throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
+            }
+        }
+
+        boolean itemNotConfigured = !projectAcceptanceCriteria.getAllCriteriaIdentifiers().contains(criteriaItemId);
+        if (itemNotConfigured) {
+            String message = String.format("Branch %s does not have %s included in its Acceptance Criteria, and can, therefore, not be accepted/rejected.", branchPath,
+                    criteriaItemId);
+            throw new ServiceRuntimeException(message, HttpStatus.BAD_REQUEST);
+        }
+
+        return projectAcceptanceCriteria;
     }
 }
