@@ -606,34 +606,6 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         criteriaItemRepository.save(criteriaItem);
     }
 
-    private String asJson(Object input) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsString(input);
-    }
-
-    private String getResponseBody(ResultActions resultActions) throws UnsupportedEncodingException {
-        return resultActions.andReturn().getResponse().getContentAsString();
-    }
-
-    private void assertResponseStatus(ResultActions result, int expectedResponseStatus) throws Exception {
-        result.andExpect(status().is(expectedResponseStatus));
-    }
-
-    private String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", error);
-        response.put("message", message);
-
-        return OBJECT_MAPPER.writeValueAsString(response);
-    }
-
-    private String buildErrorResponse(int error, String message) throws JsonProcessingException {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", error);
-        response.put("message", message);
-
-        return OBJECT_MAPPER.writeValueAsString(response);
-    }
-
     private List<ProjectAcceptanceCriteria> toProjectAcceptCriterias(String response) throws JsonProcessingException {
         RestResponsePage<ProjectAcceptanceCriteria> restResponsePage = OBJECT_MAPPER.readValue(response, new TypeReference<RestResponsePage<ProjectAcceptanceCriteria>>() {
         });

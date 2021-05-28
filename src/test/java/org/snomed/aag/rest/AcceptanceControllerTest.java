@@ -1,9 +1,7 @@
 package org.snomed.aag.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +15,6 @@ import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,7 +22,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,8 +29,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
@@ -790,30 +784,6 @@ class AcceptanceControllerTest extends AbstractTest {
         return "/criteria";
     }
 
-    private String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", error);
-        response.put("message", message);
-
-        return OBJECT_MAPPER.writeValueAsString(response);
-    }
-
-    private String buildErrorResponse(int error, String message) throws JsonProcessingException {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", error);
-        response.put("message", message);
-
-        return OBJECT_MAPPER.writeValueAsString(response);
-    }
-
-    private void assertResponseStatus(ResultActions result, int expectedResponseStatus) throws Exception {
-        result.andExpect(status().is(expectedResponseStatus));
-    }
-
-    private void assertResponseBody(ResultActions result, String expectedResponseBody) throws Exception {
-        result.andExpect(content().string(expectedResponseBody));
-    }
-
     private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
@@ -857,24 +827,12 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItemRepository.save(criteriaItem);
     }
 
-    private void givenBranchDoesNotExist() throws RestClientException {
-        when(securityService.currentUserHasRoleOnBranch(any(), any())).thenThrow(new AccessDeniedException("Branch does not exist."));
-        when(securityService.getBranchOrThrow(any())).thenThrow(new AccessDeniedException("Branch does not exist."));
-    }
-
     private void givenUserDoesNotHavePermissionForBranch() throws RestClientException {
         when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(false);
     }
 
     private void givenUserDoesHavePermissionForBranch() throws RestClientException {
         when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
-    }
-
-    private void givenBranchDoesExist(long timestamp) throws RestClientException {
-        Branch branch = new Branch();
-        branch.setHeadTimestamp(timestamp);
-
-        when(securityService.getBranchOrThrow(any())).thenReturn(branch);
     }
 
     private void givenAuthenticatedUser(String username) {
@@ -912,22 +870,5 @@ class AcceptanceControllerTest extends AbstractTest {
         ResultActions resultActions = mockMvc.perform(post(requestUrl));
 
         assertResponseStatus(resultActions, 200);
-    }
-
-    private String getResponseBody(ResultActions resultActions) throws UnsupportedEncodingException {
-        return resultActions.andReturn().getResponse().getContentAsString();
-    }
-
-    /*
-     * MockMvc doesn't follow re-directs. Instead of sending a request
-     * where a branch has a slash (which relies on BranchPathUriRewriteFilter),
-     * send a request with the branch already decoded.
-     * */
-    private String withPipeInsteadOfSlash(String branch) {
-        return branch.replaceAll("/", "|");
-    }
-
-    private String asJson(Object input) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsString(input);
     }
 }
