@@ -50,47 +50,24 @@ public class AcceptanceController {
             @ApiResponse(code = 200, message = "When the branch (or its parent) has acceptance criteria.", response = ProjectAcceptanceCriteriaDTO.class)
     })
     @GetMapping("/{branch}")
-    public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch,
-                                               @RequestParam(required = false) Integer projectIteration) throws RestClientException {
-        String branchPath = BranchPathUriUtil.decodePath(branch);
+    public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branch") String branch) throws RestClientException {
+        branch = BranchPathUriUtil.decodePath(branch);
 
         //Verify branch
-        securityService.getBranchOrThrow(branchPath);
-
-        //Find projectIteration for branch or parent
-        boolean checkParent = true;
-        String targetBranch = branchPath;
-        boolean requestingLatestProjectIteration = projectIteration == null;
-        if (requestingLatestProjectIteration) {
-            projectIteration = projectAcceptanceCriteriaService.getLatestProjectIteration(branchPath);
-
-            //If branch has no project iteration, check parent branch.
-            if (projectIteration == null) {
-                String parentPath = PathUtil.getParentPath(branchPath);
-                if (parentPath == null) {
-                    String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
-                    throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
-                }
-                projectIteration = projectAcceptanceCriteriaService.getLatestProjectIterationOrThrow(parentPath); //If parent branch has no project iteration, throw exception.
-                checkParent = false; //Already checked parent branch, don't need to do it again.
-                targetBranch = parentPath;
-            }
-        }
+        securityService.getBranchOrThrow(branch);
 
         //Find ProjectAcceptanceCriteria (including mandatory items)
-        ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathAndProjectIterationAndMandatoryOrThrow(
-                targetBranch, //Current branch or parent branch
-                projectIteration,
-                checkParent
-        );
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findEffectiveCriteriaWithMandatoryItems(branch);
+        if (projectAcceptanceCriteria == null) {
+			throw new ServiceRuntimeException(String.format("Cannot find Acceptance Criteria for %s.", branch), HttpStatus.NOT_FOUND);
+		}
 
         //Update complete flag for all Criteria Items on this branch
-        Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(projectAcceptanceCriteria.getAllCriteriaIdentifiers());
-        criteriaItemSignOffService.findByBranchPathAndProjectIterationAndCriteriaItemId(branchPath, projectIteration, criteriaItems);
+		final Set<CriteriaItem> items = projectAcceptanceCriteriaService.findItemsAndMarkSignOff(projectAcceptanceCriteria);
 
-        return ResponseEntity
+		return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(new ProjectAcceptanceCriteriaDTO(branchPath, criteriaItems));
+                .body(new ProjectAcceptanceCriteriaDTO(projectAcceptanceCriteria.getBranchPath(), items));
     }
 
     @ApiOperation(value = "Manually accept a Criteria Item.",

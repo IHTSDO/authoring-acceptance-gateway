@@ -8,8 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,17 +73,15 @@ public class CriteriaItemSignOffService {
      * @return Entries in database with matching branchPath, projectIteration, and criteriaItemId fields.
      * @throws IllegalArgumentException If arguments are invalid.
      */
-    public List<CriteriaItemSignOff> findByBranchPathAndProjectIterationAndCriteriaItemId(String branchPath, Integer projectIteration, Set<CriteriaItem> criteriaItems) {
+    public List<CriteriaItemSignOff> markSignedOffItems(String branchPath, Integer projectIteration, Set<CriteriaItem> criteriaItems) {
         verifyParams(branchPath, projectIteration, criteriaItems);
-        List<String> criteriaItemIdentifiers = criteriaItems.stream().map(CriteriaItem::getId).collect(Collectors.toList());
-        List<CriteriaItemSignOff> criteriaItemSignOffs = repository.findAllByBranchAndProjectIterationAndCriteriaItemIdIn(branchPath, projectIteration, criteriaItemIdentifiers);
+        Map<String, CriteriaItem> criteriaItemMap = criteriaItems.stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
+        List<CriteriaItemSignOff> criteriaItemSignOffs = repository.findAllByBranchAndProjectIterationAndCriteriaItemIdIn(branchPath, projectIteration, criteriaItemMap.keySet());
         for (CriteriaItemSignOff criteriaItemSignOff : criteriaItemSignOffs) {
-            String criteriaItemSignOffId = criteriaItemSignOff.getCriteriaItemId();
-            for (CriteriaItem criteriaItem : criteriaItems) {
-                if (criteriaItem.getId().equals(criteriaItemSignOffId)) {
-                    criteriaItem.setComplete(true);
-                }
-            }
+			final CriteriaItem criteriaItem = criteriaItemMap.get(criteriaItemSignOff.getCriteriaItemId());
+			if (criteriaItem != null) {
+				criteriaItem.setComplete(true);
+			}
         }
 
         return criteriaItemSignOffs;

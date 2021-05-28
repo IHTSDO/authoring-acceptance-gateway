@@ -338,7 +338,7 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find ProjectAcceptanceCriteria."));
+        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find Acceptance Criteria for MAIN/projectA."));
     }
 
     @Test
@@ -355,7 +355,7 @@ class AcceptanceControllerTest extends AbstractTest {
 
         //then
         assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find ProjectAcceptanceCriteria."));
+        assertResponseBody(resultActions, buildErrorResponse(404, "Cannot find Acceptance Criteria for MAIN/projectA/taskA."));
     }
 
     @Test

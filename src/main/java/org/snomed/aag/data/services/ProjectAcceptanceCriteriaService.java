@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static java.lang.String.format;
 
@@ -28,6 +30,9 @@ public class ProjectAcceptanceCriteriaService {
 
     @Autowired
     private CriteriaItemService criteriaItemService;
+
+	@Autowired
+    private CriteriaItemSignOffService criteriaItemSignOffService;
 
     private static void verifyParams(String branchPath, Integer projectIteration) {
         if (branchPath == null || projectIteration == null || projectIteration < 0) {
@@ -118,42 +123,34 @@ public class ProjectAcceptanceCriteriaService {
     }
 
     /**
-     * Find entry in database with matching branchPath and projectIteration fields. Also, find all mandatory project/task
-     * Criteria Items and include in response. If no entry is found in database matching the query and the checkParent flag
-     * is set, then return the latest ProjectAcceptanceCriteria for the parent Branch. If no entry is found in database, then throw an exception.
+     * Find project acceptance criteria for the latest iteration from this or the parent branch.
+	 * Add all current mandatory criteria items.
      *
-     * @param branchPath       Field to match in query.
-     * @param projectIteration Field to match in query.
-     * @param checkParent      Flag to indicate whether to get entry for parent Branch, if no entry found for given branch.
-     * @return Entry in database with matching branchPath and projectIteration, or latest entry for parent Branch.
-     * @throws IllegalArgumentException If arguments are invalid.
-     * @throws NotFoundException        If no entry found in database matching query, or no entry found for parent Branch.
+     * @param branchPath Field to match in query.
+     * @return The project acceptance criteria or null if none found.
      */
-    public ProjectAcceptanceCriteria findByBranchPathAndProjectIterationAndMandatoryOrThrow(String branchPath, Integer projectIteration, boolean checkParent) {
-        ProjectAcceptanceCriteria projectAcceptanceCriteria = findByBranchPathAndProjectIteration(branchPath, projectIteration);
-        if (projectAcceptanceCriteria == null) {
-            if (!checkParent) {
-                throw new NotFoundException("No project acceptance criteria found for this branch path.");
-            }
+    public ProjectAcceptanceCriteria findEffectiveCriteriaWithMandatoryItems(String branchPath) {
+		ProjectAcceptanceCriteria criteria = getLatestProjectAcceptanceCriteria(branchPath);
 
-            String parentPath = PathUtil.getParentPath(branchPath);
-            if (parentPath == null || parentPath.equals(branchPath)) {
-                throw new NotFoundException("No project acceptance criteria found for this branch path.");
-            }
+		if (criteria == null) {
+			String parentPath = PathUtil.getParentPath(branchPath);
+			if (parentPath != null) {
+				criteria = getLatestProjectAcceptanceCriteria(parentPath);
+			}
+		}
+		if (criteria == null) {
+			return null;
+		}
 
-            Integer latestParentProjectIteration = getLatestProjectIterationOrThrow(parentPath);
-            return findByBranchPathAndProjectIterationAndMandatoryOrThrow(parentPath, latestParentProjectIteration, false); //Not recursive
-        }
-
+		// Join mandatory criteria items, these may have been updated since the project criteria was created
         for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
-            projectAcceptanceCriteria.addToSelectedProjectCriteria(criteriaItem);
+			criteria.addToSelectedProjectCriteria(criteriaItem);
         }
-
         for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
-            projectAcceptanceCriteria.addToSelectedTaskCriteria(criteriaItem);
+			criteria.addToSelectedTaskCriteria(criteriaItem);
         }
 
-        return projectAcceptanceCriteria;
+        return criteria;
     }
 
     /**
@@ -253,4 +250,13 @@ public class ProjectAcceptanceCriteriaService {
         verifyParams(projectAcceptanceCriteria);
         repository.delete(projectAcceptanceCriteria);
     }
+
+	public Set<CriteriaItem> findItemsAndMarkSignOff(ProjectAcceptanceCriteria criteria) {
+    	if (criteria == null) {
+    		return null;
+		}
+		Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteria.getAllCriteriaIdentifiers());
+		criteriaItemSignOffService.markSignedOffItems(criteria.getBranchPath(), criteria.getProjectIteration(), criteriaItems);
+		return criteriaItems;
+	}
 }
