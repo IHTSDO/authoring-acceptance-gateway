@@ -1,6 +1,7 @@
 package org.snomed.aag.data.domain;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -10,6 +11,17 @@ import java.util.Date;
 
 @Document(indexName = "whitelist-item")
 public class WhitelistItem {
+    public interface Fields {
+        String ID = "id";
+        String USER_ID = "userId";
+        String CREATION_DATE = "creationDate";
+        String VALIDATION_RULE_ID = "validationRuleId";
+        String COMPONENT_ID = "componentId";
+        String CONCEPT_ID = "conceptId";
+        String BRANCH = "branch";
+        String ADDITIONAL_FIELDS = "additionalFields";
+    }
+
     @Id
     @Field(type = FieldType.Keyword)
     @NotBlank
@@ -41,6 +53,9 @@ public class WhitelistItem {
     @Field(type = FieldType.Keyword)
     private String additionalFields;
 
+    @Transient
+    private Long creationDateLong;
+
     public String getId() {
         return id;
     }
@@ -63,6 +78,18 @@ public class WhitelistItem {
 
     public void setCreationDate(Date creationDate) {
         this.creationDate = creationDate;
+
+        if (creationDate != null) {
+            this.creationDateLong = creationDate.getTime();
+        }
+    }
+
+    public Long getCreationDateLong() {
+        return creationDateLong;
+    }
+
+    public void setCreationDateLong(Long creationDateLong) {
+        this.creationDateLong = creationDateLong;
     }
 
     public String getValidationRuleId() {

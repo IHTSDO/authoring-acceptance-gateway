@@ -1,19 +1,21 @@
 package org.snomed.aag.rest;
 
+import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.snomed.aag.data.domain.WhitelistItem;
+import org.snomed.aag.data.services.SecurityService;
 import org.snomed.aag.data.services.WhitelistService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -22,8 +24,13 @@ import java.util.Set;
 @RequestMapping(value = "/whitelist-items", produces = "application/json")
 public class WhitelistController {
 
-    @Autowired
-    private WhitelistService whitelistService;
+    private final WhitelistService whitelistService;
+    private final SecurityService securityService;
+
+    public WhitelistController(WhitelistService whitelistService, SecurityService securityService) {
+        this.whitelistService = whitelistService;
+        this.securityService = securityService;
+    }
 
     @GetMapping
     public Page<WhitelistItem> findWhitelistItems(
@@ -80,5 +87,22 @@ public class WhitelistController {
     public void deleteWhitelistItem(@PathVariable String id) {
         WhitelistItem item = whitelistService.findOrThrow(id);
         whitelistService.delete(item);
+    }
+
+    @GetMapping("/{branch}")
+    public ResponseEntity<?> findForBranch(@PathVariable String branch, @RequestParam Long creationDate,
+                                           @RequestParam(required = false, defaultValue = "true") boolean includeDescendants) throws RestClientException {
+        branch = BranchPathUriUtil.decodePath(branch);
+        securityService.getBranchOrThrow(branch);
+
+        List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndCreationDateGreaterThanEquals(branch, new Date(creationDate), includeDescendants);
+        if (whitelistItems.isEmpty()) {
+            String message = String.format("No WhitelistItems found for branch %s and created after %d", branch, creationDate);
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(message);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(whitelistItems);
     }
 }
