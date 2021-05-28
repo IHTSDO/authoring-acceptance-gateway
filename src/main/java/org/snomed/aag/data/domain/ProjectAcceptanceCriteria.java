@@ -1,12 +1,15 @@
 package org.snomed.aag.data.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,11 +26,17 @@ public class ProjectAcceptanceCriteria {
 	@Field(type = FieldType.Integer)
 	private Integer projectIteration;
 
+	@Field(type = FieldType.Long)
+	private Date creationDate;
+
 	@Field(type = FieldType.Keyword)
 	private Set<String> selectedProjectCriteriaIds;
 
 	@Field(type = FieldType.Keyword)
 	private Set<String> selectedTaskCriteriaIds;
+
+	@Transient
+	private Long creationDateLong;
 
 	private ProjectAcceptanceCriteria() {
 	}
@@ -63,6 +72,23 @@ public class ProjectAcceptanceCriteria {
 	public void setProjectIteration(Integer projectIteration) {
 		this.projectIteration = projectIteration;
 		this.key = this.key + this.projectIteration; //second half
+	}
+
+	public Date getCreationDate() {
+		return creationDate;
+	}
+
+	public void setCreationDate(Date creationDate) {
+		this.creationDate = creationDate;
+	}
+
+	@JsonProperty(value = "creationDateLong")
+	public Long getCreationDateLong() {
+		if (this.creationDate == null) {
+			return null;
+		}
+
+		return this.creationDate.getTime();
 	}
 
 	public Set<String> getSelectedProjectCriteriaIds() {
@@ -122,6 +148,7 @@ public class ProjectAcceptanceCriteria {
 				"key='" + key + '\'' +
 				", branchPath='" + branchPath + '\'' +
 				", projectIteration=" + projectIteration +
+				", creationDate =" + creationDate +
 				", selectedProjectCriteriaIds=" + selectedProjectCriteriaIds +
 				", selectedTaskCriteriaIds=" + selectedTaskCriteriaIds +
 				'}';
