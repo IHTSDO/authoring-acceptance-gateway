@@ -73,7 +73,6 @@ public class AcceptanceCriteriaController {
 		}
 
 		updateValidator.validate(criteria, branch, projectIteration);
-		criteria.setBranchPath(branch);
 		return service.update(criteria);
 	}
 
