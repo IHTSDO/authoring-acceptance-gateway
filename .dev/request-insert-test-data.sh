@@ -133,3 +133,17 @@ curl --header "Content-Type: application/json" \
   ]
   }" \
   ${aagUrl}/criteria
+
+# ----------------------------------------
+# Whitelist
+# ----------------------------------------
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data "{
+  \"validationRuleId\": \"fbd4bbb5-3e62-4ccb-824a-e82d9771c0ee\",
+  \"componentId\": \"9327948011\",
+  \"conceptId\": \"3641484006\",
+  \"branch\": \"$branchPath\",
+  \"additionalFields\": \"1,900000000000207008,3641484006,en,900000000000003001,\$processOutput\$ by microscopy technique using microscope camera (observable entity),900000000000448009\"
+  }" \
+  ${aagUrl}/whitelist-items
