@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -64,7 +65,6 @@ class WhitelistControllerTest extends AbstractTest {
         String branchPath = UUID.randomUUID().toString();
         long creationDate = System.currentTimeMillis();
         String requestUrl = findForBranch(branchPath, creationDate);
-        String expectedResponse = "No WhitelistItems found for branch " + branchPath + " and created after " + creationDate;
 
         givenBranchDoesExist(System.currentTimeMillis());
 
@@ -72,8 +72,8 @@ class WhitelistControllerTest extends AbstractTest {
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
 
         // then
-        assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, expectedResponse);
+        assertResponseStatus(resultActions, 204);
+        assertResponseBody(resultActions, "[]");
     }
 
     @Test
@@ -85,14 +85,13 @@ class WhitelistControllerTest extends AbstractTest {
 
         long requestedCreationDate = System.currentTimeMillis();
         String requestUrl = findForBranch(branchPath, requestedCreationDate); //Requesting after creation of whitelist item
-        String expectedMessage = String.format("No WhitelistItems found for branch %s and created after %d", branchPath, requestedCreationDate);
 
         // when
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
 
         // then
-        assertResponseStatus(resultActions, 404);
-        assertResponseBody(resultActions, expectedMessage);
+        assertResponseStatus(resultActions, 204);
+        assertResponseBody(resultActions, "[]");
     }
 
     @Test

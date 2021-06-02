@@ -96,13 +96,11 @@ public class WhitelistController {
         securityService.getBranchOrThrow(branch);
 
         List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(branch, new Date(creationDate), includeDescendants);
+        HttpStatus httpStatus = HttpStatus.OK;
         if (whitelistItems.isEmpty()) {
-            String message = String.format("No WhitelistItems found for branch %s and created after %d", branch, creationDate);
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(message);
+            httpStatus = HttpStatus.NO_CONTENT;
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body(whitelistItems);
+        return ResponseEntity.status(httpStatus).body(whitelistItems);
     }
 }
