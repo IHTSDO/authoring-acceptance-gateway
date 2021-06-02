@@ -2,7 +2,6 @@ package org.snomed.aag.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.traceability.RestResponsePage;
 import org.junit.jupiter.api.AfterEach;
@@ -19,19 +18,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
 class AcceptanceCriteriaControllerTest extends AbstractTest {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     private AcceptanceController acceptanceController;
     private AcceptanceCriteriaController acceptanceCriteriaController;
     private MockMvc mockMvc;
@@ -604,34 +601,6 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         criteriaItem.setLabel(label);
 
         criteriaItemRepository.save(criteriaItem);
-    }
-
-    private String asJson(Object input) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsString(input);
-    }
-
-    private String getResponseBody(ResultActions resultActions) throws UnsupportedEncodingException {
-        return resultActions.andReturn().getResponse().getContentAsString();
-    }
-
-    private void assertResponseStatus(ResultActions result, int expectedResponseStatus) throws Exception {
-        result.andExpect(status().is(expectedResponseStatus));
-    }
-
-    private String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", error);
-        response.put("message", message);
-
-        return OBJECT_MAPPER.writeValueAsString(response);
-    }
-
-    private String buildErrorResponse(int error, String message) throws JsonProcessingException {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", error);
-        response.put("message", message);
-
-        return OBJECT_MAPPER.writeValueAsString(response);
     }
 
     private List<ProjectAcceptanceCriteria> toProjectAcceptCriterias(String response) throws JsonProcessingException {

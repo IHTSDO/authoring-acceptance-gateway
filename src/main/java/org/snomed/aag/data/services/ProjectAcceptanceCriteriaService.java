@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -74,6 +75,7 @@ public class ProjectAcceptanceCriteriaService {
             throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
         }
 
+        projectAcceptanceCriteria.setCreationDate(new Date());
         repository.save(projectAcceptanceCriteria);
     }
 

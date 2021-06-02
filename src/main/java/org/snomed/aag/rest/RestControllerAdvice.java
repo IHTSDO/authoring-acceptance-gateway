@@ -1,5 +1,6 @@
 package org.snomed.aag.rest;
 
+import org.elasticsearch.ElasticsearchStatusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.services.NotFoundException;
@@ -65,6 +66,18 @@ public class RestControllerAdvice {
 	public Map<String,Object> handleAccessDeniedException(AccessDeniedException exception) {
 		HashMap<String, Object> result = new HashMap<>();
 		result.put("error", HttpStatus.FORBIDDEN);
+		result.put("message", exception.getMessage());
+		return result;
+	}
+
+	@ExceptionHandler(ElasticsearchStatusException.class)
+	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+	@ResponseBody
+	public Map<String, Object> handleElasticsearchStatusException(ElasticsearchStatusException exception) {
+		logger.error("Failed to run Elasticsearch query; returning {} to client.", HttpStatus.INTERNAL_SERVER_ERROR.value());
+		logger.debug("ElasticsearchStatusException: " + exception.toString());
+		HashMap<String, Object> result = new HashMap<>();
+		result.put("error", HttpStatus.INTERNAL_SERVER_ERROR);
 		result.put("message", exception.getMessage());
 		return result;
 	}

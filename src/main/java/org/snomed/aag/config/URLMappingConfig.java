@@ -7,15 +7,27 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class URLMappingConfig {
-
+	/**
+	 * Instantiate a bean which allows for endpoints within this service to contain a branch path.
+	 *
+	 * @return A bean which allows for endpoints within this service to contain a branch path.
+	 */
 	@Bean
 	public FilterRegistrationBean<BranchPathUriRewriteFilter> getUrlRewriteFilter() {
-		// Encode branch paths in uri to allow request mapping to work
-		return new FilterRegistrationBean<>(new BranchPathUriRewriteFilter(
-				"/criteria/(.*)",
-				"/acceptance/(.*)/item/.*/accept",
-				"/acceptance/(.*)"
-		));
+		return new FilterRegistrationBean<>(new BranchPathUriRewriteFilter(getPatternStrings()));
 	}
 
+	/**
+	 * Return endpoints which have the branch path present in their path.
+	 *
+	 * @return Endpoints which have the branch path present in their path.
+	 */
+	public String[] getPatternStrings() {
+		return new String[]{
+				"/criteria/(.*)",
+				"/acceptance/(.*)/item/.*/accept",
+				"/acceptance/(.*)",
+				"/whitelist-items/(.*)"
+		};
+	}
 }
