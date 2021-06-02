@@ -910,9 +910,4 @@ class AcceptanceControllerTest extends AbstractTest {
         return OBJECT_MAPPER.readValue(response, new TypeReference<ProjectAcceptanceCriteriaDTO>() {
         });
     }
-
-    private ProjectAcceptanceCriteriaDTO toProjectAcceptCriteria(String response) throws JsonProcessingException {
-        return OBJECT_MAPPER.readValue(response, new TypeReference<ProjectAcceptanceCriteriaDTO>() {
-        });
-    }
 }
