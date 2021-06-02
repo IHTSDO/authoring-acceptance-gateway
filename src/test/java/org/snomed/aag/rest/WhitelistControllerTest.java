@@ -15,11 +15,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -111,6 +111,24 @@ class WhitelistControllerTest extends AbstractTest {
     }
 
     @Test
+    void findForBranch_ShouldReturnExpectedResponseBody_WhenWhitelistItemsMatchesRequestParam() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = findForBranch(branchPath, System.currentTimeMillis()); //Requesting before creation of whitelist item
+
+        givenWhitelistItemExists(branchPath);
+        givenWhitelistItemExists(branchPath + "/projectA");
+        givenBranchDoesExist(System.currentTimeMillis());
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        List<WhitelistItem> whitelistItems = toWhitelistItems(getResponseBody(resultActions));
+
+        // then
+        assertEquals(2, whitelistItems.size()); //found child branches
+    }
+
+    @Test
     void findForBranch_ShouldReturnExpectedResponseBody_WhenWhitelistItemMatchesRequestParam() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
@@ -128,21 +146,20 @@ class WhitelistControllerTest extends AbstractTest {
     }
 
     @Test
-    void findForBranch_ShouldReturnExpectedResponseBody_WhenWhitelistItemsMatchesRequestParam() throws Exception {
+    void findForBranch_ShouldReturnTransientProperty() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
-        String requestUrl = findForBranch(branchPath, System.currentTimeMillis()); //Requesting before creation of whitelist item
+        String requestUrl = findForBranch(branchPath, System.currentTimeMillis());
 
         givenWhitelistItemExists(branchPath);
-        givenWhitelistItemExists(branchPath + "/projectA");
         givenBranchDoesExist(System.currentTimeMillis());
 
         // when
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
-        List<WhitelistItem> whitelistItems = toWhitelistItems(getResponseBody(resultActions));
+        String responseBody = getResponseBody(resultActions);
 
         // then
-        assertEquals(2, whitelistItems.size()); //found child branches
+        assertTrue(responseBody.contains("\"creationDateLong\""));
     }
 
     private void givenWhitelistItemExists(String branch) throws Exception {

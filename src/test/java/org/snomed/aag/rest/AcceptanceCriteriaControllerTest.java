@@ -2,7 +2,6 @@ package org.snomed.aag.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.traceability.RestResponsePage;
 import org.junit.jupiter.api.AfterEach;
@@ -19,19 +18,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
 class AcceptanceCriteriaControllerTest extends AbstractTest {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     private AcceptanceController acceptanceController;
     private AcceptanceCriteriaController acceptanceCriteriaController;
     private MockMvc mockMvc;

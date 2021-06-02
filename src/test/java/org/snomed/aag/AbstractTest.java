@@ -1,6 +1,7 @@
 package org.snomed.aag;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
@@ -34,7 +35,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ContextConfiguration(classes = TestConfig.class)
 public class AbstractTest {
-	protected final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+	protected static final ObjectMapper OBJECT_MAPPER;
+
+	static {
+		OBJECT_MAPPER = new ObjectMapper();
+		OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
 
 	@Autowired
 	protected CriteriaItemRepository criteriaItemRepository;
