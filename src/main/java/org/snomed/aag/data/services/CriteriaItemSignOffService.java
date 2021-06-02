@@ -1,5 +1,8 @@
 package org.snomed.aag.data.services;
 
+import org.ihtsdo.sso.integration.SecurityUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.repositories.CriteriaItemSignOffRepository;
@@ -7,10 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -21,7 +21,9 @@ public class CriteriaItemSignOffService {
     @Autowired
     private CriteriaItemSignOffRepository repository;
 
-    private static void verifyParams(CriteriaItemSignOff criteriaItemSignOff) {
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private static void verifyParams(CriteriaItemSignOff criteriaItemSignOff) {
         if (criteriaItemSignOff == null) {
             throw new IllegalArgumentException(INVALID_PARAMETERS);
         }
@@ -60,8 +62,17 @@ public class CriteriaItemSignOffService {
             throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
         }
 
-        return repository.save(criteriaItemSignOff);
+		logger.info("Creating item sign-offs {} for branch {}, iteration {}", Collections.singleton(criteriaItemId), branch, projectIteration);
+		return repository.save(criteriaItemSignOff);
     }
+
+	public void doCreateItems(Set<String> itemsToAccept, String branchPath, long headTimestamp, Integer projectIteration) {
+		final Set<CriteriaItemSignOff> items = itemsToAccept.stream()
+				.map(id -> new CriteriaItemSignOff(id, branchPath, headTimestamp, projectIteration, SecurityUtil.getUsername()))
+				.collect(Collectors.toSet());
+		logger.info("Creating item sign-offs {} for branch {}, iteration {}", itemsToAccept, branchPath, projectIteration);
+		repository.saveAll(items);
+	}
 
     /**
      * Find entries in database with matching branchPath, projectIteration and criteriaItemId fields. For each entry found,
@@ -119,7 +130,15 @@ public class CriteriaItemSignOffService {
             return false;
         }
 
-        repository.deleteByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration);
+        logger.info("Deleting item sign-offs {} for branch {}, iteration {}", Collections.singleton(criteriaItemId), branchPath, projectIteration);
+		repository.deleteByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration);
         return true;
     }
+
+	public void deleteItems(Set<String> itemsToUnaccept, String branchPath, Integer projectIteration) {
+		logger.info("Deleting item sign-offs {} for branch {}, iteration {}", itemsToUnaccept, branchPath, projectIteration);
+		for (String itemId : itemsToUnaccept) {
+			repository.deleteByCriteriaItemIdAndBranchAndProjectIteration(itemId, branchPath, projectIteration);
+		}
+	}
 }

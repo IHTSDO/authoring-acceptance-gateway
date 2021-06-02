@@ -9,7 +9,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-@ConditionalOnProperty(name = "snowstorm.confirm-access", havingValue = "true")
+@ConditionalOnProperty(name = "snowstorm.test.connection", havingValue = "true")
 @Component
 public class SnowstormAccessValidator implements CommandLineRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(SnowstormAccessValidator.class);

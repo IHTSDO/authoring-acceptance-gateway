@@ -56,7 +56,7 @@ public class CriteriaItemSignOff {
         this.branchHeadTimestamp = null;
     }
 
-    public CriteriaItemSignOff(String criteriaItemId, String branch, Integer projectIteration, Long branchHeadTimestamp, String userId) {
+    public CriteriaItemSignOff(String criteriaItemId, String branch, Long branchHeadTimestamp, Integer projectIteration, String userId) {
         this.criteriaItemId = criteriaItemId;
         this.branch = branch;
         this.projectIteration = projectIteration;

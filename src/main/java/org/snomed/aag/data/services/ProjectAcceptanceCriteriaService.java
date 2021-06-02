@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -20,6 +21,7 @@ import static java.lang.String.format;
 
 @Service
 public class ProjectAcceptanceCriteriaService {
+
     private static final String INVALID_PARAMETERS = "Invalid parameters.";
 
     @Autowired
@@ -34,7 +36,7 @@ public class ProjectAcceptanceCriteriaService {
 	@Autowired
     private CriteriaItemSignOffService criteriaItemSignOffService;
 
-    private static void verifyParams(String branchPath, Integer projectIteration) {
+	private static void verifyParams(String branchPath, Integer projectIteration) {
         if (branchPath == null || projectIteration == null || projectIteration < 0) {
             throw new IllegalArgumentException(INVALID_PARAMETERS);
         }
@@ -142,9 +144,6 @@ public class ProjectAcceptanceCriteriaService {
             if (criteria == null) {
                 return null;
             }
-
-            // Criteria has come from parent; update to have child path.
-            criteria.setBranchPath(branchPath);
         }
 
 		// Join mandatory criteria items, these may have been updated since the project criteria was created
@@ -256,12 +255,13 @@ public class ProjectAcceptanceCriteriaService {
         repository.delete(projectAcceptanceCriteria);
     }
 
-	public Set<CriteriaItem> findItemsAndMarkSignOff(ProjectAcceptanceCriteria criteria) {
-    	if (criteria == null) {
-    		return null;
+	public Set<CriteriaItem> findItemsAndMarkSignOff(ProjectAcceptanceCriteria criteria, String branchPath) {
+		if (criteria == null) {
+			return Collections.emptySet();
 		}
 		Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteria.getAllCriteriaIdentifiers());
-		criteriaItemSignOffService.markSignedOffItems(criteria.getBranchPath(), criteria.getProjectIteration(), criteriaItems);
+		criteriaItemSignOffService.markSignedOffItems(branchPath, criteria.getProjectIteration(), criteriaItems);
 		return criteriaItems;
 	}
+
 }

@@ -12,6 +12,9 @@ import java.util.Objects;
 @Document(indexName = "criteria-item")
 public class CriteriaItem implements Comparable<CriteriaItem> {
 
+	public static final String PROJECT_CLEAN_CLASSIFICATION = "project-clean-classification";
+	public static final String TASK_CLEAN_CLASSIFICATION = "task-clean-classification";
+
 	@Id
 	@Field(type = FieldType.Keyword)
 	@NotBlank
@@ -50,6 +53,14 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 
 	public CriteriaItem(String id) {
 		this.id = id;
+	}
+
+	public CriteriaItem(String id, AuthoringLevel authoringLevel, boolean mandatory, boolean manual, boolean expiresOnCommit) {
+		this.id = id;
+		this.authoringLevel = authoringLevel;
+		this.mandatory = mandatory;
+		this.manual = manual;
+		this.expiresOnCommit = expiresOnCommit;
 	}
 
 	public String getId() {

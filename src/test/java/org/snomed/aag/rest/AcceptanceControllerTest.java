@@ -17,6 +17,7 @@ import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,8 +29,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 
@@ -44,11 +44,9 @@ class AcceptanceControllerTest extends AbstractTest {
     @BeforeEach
     public void setUp() {
         this.acceptanceController = new AcceptanceController(
-                criteriaItemService,
-                branchService,
-                criteriaItemSignOffService,
                 securityService,
-                projectAcceptanceCriteriaService
+                projectAcceptanceCriteriaService,
+				acceptanceService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
                 projectAcceptanceCriteriaService,
@@ -118,9 +116,12 @@ class AcceptanceControllerTest extends AbstractTest {
     void signOffCriteriaItem_ShouldReturnExpectedResponse_WhenUserDoesNotHaveDesiredRole() throws Exception {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
-        String requestUrl = signOffCriteriaItem("MAIN", criteriaItemId);
+		final String branchPath = "MAIN";
+		String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
 
-        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenProjectAcceptanceCriteriaExists(branchPath, 1, criteriaItemId);
+        givenCriteriaItemExists(criteriaItemId, true, 1, criteriaItemId);
+        givenBranchDoesExist(1);
         givenUserDoesNotHavePermissionForBranch();
 
         //when
@@ -136,7 +137,7 @@ class AcceptanceControllerTest extends AbstractTest {
         //given
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem(withPipeInsteadOfSlash("MAIN/projectA/taskA"), criteriaItemId);
-        String expectedErrorMessage = String.format("Cannot find Acceptance Criteria for %s or %s.", "MAIN/projectA/taskA", "MAIN/projectA");
+        String expectedErrorMessage = String.format("Cannot find Acceptance Criteria for %s.", "MAIN/projectA/taskA");
 
         givenProjectAcceptanceCriteriaExists("MAIN", 1); //Project and Task do not have visibility of this.
         givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
@@ -677,7 +678,9 @@ class AcceptanceControllerTest extends AbstractTest {
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
 
-        givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
+        givenProjectAcceptanceCriteriaExists(branchPath, 1, criteriaItemId);
+        givenCriteriaItemExists(criteriaItemId, true, 1, criteriaItemId);
+        givenBranchDoesExist(1);
         givenUserDoesNotHavePermissionForBranch();
 
         //when
@@ -714,7 +717,7 @@ class AcceptanceControllerTest extends AbstractTest {
         String taskBranch = projectBranch + "/" + "taskB";
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem(withPipeInsteadOfSlash(taskBranch), criteriaItemId);
-        String expectedErrorMessage = String.format("Cannot find Acceptance Criteria for %s or %s.", taskBranch, projectBranch);
+        String expectedErrorMessage = String.format("Cannot find Acceptance Criteria for %s.", taskBranch);
 
         givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
         givenUserDoesHavePermissionForBranch();
@@ -862,7 +865,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     private void givenUserDoesNotHavePermissionForBranch() throws RestClientException {
-        when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(false);
+		doThrow(new AccessDeniedException("User does not have desired role.")).when(securityService).verifyBranchRole(any(), any());
     }
 
     private void givenUserDoesHavePermissionForBranch() throws RestClientException {

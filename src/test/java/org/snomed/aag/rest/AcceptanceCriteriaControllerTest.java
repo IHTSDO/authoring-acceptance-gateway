@@ -36,11 +36,9 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     @BeforeEach
     public void setUp() {
         this.acceptanceController = new AcceptanceController(
-                criteriaItemService,
-                branchService,
-                criteriaItemSignOffService,
                 securityService,
-                projectAcceptanceCriteriaService
+                projectAcceptanceCriteriaService,
+				acceptanceService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
                 projectAcceptanceCriteriaService,

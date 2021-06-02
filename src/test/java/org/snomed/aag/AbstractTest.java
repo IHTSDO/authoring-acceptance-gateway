@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(SpringExtension.class)
 @Testcontainers
 @ContextConfiguration(classes = TestConfig.class)
-public class AbstractTest {
+public abstract class AbstractTest {
 	protected static final ObjectMapper OBJECT_MAPPER;
 
 	static {
@@ -61,9 +62,6 @@ public class AbstractTest {
 	protected CriteriaItemSignOffService criteriaItemSignOffService;
 
 	@Autowired
-	protected BranchService branchService;
-
-	@Autowired
 	protected WhitelistService whitelistService;
 
 	@Autowired
@@ -71,6 +69,9 @@ public class AbstractTest {
 
 	@Autowired
 	protected ProjectAcceptanceCriteriaUpdateValidator projectAcceptanceCriteriaUpdateValidator;
+
+	@Autowired
+	protected AcceptanceService acceptanceService;
 
 	@MockBean
 	protected SecurityService securityService;
@@ -84,6 +85,7 @@ public class AbstractTest {
 	}
 
 	protected void givenBranchDoesNotExist() throws RestClientException {
+		doThrow(new AccessDeniedException("Branch does not exist.")).when(securityService).verifyBranchRole(any(), any());
 		when(securityService.currentUserHasRoleOnBranch(any(), any())).thenThrow(new AccessDeniedException("Branch does not exist."));
 		when(securityService.getBranchOrThrow(any())).thenThrow(new AccessDeniedException("Branch does not exist."));
 	}
