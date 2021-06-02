@@ -1,5 +1,7 @@
 package org.snomed.aag.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.junit.jupiter.api.AfterEach;
@@ -587,6 +589,38 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
+    void viewCriteriaItems_ShouldReturnItemMarkedComplete_WhenGivenBranchHasAcceptedItem() throws Exception {
+        //given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch));
+
+        givenBranchDoesExist(System.currentTimeMillis());
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, true, 1, projectCriteriaItemId);
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Collections.emptySet());
+        givenCriteriaItemSignOffExists(taskBranch, projectCriteriaItemId);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
+
+        //then
+        boolean itemFound = false;
+        for (CriteriaItem criteriaItem : criteriaItems) {
+            if (criteriaItem.getId().equals(projectCriteriaItemId)) {
+                assertTrue(criteriaItem.isComplete());
+                itemFound = true;
+                break;
+            }
+        }
+
+        assertTrue(itemFound);
+    }
+
+    @Test
     void rejectCriteriaItem_ShouldReturnExpectedStatus_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
         //given
         String branchPath = UUID.randomUUID().toString();
@@ -870,5 +904,10 @@ class AcceptanceControllerTest extends AbstractTest {
         ResultActions resultActions = mockMvc.perform(post(requestUrl));
 
         assertResponseStatus(resultActions, 200);
+    }
+
+    private ProjectAcceptanceCriteriaDTO toProjectAcceptCriteria(String response) throws JsonProcessingException {
+        return OBJECT_MAPPER.readValue(response, new TypeReference<ProjectAcceptanceCriteriaDTO>() {
+        });
     }
 }

@@ -133,15 +133,19 @@ public class ProjectAcceptanceCriteriaService {
     public ProjectAcceptanceCriteria findEffectiveCriteriaWithMandatoryItems(String branchPath) {
 		ProjectAcceptanceCriteria criteria = getLatestProjectAcceptanceCriteria(branchPath);
 
-		if (criteria == null) {
-			String parentPath = PathUtil.getParentPath(branchPath);
-			if (parentPath != null) {
-				criteria = getLatestProjectAcceptanceCriteria(parentPath);
-			}
-		}
-		if (criteria == null) {
-			return null;
-		}
+        if (criteria == null) {
+            String parentPath = PathUtil.getParentPath(branchPath);
+            if (parentPath != null) {
+                criteria = getLatestProjectAcceptanceCriteria(parentPath);
+            }
+
+            if (criteria == null) {
+                return null;
+            }
+
+            // Criteria has come from parent; update to have child path.
+            criteria.setBranchPath(branchPath);
+        }
 
 		// Join mandatory criteria items, these may have been updated since the project criteria was created
         for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
