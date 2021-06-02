@@ -95,7 +95,7 @@ public class WhitelistController {
         branch = BranchPathUriUtil.decodePath(branch);
         securityService.getBranchOrThrow(branch);
 
-        List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndCreationDateGreaterThanEquals(branch, new Date(creationDate), includeDescendants);
+        List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(branch, new Date(creationDate), includeDescendants);
         if (whitelistItems.isEmpty()) {
             String message = String.format("No WhitelistItems found for branch %s and created after %d", branch, creationDate);
             return ResponseEntity

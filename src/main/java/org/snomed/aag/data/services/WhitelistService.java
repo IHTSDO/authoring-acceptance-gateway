@@ -46,7 +46,7 @@ public class WhitelistService {
 		return repository.findAllByValidationRuleIdIn(validationRuleIds);
 	}
 
-	public List<WhitelistItem> findAllByBranchAndCreationDateGreaterThanEquals(String branchPath, Date date, boolean includeDescendants) {
+	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, boolean includeDescendants) {
 		BoolQueryBuilder branchQuery;
 		if (includeDescendants) {
 			branchQuery = boolQuery().should(termQuery(WhitelistItem.Fields.BRANCH, branchPath)).should(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*"));
