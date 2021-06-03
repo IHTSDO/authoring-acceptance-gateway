@@ -2,7 +2,7 @@
 Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.
 
 ## Project Acceptance Criteria
-Acceptance criteria are defined at the project level. Projects typically exist exist within a branch that is a direct child of a code system branch (e.g. `MAIN` or 
+Acceptance criteria are defined at the project level. Projects typically exist within a branch that is a direct child of a code system branch (e.g. `MAIN` or 
 `MAIN/SNOMEDCT-BE`). Each project acceptance criteria contains two sets of criteria items which must be signed off at project and task level respectively.
 
 ### Criteria Items
