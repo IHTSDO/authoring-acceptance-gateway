@@ -9,23 +9,23 @@ import java.util.stream.Collectors;
 public class ProjectAcceptanceCriteriaDTO {
     private static final Comparator<CriteriaItem> COMPARATOR = CriteriaItem::compareTo;
 
-    private final String projectKey;
+    private final String branchPath;
 
     @JsonDeserialize(as = TreeSet.class)
     private final SortedSet<CriteriaItem> criteriaItems = new TreeSet<>(COMPARATOR);
 
     //Default constructor for (de)serialisation.
     public ProjectAcceptanceCriteriaDTO() {
-        this.projectKey = null;
+        this.branchPath = null;
     }
 
-    public ProjectAcceptanceCriteriaDTO(String projectKey, Set<CriteriaItem> criteriaItems) {
-        this.projectKey = projectKey;
+    public ProjectAcceptanceCriteriaDTO(String branchPath, Set<CriteriaItem> criteriaItems) {
+        this.branchPath = branchPath;
         this.criteriaItems.addAll(criteriaItems);
     }
 
-    public String getProjectKey() {
-        return projectKey;
+    public String getBranchPath() {
+        return branchPath;
     }
 
     public Set<CriteriaItem> getCriteriaItems() {

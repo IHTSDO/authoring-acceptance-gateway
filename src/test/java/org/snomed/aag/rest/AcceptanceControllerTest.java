@@ -396,7 +396,7 @@ class AcceptanceControllerTest extends AbstractTest {
         ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = OBJECT_MAPPER.readValue(responseBody, ProjectAcceptanceCriteriaDTO.class);
 
         //then
-        assertEquals(branchPath, projectAcceptanceCriteriaDTO.getProjectKey());
+        assertEquals(branchPath, projectAcceptanceCriteriaDTO.getBranchPath());
         assertEquals(2, projectAcceptanceCriteriaDTO.getCriteriaItems().size());
     }
 
@@ -476,7 +476,7 @@ class AcceptanceControllerTest extends AbstractTest {
         List<CriteriaItem> criteriaItems = new ArrayList<>(projectAcceptanceCriteriaDTO.getCriteriaItems());
 
         //then
-        assertEquals(branchPath, projectAcceptanceCriteriaDTO.getProjectKey());
+        assertEquals(branchPath, projectAcceptanceCriteriaDTO.getBranchPath());
         assertEquals(4, criteriaItems.size());
         assertEquals(globalProjectLevelCriteriaItemId, criteriaItems.get(0).getId());
         assertEquals(globalTaskLevelCriteriaItemId, criteriaItems.get(1).getId());
