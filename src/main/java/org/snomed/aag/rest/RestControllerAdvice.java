@@ -84,8 +84,8 @@ public class RestControllerAdvice {
 
 	@ExceptionHandler(ServiceRuntimeException.class)
 	public ResponseEntity<Map<String, Object>> handleServiceRuntimeException(ServiceRuntimeException exception) {
-		logger.error("ServiceRuntimeException caught; returning {} to client.", exception.getHttpStatus());
-		logger.debug("ServiceRuntimeException: " + exception.toString());
+		logger.info("ServiceRuntimeException caught; returning {} to client.", exception.getHttpStatus());
+		logger.debug("ServiceRuntimeException", exception);
 		Map<String, Object> result = new HashMap<>();
 		result.put("error", exception.getHttpStatusCode());
 		result.put("message", exception.getMessage());

@@ -27,7 +27,8 @@ public class URLMappingConfig {
 				"/criteria/(.*)",
 				"/acceptance/(.*)/item/.*/accept",
 				"/acceptance/(.*)",
-				"/whitelist-items/(.*)"
+				"/whitelist-items/(.*)",
+				"/service-hook/(.*)/commit"
 		};
 	}
 }
