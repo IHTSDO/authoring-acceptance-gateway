@@ -146,6 +146,26 @@ class WhitelistControllerTest extends AbstractTest {
     }
 
     @Test
+    void findForBranch_ShouldReturnExpectedResponseBody_WhenDefaultCreationDateIsApplied() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        String requestUrl = findForBranch(branchPath);
+
+        givenWhitelistItemExists(branchPath);
+        givenWhitelistItemExists(branchPath + "/projectA");
+        givenWhitelistItemExists(branchPath + "/projectB");
+        givenWhitelistItemExists(branchPath + "/projectC");
+        givenBranchDoesExist(System.currentTimeMillis());
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        List<WhitelistItem> whitelistItems = toWhitelistItems(getResponseBody(resultActions));
+
+        // then
+        assertEquals(4, whitelistItems.size()); //Found everything
+    }
+
+    @Test
     void findForBranch_ShouldReturnTransientProperty() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
@@ -183,6 +203,10 @@ class WhitelistControllerTest extends AbstractTest {
 
     private String findForBranch(String branchPath, long creationDate) {
         return "/whitelist-items/" + branchPath + "?creationDate=" + creationDate;
+    }
+
+    private String findForBranch(String branchPath) {
+        return "/whitelist-items/" + branchPath;
     }
 
     private String addWhitelistItem() {

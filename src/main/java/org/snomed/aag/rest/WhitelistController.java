@@ -90,12 +90,19 @@ public class WhitelistController {
     }
 
     @GetMapping("/{branch}")
-    public ResponseEntity<?> findForBranch(@PathVariable String branch, @RequestParam Long creationDate,
-                                           @RequestParam(required = false, defaultValue = "true") boolean includeDescendants) throws RestClientException {
+    public ResponseEntity<?> findForBranch(@PathVariable String branch, @RequestParam(required = false) Long creationDate,
+                                           @RequestParam(required = false, defaultValue = "true") boolean includeDescendants,
+                                           @RequestParam(required = false, defaultValue = "0") int page,
+                                           @RequestParam(required = false, defaultValue = "100") int size) throws RestClientException {
         branch = BranchPathUriUtil.decodePath(branch);
         securityService.getBranchOrThrow(branch);
 
-        List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(branch, new Date(creationDate), includeDescendants);
+        Date date = null;
+        if (creationDate != null) {
+            date = new Date(creationDate);
+        }
+
+        List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(branch, date, includeDescendants, PageRequest.of(page, size));
         HttpStatus httpStatus = HttpStatus.OK;
         if (whitelistItems.isEmpty()) {
             httpStatus = HttpStatus.NO_CONTENT;

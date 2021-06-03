@@ -2,19 +2,20 @@ package org.snomed.aag.data.services;
 
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.ihtsdo.sso.integration.SecurityUtil;
-import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.repositories.WhitelistItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
-import org.springframework.data.elasticsearch.core.SearchHitsIterator;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,18 @@ public class WhitelistService {
 	@Autowired
 	private ElasticsearchRestTemplate elasticsearchRestTemplate;
 
+	private static Date getDefaultDateIfNull(Date date) {
+		if (date == null) {
+			try {
+				date = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse("2021-01-01 00:00:00");
+			} catch (ParseException e) {
+				// Should never happen as source is hard-coded.
+			}
+		}
+
+		return date;
+	}
+
 	public Page<WhitelistItem> findAll(PageRequest pageRequest) {
 		return repository.findAll(pageRequest);
 	}
@@ -46,7 +59,8 @@ public class WhitelistService {
 		return repository.findAllByValidationRuleIdIn(validationRuleIds);
 	}
 
-	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, boolean includeDescendants) {
+	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, boolean includeDescendants, PageRequest pageRequest) {
+		date = getDefaultDateIfNull(date);
 		BoolQueryBuilder branchQuery;
 		if (includeDescendants) {
 			branchQuery = boolQuery().should(termQuery(WhitelistItem.Fields.BRANCH, branchPath)).should(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*"));
@@ -60,15 +74,13 @@ public class WhitelistService {
 						.must(creationDateQuery)
 						.must(branchQuery)
 				)
-				.withPageable(Constants.SMALL_PAGE)
+				.withPageable(pageRequest)
 				.build();
 
-		List<WhitelistItem> whitelistItems = new ArrayList<>();
-		try (SearchHitsIterator<WhitelistItem> hits = elasticsearchRestTemplate.searchForStream(nativeSearchQuery, WhitelistItem.class)) {
-			hits.forEachRemaining(item -> whitelistItems.add(item.getContent()));
-		}
-
-		return whitelistItems;
+		return elasticsearchRestTemplate.search(nativeSearchQuery, WhitelistItem.class)
+				.stream()
+				.map(SearchHit::getContent)
+				.collect(Collectors.toList());
 	}
 
 	public List<WhitelistItem> validateWhitelistComponents(Set<WhitelistItem> whitelistItems) {
