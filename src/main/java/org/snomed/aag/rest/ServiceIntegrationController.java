@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.services.AcceptanceService;
-import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +21,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @RestController
-@Api(tags = "Snowstorm Integration")
-@RequestMapping(value = "/snowstorm-integration", produces = "application/json")
-public class SnowstormIntegrationController {
+@Api(tags = "Service Integration")
+@RequestMapping(value = "/integration", produces = "application/json")
+public class ServiceIntegrationController {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -33,11 +32,11 @@ public class SnowstormIntegrationController {
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    @ApiOperation(value = "Receive commit information.",
+    @ApiOperation(value = "Receive commit information from Snowstorm.",
             notes = "This function is called by the Snowstorm Terminology server when a commit is made. " +
 					"This information is used to perform automatic actions within this service like accepting or expiring acceptance items. "
     )
-    @PostMapping("/commit")
+    @PostMapping("/snowstorm/commit")
     public ResponseEntity<Void> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
 		final String username = SecurityUtil.getUsername();
 		logger.info("Received commit information {} from user {}", commitInformation, username);

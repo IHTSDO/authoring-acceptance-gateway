@@ -11,27 +11,27 @@ import org.springframework.web.client.RestTemplate;
 
 @ConditionalOnProperty(name = "snowstorm.connection.test", havingValue = "true")
 @Component
-public class SnowstormAccessValidator implements CommandLineRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SnowstormAccessValidator.class);
+public class SnowstormConnectionTester implements CommandLineRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SnowstormConnectionTester.class);
 
     @Value("${snowstorm.url}")
     private String snowstormUrl;
 
     private final RestTemplate restTemplate;
 
-    public SnowstormAccessValidator(RestTemplateBuilder restTemplateBuilder) {
+    public SnowstormConnectionTester(RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder.build();
     }
 
     @Override
     public void run(String... args) {
         snowstormUrl = snowstormUrl + "/version";
-        LOGGER.info("Confirming access to Snowstorm. (Snowstorm URL: {})", snowstormUrl);
+        LOGGER.info("Confirming connection to Snowstorm. (Snowstorm URL: {})", snowstormUrl);
         try {
             this.restTemplate.getForObject(snowstormUrl, String.class);
-            LOGGER.info("Successfully confirmed access to Snowstorm.");
+            LOGGER.info("Successfully confirmed connection to Snowstorm.");
         } catch (Exception e) {
-            LOGGER.warn("Cannot access Snowstorm. (Error: {})", e.getMessage());
+            LOGGER.warn("Cannot connect to Snowstorm. (Error: {})", e.getMessage());
         }
     }
 
