@@ -2,6 +2,7 @@ package org.snomed.aag.data.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -136,6 +137,14 @@ public class ProjectAcceptanceCriteria {
 			}
 			this.selectedTaskCriteriaIds.add(criteriaItem.getId());
 		}
+	}
+
+	public boolean isBranchProjectLevel(String branchPath) {
+		return getBranchPath().equals(branchPath);
+	}
+
+	public boolean isBranchTaskLevel(String branchPath) {
+		return getBranchPath().equals(PathUtil.getParentPath(branchPath));
 	}
 
 	@Override

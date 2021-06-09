@@ -15,6 +15,9 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 	public static final String PROJECT_CLEAN_CLASSIFICATION = "project-clean-classification";
 	public static final String TASK_CLEAN_CLASSIFICATION = "task-clean-classification";
 
+	public static final String PROJECT_CLEAN_VALIDATION = "project-clean-validation";
+	public static final String TASK_CLEAN_VALIDATION = "task-clean-validation";
+
 	@Id
 	@Field(type = FieldType.Keyword)
 	@NotBlank

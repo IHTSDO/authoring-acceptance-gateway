@@ -1,6 +1,7 @@
 package org.snomed.aag.data.services;
 
 import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,11 +9,13 @@ import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
-import org.snomed.aag.rest.util.PathUtil;
+import org.snomed.aag.data.pojo.ValidationInformation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,10 +29,13 @@ public class AcceptanceService {
 	private CriteriaItemSignOffService criteriaItemSignOffService;
 
 	@Autowired
-	private SecurityService securityService;
+	private BranchSecurityService securityService;
 
 	@Autowired
 	private ProjectAcceptanceCriteriaService criteriaService;
+
+	@Autowired
+	private ValidationService validationService;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AcceptanceService.class);
 
@@ -74,8 +80,8 @@ public class AcceptanceService {
 		}
 
 		boolean classified = commitInformation.isClassified();
-		boolean projectLevel = criteria.getBranchPath().equals(branchPath);
-		boolean taskLevel = criteria.getBranchPath().equals(PathUtil.getParentPath(branchPath));
+		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
+		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
 
 		final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, branchPath);
 		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
@@ -95,18 +101,60 @@ public class AcceptanceService {
 				.map(CriteriaItem::getId)
 				.collect(Collectors.toSet());
 
-		itemsToUnaccept.removeAll(itemsShouldBeAccepted);
-
-		Set<String> itemsToAccept = items.stream()
-				.filter(item -> !item.isComplete() && itemsShouldBeAccepted.contains(item.getId()))
+		final Set<String> acceptedItems = items.stream()
+				.filter(item -> item.isComplete() && !itemsToUnaccept.contains(item.getId()))
 				.map(CriteriaItem::getId)
 				.collect(Collectors.toSet());
+
 
 		if (!itemsToUnaccept.isEmpty()) {
 			criteriaItemSignOffService.deleteItems(itemsToUnaccept, branchPath, criteria.getProjectIteration());
 		}
-		if (!itemsToAccept.isEmpty()) {
-			criteriaItemSignOffService.doCreateItems(itemsToAccept, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
+
+		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
+	}
+
+	@Async
+	public void processValidationAsync(ValidationInformation validationInformation) {
+		try {
+			final String branchPath = validationInformation.getBranchPath();
+			final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
+			if (criteria == null) {
+				return;
+			}
+
+			final Branch branch = securityService.getBranchOrThrow(branchPath);
+			if (validationService.isReportClean(validationInformation.getReportUrl(), branch.getHeadTimestamp(), branchPath)) {
+
+				final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, branchPath);
+
+				Set<String> itemsShouldBeAccepted = items.stream()
+						.filter(item ->
+								(item.getId().equals(CriteriaItem.PROJECT_CLEAN_VALIDATION) && criteria.isBranchProjectLevel(branchPath)) ||
+										(item.getId().equals(CriteriaItem.TASK_CLEAN_VALIDATION) && criteria.isBranchTaskLevel(branchPath))
+						)
+						.map(CriteriaItem::getId)
+						.collect(Collectors.toSet());
+
+				persistItemsShouldBeAccepted(itemsShouldBeAccepted, getAcceptedItemIds(items), branchPath, branch.getHeadTimestamp(), criteria.getProjectIteration());
+			}
+
+		} catch (RestClientException e) {
+			LOGGER.error("Failed to handle validation complete notification.", e);
+		}
+	}
+
+	private Set<String> getAcceptedItemIds(Set<CriteriaItem> items) {
+		return items.stream().filter(CriteriaItem::isComplete).map(CriteriaItem::getId).collect(Collectors.toSet());
+	}
+
+	private void persistItemsShouldBeAccepted(Set<String> itemsShouldBeAccepted, Set<String> itemsAlreadyAccepted, String branchPath, long branchHeadTime, Integer projectIteration) {
+		// Only accept items which are not already accepted
+		Set<String> toPersist = new HashSet<>(itemsShouldBeAccepted);
+		toPersist.removeAll(itemsAlreadyAccepted);
+
+		if (!toPersist.isEmpty()) {
+			criteriaItemSignOffService.doCreateItems(toPersist, branchPath, branchHeadTime, projectIteration);
 		}
 	}
 

@@ -13,7 +13,14 @@ All Criteria items with the `manual` flag set must be accepted manually.
 
 #### Automatic Sign-Off
 Some Criteria Items, those without the `manual` flag, are signed off automatically by the system by listening to various events.
-These include  `project-clean-classification` and `task-clean-classification`.
+
+These include:
+- Classification
+  - `project-clean-classification`
+  - `task-clean-classification`
+- Validation
+  - `project-clean-validation`
+  - `task-clean-validation`
 
 #### Automatic Expiration
 Any Criteria Item which has the `expiresOnCommit` flag set to try will have any existing Sign-Off deleted when a new commit is made on that branch.

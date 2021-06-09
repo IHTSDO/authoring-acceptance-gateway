@@ -7,7 +7,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.snomed.aag.data.domain.WhitelistItem;
-import org.snomed.aag.data.services.SecurityService;
+import org.snomed.aag.data.services.BranchSecurityService;
 import org.snomed.aag.data.services.WhitelistService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -25,9 +25,9 @@ import java.util.Set;
 public class WhitelistController {
 
     private final WhitelistService whitelistService;
-    private final SecurityService securityService;
+    private final BranchSecurityService securityService;
 
-    public WhitelistController(WhitelistService whitelistService, SecurityService securityService) {
+    public WhitelistController(WhitelistService whitelistService, BranchSecurityService securityService) {
         this.whitelistService = whitelistService;
         this.securityService = securityService;
     }

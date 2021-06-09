@@ -13,14 +13,14 @@ import java.util.Collections;
 import java.util.Set;
 
 @Service
-public class SecurityService {
+public class BranchSecurityService {
 
 	// This factory produces clients authenticated as the current user, it has its own client cache.
 	private final SnowstormRestClientFactory snowstormRestClientFactory;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SecurityService.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BranchSecurityService.class);
 
-	public SecurityService(@Value("${snowstorm.url}") String snowstormUrl) {
+	public BranchSecurityService(@Value("${snowstorm.url}") String snowstormUrl) {
 		snowstormRestClientFactory = new SnowstormRestClientFactory(snowstormUrl, null);
 	}
 

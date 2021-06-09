@@ -2,7 +2,7 @@ package org.snomed.aag.config;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
 import org.ihtsdo.otf.rest.client.RestClientException;
-import org.snomed.aag.data.services.SecurityService;
+import org.snomed.aag.data.services.BranchSecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,7 +36,7 @@ public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
 	}
 
 	@Bean
-	public PermissionEvaluator permissionEvaluator(@Lazy SecurityService securityService) {
+	public PermissionEvaluator permissionEvaluator(@Lazy BranchSecurityService securityService) {
 		return new PermissionEvaluator() {
 			@Override
 			public boolean hasPermission(Authentication authentication, Object role, Object branchPath) {

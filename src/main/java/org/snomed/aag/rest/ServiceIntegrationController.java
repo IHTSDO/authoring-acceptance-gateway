@@ -6,6 +6,7 @@ import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.pojo.CommitInformation;
+import org.snomed.aag.data.pojo.ValidationInformation;
 import org.snomed.aag.data.services.AcceptanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -32,12 +33,12 @@ public class ServiceIntegrationController {
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    @ApiOperation(value = "Receive commit information from Snowstorm.",
-            notes = "This function is called by the Snowstorm Terminology server when a commit is made. " +
+	@ApiOperation(value = "Receive commit information from Snowstorm.",
+			notes = "This function is called by the Snowstorm Terminology server when a commit is made. " +
 					"This information is used to perform automatic actions within this service like accepting or expiring acceptance items. "
-    )
-    @PostMapping("/snowstorm/commit")
-    public ResponseEntity<Void> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
+	)
+	@PostMapping("/snowstorm/commit")
+	public ResponseEntity<Void> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
 		final String username = SecurityUtil.getUsername();
 		logger.info("Received commit information {} from user {}", commitInformation, username);
 
@@ -55,7 +56,22 @@ public class ServiceIntegrationController {
 //			criteriaService.validatePromotion(commitInformation);
 		}
 
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
+		return ResponseEntity.status(HttpStatus.OK).build();
+	}
+
+	@ApiOperation(value = "Receive validation report information from Authoring Services.",
+			notes = "This function is called by Authoring Services when an RVF validation completes. " +
+					"This information may automatically accept a validation acceptance item. "
+	)
+	@PostMapping("/validation-complete")
+	public ResponseEntity<Void> receiveValidation(@RequestBody ValidationInformation validationInformation) {
+		final String username = SecurityUtil.getUsername();
+		logger.info("Received validation information {} from user {}", validationInformation, username);
+
+		// Prevent the processing of this call slowing down the snowstorm commit
+		acceptanceService.processValidationAsync(validationInformation);
+
+		return ResponseEntity.status(HttpStatus.OK).build();
+	}
 
 }

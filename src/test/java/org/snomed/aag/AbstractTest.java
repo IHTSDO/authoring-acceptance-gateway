@@ -74,7 +74,7 @@ public abstract class AbstractTest {
 	protected AcceptanceService acceptanceService;
 
 	@MockBean
-	protected SecurityService securityService;
+	protected BranchSecurityService securityService;
 
 	@AfterEach
 	void defaultTearDown() {

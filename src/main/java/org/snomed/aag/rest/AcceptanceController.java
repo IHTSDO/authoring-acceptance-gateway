@@ -8,7 +8,7 @@ import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.services.AcceptanceService;
 import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
-import org.snomed.aag.data.services.SecurityService;
+import org.snomed.aag.data.services.BranchSecurityService;
 import org.snomed.aag.data.services.ServiceRuntimeException;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.http.HttpStatus;
@@ -22,11 +22,11 @@ import java.util.Set;
 @RequestMapping(value = "/acceptance", produces = "application/json")
 public class AcceptanceController {
 
-    private final SecurityService securityService;
+    private final BranchSecurityService securityService;
     private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
     private final AcceptanceService acceptanceService;
 
-    public AcceptanceController(SecurityService securityService,
+    public AcceptanceController(BranchSecurityService securityService,
 			ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService,
 			AcceptanceService acceptanceService) {
 
