@@ -16,11 +16,11 @@ Some Criteria Items, those without the `manual` flag, are signed off automatical
 
 These include:
 - Classification
-  - `project-clean-classification`
-  - `task-clean-classification`
+  - `project-classification-clean`
+  - `task-classification-clean`
 - Validation
-  - `project-clean-validation`
-  - `task-clean-validation`
+  - `project-validation-clean`
+  - `task-validation-clean`
 
 #### Automatic Expiration
 Any Criteria Item which has the `expiresOnCommit` flag set to try will have any existing Sign-Off deleted when a new commit is made on that branch.

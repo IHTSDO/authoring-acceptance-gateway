@@ -89,8 +89,8 @@ public class AcceptanceService {
 		// Includes role check
 		Set<String> itemsShouldBeAccepted = items.stream()
 				.filter(item ->
-						(item.getId().equals(CriteriaItem.PROJECT_CLEAN_CLASSIFICATION) && projectLevel && classified && userHasRole(item, branchRoles)) ||
-								(item.getId().equals(CriteriaItem.TASK_CLEAN_CLASSIFICATION) && taskLevel && classified && userHasRole(item, branchRoles))
+						(item.getId().equals(CriteriaItem.PROJECT_CLASSIFICATION_CLEAN) && projectLevel && classified && userHasRole(item, branchRoles)) ||
+								(item.getId().equals(CriteriaItem.TASK_CLASSIFICATION_CLEAN) && taskLevel && classified && userHasRole(item, branchRoles))
 				)
 				.map(CriteriaItem::getId)
 				.collect(Collectors.toSet());
@@ -130,8 +130,8 @@ public class AcceptanceService {
 
 				Set<String> itemsShouldBeAccepted = items.stream()
 						.filter(item ->
-								(item.getId().equals(CriteriaItem.PROJECT_CLEAN_VALIDATION) && criteria.isBranchProjectLevel(branchPath)) ||
-										(item.getId().equals(CriteriaItem.TASK_CLEAN_VALIDATION) && criteria.isBranchTaskLevel(branchPath))
+								(item.getId().equals(CriteriaItem.PROJECT_VALIDATION_CLEAN) && criteria.isBranchProjectLevel(branchPath)) ||
+										(item.getId().equals(CriteriaItem.TASK_VALIDATION_CLEAN) && criteria.isBranchTaskLevel(branchPath))
 						)
 						.map(CriteriaItem::getId)
 						.collect(Collectors.toSet());

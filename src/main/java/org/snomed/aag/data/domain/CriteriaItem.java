@@ -12,11 +12,11 @@ import java.util.Objects;
 @Document(indexName = "criteria-item")
 public class CriteriaItem implements Comparable<CriteriaItem> {
 
-	public static final String PROJECT_CLEAN_CLASSIFICATION = "project-clean-classification";
-	public static final String TASK_CLEAN_CLASSIFICATION = "task-clean-classification";
+	public static final String PROJECT_CLASSIFICATION_CLEAN = "project-classification-clean";
+	public static final String TASK_CLASSIFICATION_CLEAN = "task-classification-clean";
 
-	public static final String PROJECT_CLEAN_VALIDATION = "project-clean-validation";
-	public static final String TASK_CLEAN_VALIDATION = "task-clean-validation";
+	public static final String PROJECT_VALIDATION_CLEAN = "project-validation-clean";
+	public static final String TASK_VALIDATION_CLEAN = "task-validation-clean";
 
 	@Id
 	@Field(type = FieldType.Keyword)
