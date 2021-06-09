@@ -48,7 +48,7 @@ class URLMappingConfigTest {
     void getPatternStrings_ShouldReturnArrayWithExpectedLength() {
         // given
         URLMappingConfig urlMappingConfig = new URLMappingConfig();
-        int expectedLength = 5;
+        int expectedLength = 4;
 
         // when
         String[] result = urlMappingConfig.getPatternStrings();
