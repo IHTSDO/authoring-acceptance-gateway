@@ -1,0 +1,51 @@
+{
+  "status": "COMPLETE",
+  "rvfValidationResult": {
+    "validationConfig": {
+      "testFileName": "MAIN_STORMTESTK_20210610.zip",
+      "runId": 1623336580974,
+      "writeSucceses": false,
+      "groupsList": [
+        "empty-test"
+      ],
+      "previousRelease": "dev_main_cdi_2021-07-31-20210310144300.zip",
+      "storageLocation": "RVF_TS/MAIN_STORMTESTK/1623336580974",
+      "url": "https://dev-rvf.ihtsdotools.org/api",
+      "failureExportMax": 100,
+      "prospectiveFileFullPath": "RVF_TS/MAIN_STORMTESTK/1623336580974/files_to_validate/MAIN_STORMTESTK_20210610.zip",
+      "isProspectiveFileInS3": true,
+      "isRf2DeltaOnly": true,
+      "enableDrools": false,
+      "releaseAsAnEdition": false,
+      "generateDroolsReport": false,
+      "bucketName": "snomed-international",
+      "enableMRCMValidation": true,
+      "form": "stated",
+      "contentHeadTimestamp": 1622714429925
+    },
+    "reportSummary": {
+      "ARCHIVE_STRUCTURAL": "Validations executed. Failures count: 0",
+      "DROOL_RULES": "Validations are disabled.",
+      "MRCM": "Validations executed. Failures count: 0",
+      "SQL": "Validations executed. Failures count: 0"
+    },
+    "TestResult": {
+      "executionId": 1623336580974,
+      "timeTakenInSeconds": 0,
+      "reportUrl": "https://dev-rvf.ihtsdotools.org/api",
+      "totalTestsRun": 0,
+      "totalSkips": 0,
+      "totalWarnings": 0,
+      "totalFailures": 0,
+      "assertionsFailed": [],
+      "assertionsWarning": [],
+      "assertionsSkipped": [],
+      "assertionsPassed": []
+    },
+    "startTime": "Jun 10, 2021, 2:53:25 PM",
+    "endTime": "Jun 10, 2021, 2:53:26 PM",
+    "totalRF2FilesLoaded": -1,
+    "failureMessages": [],
+    "rf2Files": []
+  }
+}
