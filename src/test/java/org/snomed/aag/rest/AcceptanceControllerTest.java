@@ -864,14 +864,6 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItemRepository.save(criteriaItem);
     }
 
-    private void givenUserDoesNotHavePermissionForBranch() throws RestClientException {
-		doThrow(new AccessDeniedException("User does not have desired role.")).when(securityService).verifyBranchRole(any(), any());
-    }
-
-    private void givenUserDoesHavePermissionForBranch() throws RestClientException {
-        when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
-    }
-
     private void givenAuthenticatedUser(String username) {
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(username);

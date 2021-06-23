@@ -90,11 +90,23 @@ public abstract class AbstractTest {
 		when(securityService.getBranchOrThrow(any())).thenThrow(new AccessDeniedException("Branch does not exist."));
 	}
 
+	protected void givenBranchDoesExist() throws RestClientException {
+		givenBranchDoesExist(System.currentTimeMillis());
+	}
+
 	protected void givenBranchDoesExist(long timestamp) throws RestClientException {
 		Branch branch = new Branch();
 		branch.setHeadTimestamp(timestamp);
 
 		when(securityService.getBranchOrThrow(any())).thenReturn(branch);
+	}
+
+	protected void givenUserDoesNotHavePermissionForBranch() throws RestClientException {
+		doThrow(new AccessDeniedException("User does not have desired role.")).when(securityService).verifyBranchRole(any(), any());
+	}
+
+	protected void givenUserDoesHavePermissionForBranch() throws RestClientException {
+		when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
 	}
 
 	protected String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
