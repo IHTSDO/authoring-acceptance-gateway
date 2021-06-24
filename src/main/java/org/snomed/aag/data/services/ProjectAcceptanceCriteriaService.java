@@ -3,6 +3,7 @@ package org.snomed.aag.data.services;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
+import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaCreateValidator;
 import org.snomed.aag.rest.util.PathUtil;
@@ -12,8 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -56,6 +57,12 @@ public class ProjectAcceptanceCriteriaService {
 
     private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
         if (projectAcceptanceCriteria == null) {
+            throw new IllegalArgumentException();
+        }
+    }
+
+    private static void verifyParams(CommitInformation commitInformation) {
+        if (commitInformation == null) {
             throw new IllegalArgumentException();
         }
     }
@@ -264,4 +271,33 @@ public class ProjectAcceptanceCriteriaService {
 		return criteriaItems;
 	}
 
+    /**
+     * Return whether the latest ProjectAcceptanceCriteria for the given branch is complete. If the ProjectAcceptanceCriteria
+     * has been completed, a new entry will be added to the database.
+     *
+     * @param commitInformation Request from client.
+     * @return Whether the latest ProjectAcceptanceCriteria for the given branch is complete.
+     */
+    public boolean incrementIfComplete(CommitInformation commitInformation) {
+        verifyParams(commitInformation);
+
+        String path = commitInformation.getPath();
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = findEffectiveCriteriaWithMandatoryItems(path);
+        if (projectAcceptanceCriteria == null) {
+            throw new ServiceRuntimeException("No Project Acceptance Criteria found for branch.", HttpStatus.NOT_FOUND);
+        }
+
+        if (!projectAcceptanceCriteria.hasCriteria()) {
+            throw new ServiceRuntimeException("Project Acceptance Criteria has no Criteria Items.", HttpStatus.CONFLICT);
+        }
+
+        boolean allCriteriaItemsComplete = findItemsAndMarkSignOff(projectAcceptanceCriteria, path).stream().allMatch(CriteriaItem::isComplete);
+        if (allCriteriaItemsComplete) {
+            // New entry to get new creation date.
+            ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.incrementProjectIteration();
+            create(incrementedProjectAcceptanceCriteria);
+        }
+
+        return allCriteriaItemsComplete;
+    }
 }

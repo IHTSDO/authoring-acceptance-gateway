@@ -12,9 +12,6 @@ import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -24,8 +21,6 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
@@ -358,16 +353,6 @@ class AdminControllerTest extends AbstractTest {
 		ResultActions resultActions = mockMvc.perform(post(requestUrl));
 
 		assertResponseStatus(resultActions, 200);
-	}
-
-	private void givenAuthenticatedUser(String username) {
-		Authentication authentication = mock(Authentication.class);
-		when(authentication.getPrincipal()).thenReturn(username);
-
-		SecurityContext securityContext = mock(SecurityContext.class);
-		when(securityContext.getAuthentication()).thenReturn(authentication);
-
-		SecurityContextHolder.setContext(securityContext);
 	}
 
 	private List<CriteriaItemSignOff> toCriteriaItemSignOffs(String response) throws JsonProcessingException {
