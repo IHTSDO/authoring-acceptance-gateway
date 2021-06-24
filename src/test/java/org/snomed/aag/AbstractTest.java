@@ -12,11 +12,15 @@ import org.snomed.aag.data.repositories.CriteriaItemSignOffRepository;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.repositories.WhitelistItemRepository;
 import org.snomed.aag.data.services.*;
+import org.snomed.aag.data.validators.CommitInformationValidator;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaUpdateValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.ResultActions;
@@ -27,8 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -73,6 +76,9 @@ public abstract class AbstractTest {
 	@Autowired
 	protected AcceptanceService acceptanceService;
 
+	@Autowired
+	protected CommitInformationValidator commitInformationValidator;
+
 	@MockBean
 	protected BranchSecurityService securityService;
 
@@ -109,6 +115,16 @@ public abstract class AbstractTest {
 		when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
 	}
 
+	protected void givenAuthenticatedUser(String username) {
+		Authentication authentication = mock(Authentication.class);
+		when(authentication.getPrincipal()).thenReturn(username);
+
+		SecurityContext securityContext = mock(SecurityContext.class);
+		when(securityContext.getAuthentication()).thenReturn(authentication);
+
+		SecurityContextHolder.setContext(securityContext);
+	}
+
 	protected String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
 		Map<String, Object> response = new HashMap<>();
 		response.put("error", error);
@@ -131,6 +147,10 @@ public abstract class AbstractTest {
 
 	protected void assertResponseBody(ResultActions result, String expectedResponseBody) throws Exception {
 		result.andExpect(content().string(expectedResponseBody));
+	}
+
+	protected void assertResponseBodyIsEmpty(ResultActions result) throws Exception {
+		result.andExpect(content().string(""));
 	}
 
 	/*
