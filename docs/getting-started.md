@@ -26,5 +26,5 @@ Alternatively, you can download and run the latest JAR from the [releases page](
 The functionality of AAG is accessible by sending requests using HTTP methods. For ease of use, you can use the embedded [Swagger UI](http://localhost:8090/authoring-acceptance-gateway/swagger-ui.html) page.    
 
 ## Notes
-- Java 1.8
+- Java 11
 - Maven 
