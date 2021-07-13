@@ -147,7 +147,7 @@ public class ProjectAcceptanceCriteria {
 		return getBranchPath().equals(PathUtil.getParentPath(branchPath));
 	}
 
-	public ProjectAcceptanceCriteria incrementProjectIteration() {
+	public ProjectAcceptanceCriteria cloneWithNextProjectIteration() {
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria();
 		projectAcceptanceCriteria.setBranchPath(this.branchPath);
 		projectAcceptanceCriteria.setProjectIteration(this.projectIteration + 1);

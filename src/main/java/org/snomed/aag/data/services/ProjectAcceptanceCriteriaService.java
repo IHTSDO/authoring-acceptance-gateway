@@ -294,7 +294,7 @@ public class ProjectAcceptanceCriteriaService {
         boolean allCriteriaItemsComplete = findItemsAndMarkSignOff(projectAcceptanceCriteria, path).stream().allMatch(CriteriaItem::isComplete);
         if (allCriteriaItemsComplete) {
             // New entry to get new creation date.
-            ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.incrementProjectIteration();
+            ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
             create(incrementedProjectAcceptanceCriteria);
         }
 
