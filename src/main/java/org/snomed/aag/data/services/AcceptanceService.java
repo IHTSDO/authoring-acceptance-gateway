@@ -39,6 +39,38 @@ public class AcceptanceService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AcceptanceService.class);
 
+	public Set<CriteriaItemSignOff> acceptAllItemsForBranch(String branchPath) throws RestClientException {
+		// Verify branch
+		Branch branch = securityService.getBranchOrThrow(branchPath);
+
+		// Verify ProjectAcceptanceCriteria & CriteriaItems
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = getPACOrThrow(branchPath);
+		Set<String> criteriaIdentifiers = getCriteriaIdentifiersOrThrow(projectAcceptanceCriteria, branchPath);
+
+		// Only create CriteriaItems if they exist
+		Set<CriteriaItem> criteriaItemsToAccept = new HashSet<>();
+		for (String criteriaIdentifier : criteriaIdentifiers) {
+			CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(criteriaIdentifier);
+			securityService.verifyBranchRole(branchPath, criteriaItem.getRequiredRole());
+			criteriaItemsToAccept.add(criteriaItem);
+		}
+
+		// Verification complete; add record(s)
+		return criteriaItemSignOffService.createAll(criteriaItemsToAccept, branchPath, branch.getHeadTimestamp(), projectAcceptanceCriteria.getProjectIteration());
+	}
+
+	public void rejectAllItemsForBranch(String branchPath) throws RestClientException {
+		// Verify branch
+		securityService.getBranchOrThrow(branchPath);
+
+		// Verify ProjectAcceptanceCriteria & CriteriaItems
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = getPACOrThrow(branchPath);
+		Set<String> criteriaIdentifiers = getCriteriaIdentifiersOrThrow(projectAcceptanceCriteria, branchPath);
+
+		// Verification complete; remove record(s)
+		criteriaItemSignOffService.deleteItems(criteriaIdentifiers, branchPath, projectAcceptanceCriteria.getProjectIteration());
+	}
+
 	public CriteriaItemSignOff acceptItem(String branchPath, String itemId) throws RestClientException {
 		//Verify request.
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = getProjectAcceptanceCriteriaForAcceptRejectRequestOrThrow(branchPath, itemId);
@@ -189,5 +221,25 @@ public class AcceptanceService {
 		}
 
 		return projectAcceptanceCriteria;
+	}
+
+	private ProjectAcceptanceCriteria getPACOrThrow(String branchPath) {
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
+		if (projectAcceptanceCriteria == null) {
+			String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
+			throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
+		}
+
+		return projectAcceptanceCriteria;
+	}
+
+	private Set<String> getCriteriaIdentifiersOrThrow(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
+		Set<String> criteriaIdentifiers = projectAcceptanceCriteria.getAllCriteriaIdentifiers();
+		if (criteriaIdentifiers.isEmpty()) {
+			String message = String.format("Acceptance Criteria for %s has no Criteria Items configured.", branchPath);
+			throw new ServiceRuntimeException(message, HttpStatus.CONFLICT);
+		}
+
+		return criteriaIdentifiers;
 	}
 }

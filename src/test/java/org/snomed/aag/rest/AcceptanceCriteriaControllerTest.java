@@ -583,10 +583,6 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         return "/criteria/" + branchPath + "?projectIteration=" + projectIteration;
     }
 
-    private void givenUserDoesHavePermissionForBranch() throws RestClientException {
-        when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
-    }
-
     private void givenAcceptanceCriteriaExists(String branchPath, int projectIteration) {
         projectAcceptanceCriteriaService.create(new ProjectAcceptanceCriteria(branchPath, projectIteration));
     }

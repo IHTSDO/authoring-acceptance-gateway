@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.pojo.ValidationInformation;
 import org.snomed.aag.data.services.AcceptanceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
+import org.snomed.aag.data.validators.CommitInformationValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContext;
@@ -26,10 +27,17 @@ import java.util.concurrent.Executors;
 @RequestMapping(value = "/integration", produces = "application/json")
 public class ServiceIntegrationController {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final CommitInformationValidator commitInformationValidator;
+	private final AcceptanceService acceptanceService;
+	private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
 
-	@Autowired
-    private AcceptanceService acceptanceService;
+	public ServiceIntegrationController(CommitInformationValidator commitInformationValidator, AcceptanceService acceptanceService,
+										ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService) {
+		this.commitInformationValidator = commitInformationValidator;
+		this.acceptanceService = acceptanceService;
+		this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
+	}
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -42,6 +50,7 @@ public class ServiceIntegrationController {
 		final String username = SecurityUtil.getUsername();
 		logger.info("Received commit information {} from user {}", commitInformation, username);
 
+		commitInformationValidator.validate(commitInformation);
 		final CommitInformation.CommitType commitType = commitInformation.getCommitType();
 		if (commitType != CommitInformation.CommitType.PROMOTION) {
 			// Prevent the processing of this call slowing down the snowstorm commit
@@ -51,12 +60,18 @@ public class ServiceIntegrationController {
 				SecurityContextHolder.setContext(context);// Security context brought across into new thread
 				acceptanceService.processCommit(commitInformation);
 			});
-//		} else {
-			// In FRI-54 we will block promotion if the branch criteria is not complete. This must be synchronous.
-//			criteriaService.validatePromotion(commitInformation);
-		}
 
-		return ResponseEntity.status(HttpStatus.OK).build();
+			return ResponseEntity.status(HttpStatus.OK).build();
+		} else {
+			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(commitInformation);
+			if (pacComplete) {
+				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", commitInformation.getPath());
+				return ResponseEntity.status(HttpStatus.OK).build();
+			} else {
+				logger.info("Project Acceptance Criteria for {} is incomplete. Promotion is not recommended.", commitInformation.getPath());
+				return ResponseEntity.status(HttpStatus.CONFLICT).build();
+			}
+		}
 	}
 
 	@ApiOperation(value = "Receive validation report information from Authoring Services.",

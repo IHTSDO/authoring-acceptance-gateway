@@ -34,6 +34,11 @@ class URLMappingConfigTest {
                             PATTERN_STRINGS[3], // e.g. /whitelist-items/(.*)
                             "/whitelist-items/MAIN/projectA/taskB",
                             "MAIN/projectA/taskB"
+                    },
+                    {
+                            PATTERN_STRINGS[3], // e.g. /admin/criteria/(.*)/accept
+                            "/admin/criteria/MAIN/projectA/taskB/accept",
+                            "MAIN/projectA/taskB"
                     }
             }
     };
@@ -48,7 +53,7 @@ class URLMappingConfigTest {
     void getPatternStrings_ShouldReturnArrayWithExpectedLength() {
         // given
         URLMappingConfig urlMappingConfig = new URLMappingConfig();
-        int expectedLength = 4;
+        int expectedLength = 5;
 
         // when
         String[] result = urlMappingConfig.getPatternStrings();
