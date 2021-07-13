@@ -147,6 +147,34 @@ public class ProjectAcceptanceCriteria {
 		return getBranchPath().equals(PathUtil.getParentPath(branchPath));
 	}
 
+	public ProjectAcceptanceCriteria cloneWithNextProjectIteration() {
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria();
+		projectAcceptanceCriteria.setBranchPath(this.branchPath);
+		projectAcceptanceCriteria.setProjectIteration(this.projectIteration + 1);
+		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(this.selectedProjectCriteriaIds);
+		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(this.selectedTaskCriteriaIds);
+
+		return projectAcceptanceCriteria;
+	}
+
+	public boolean hasCriteria() {
+		if (this.selectedProjectCriteriaIds == null && this.selectedTaskCriteriaIds == null) {
+			return false;
+		}
+
+		boolean projectCriteria = false;
+		if (this.selectedProjectCriteriaIds != null) {
+			projectCriteria = this.selectedProjectCriteriaIds.isEmpty();
+		}
+
+		boolean taskCriteria = false;
+		if (this.selectedTaskCriteriaIds != null) {
+			taskCriteria = this.selectedTaskCriteriaIds.isEmpty();
+		}
+
+		return !projectCriteria || !taskCriteria;
+	}
+
 	@Override
 	public String toString() {
 		return "ProjectAcceptanceCriteria{" +

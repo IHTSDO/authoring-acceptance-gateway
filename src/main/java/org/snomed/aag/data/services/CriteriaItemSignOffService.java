@@ -41,6 +41,46 @@ public class CriteriaItemSignOffService {
         }
     }
 
+	/**
+	 * Save entries in database. For each entry, only save if a corresponding entry is not already present.
+	 *
+	 * @param criteriaItems       Entries to save in database.
+	 * @param branchPath          Value to set corresponding field for all entries given.
+	 * @param branchHeadTimestamp Value to set corresponding field for all entries given.
+	 * @param projectIteration    Value to set corresponding field for all entries given.
+	 * @return Saved entries in database, including entries previously saved but are still within scope.
+	 * @throws IllegalArgumentException If argument is invalid.
+	 */
+    public Set<CriteriaItemSignOff> createAll(Set<CriteriaItem> criteriaItems, String branchPath, Long branchHeadTimestamp, Integer projectIteration) {
+		verifyParams(branchPath, projectIteration, criteriaItems);
+
+		String username = SecurityUtil.getUsername();
+		List<CriteriaItemSignOff> toCreate = new ArrayList<>();
+		Set<CriteriaItemSignOff> criteriaItemSignOffs = new HashSet<>();
+		for (CriteriaItem criteriaItem : criteriaItems) {
+			Optional<CriteriaItemSignOff> existingCriteriaItemSignOff = findByCriteriaItemIdAndBranchPathAndProjectIteration(
+					criteriaItem.getId(),
+					branchPath,
+					projectIteration
+			);
+
+			// Only create new entries, but return all in scope as to not hide data.
+			if (existingCriteriaItemSignOff.isEmpty()) {
+				toCreate.add(new CriteriaItemSignOff(criteriaItem.getId(), branchPath, branchHeadTimestamp, projectIteration, username));
+			} else {
+				criteriaItemSignOffs.add(existingCriteriaItemSignOff.get());
+			}
+		}
+
+		Set<CriteriaItemSignOff> created = new HashSet<>();
+		for (CriteriaItemSignOff criteriaItemSignOff : repository.saveAll(toCreate)) {
+			created.add(criteriaItemSignOff);
+		}
+
+		criteriaItemSignOffs.addAll(created);
+		return criteriaItemSignOffs;
+	}
+
     /**
      * Save entry in database.
      *
