@@ -107,7 +107,7 @@ public class AcceptanceService {
 		final String branchPath = commitInformation.getPath();
 		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
 		if (criteria == null) {
-			// No criteria for branch, nothing to do.
+			LOGGER.info("ProjectAcceptanceCriteria not found for branch; nothing to process.");
 			return;
 		}
 
