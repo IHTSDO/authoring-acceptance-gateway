@@ -49,7 +49,7 @@ curl --header "Content-Type: application/json" \
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
-     "id": "task-clean-classification",
+     "id": "task-classification-clean",
      "label": "Classified content",
      "description": "All axiom changes and concept inactivations must be classified.",
      "order": 1,
@@ -84,7 +84,7 @@ curl --header "Content-Type: application/json" \
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
-     "id": "project-clean-classification",
+     "id": "project-classification-clean",
      "label": "Classified content",
      "description": "All axiom changes and concept inactivations must be classified.",
      "order": 1,
@@ -125,10 +125,10 @@ curl --header "Content-Type: application/json" \
   \"branchPath\": \"$branchPath\",
   \"projectIteration\": 1,
   \"selectedProjectCriteriaIds\": [
-    \"project-clean-classification\"
+    \"project-classification-clean\"
   ],
   \"selectedTaskCriteriaIds\": [
-    \"task-clean-classification\",
+    \"task-classification-clean\",
     \"task-manual-spellcheck\"
   ]
   }" \
