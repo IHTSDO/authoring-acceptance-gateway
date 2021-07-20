@@ -8,11 +8,11 @@ public class CommitInformation {
 	public static final String CLASSIFIED = "classified";
 
 	public enum CommitType {
-		CONTENT, REBASE, PROMOTION;
-
+		CONTENT, REBASE, PROMOTION
 	}
 
-	private String path;
+	private String sourceBranchPath;
+	private String targetBranchPath;
 	private CommitType commitType;
 	private long headTime;
 	private Map<String, Object> metadata;
@@ -20,8 +20,16 @@ public class CommitInformation {
 	public CommitInformation() {
 	}
 
-	public CommitInformation(String path, CommitType commitType, long headTime, Map<String, Object> metadata) {
-		this.path = path;
+	public CommitInformation(String sourceBranchPath, CommitType commitType, long headTime, Map<String, Object> metadata) {
+		this.sourceBranchPath = sourceBranchPath;
+		this.commitType = commitType;
+		this.headTime = headTime;
+		this.metadata = metadata;
+	}
+
+	public CommitInformation(String sourceBranchPath, String targetBranchPath, CommitType commitType, long headTime, Map<String, Object> metadata) {
+		this.sourceBranchPath = sourceBranchPath;
+		this.targetBranchPath = targetBranchPath;
 		this.commitType = commitType;
 		this.headTime = headTime;
 		this.metadata = metadata;
@@ -36,8 +44,12 @@ public class CommitInformation {
 		return false;
 	}
 
-	public String getPath() {
-		return path;
+	public String getSourceBranchPath() {
+		return sourceBranchPath;
+	}
+
+	public String getTargetBranchPath() {
+		return targetBranchPath;
 	}
 
 	public CommitType getCommitType() {
@@ -55,7 +67,8 @@ public class CommitInformation {
 	@Override
 	public String toString() {
 		return "CommitInformation{" +
-				"path='" + path + '\'' +
+				"sourceBranchPath='" + sourceBranchPath + '\'' +
+				", targetBranchPath='" + targetBranchPath + '\'' +
 				", commitType=" + commitType +
 				", headTime=" + headTime +
 				", metadata=" + metadata +

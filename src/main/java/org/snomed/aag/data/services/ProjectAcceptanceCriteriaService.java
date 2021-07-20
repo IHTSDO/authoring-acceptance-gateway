@@ -281,7 +281,7 @@ public class ProjectAcceptanceCriteriaService {
     public boolean incrementIfComplete(CommitInformation commitInformation) {
         verifyParams(commitInformation);
 
-        String path = commitInformation.getPath();
+        String path = commitInformation.getSourceBranchPath();
         ProjectAcceptanceCriteria projectAcceptanceCriteria = findEffectiveCriteriaWithMandatoryItems(path);
         if (projectAcceptanceCriteria == null) {
             throw new ServiceRuntimeException("No Project Acceptance Criteria found for branch.", HttpStatus.NOT_FOUND);
