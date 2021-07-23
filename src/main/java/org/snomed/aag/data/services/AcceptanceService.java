@@ -104,28 +104,49 @@ public class AcceptanceService {
 	 * @param commitInformation Commit information including branch path and metadata.
 	 */
 	public void processCommit(CommitInformation commitInformation) {
-		String branchPathReceivingChanges = commitInformation.getBranchPathReceivingChanges();
-		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPathReceivingChanges);
+		final String branchPath = commitInformation.getPath();
+		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
 		if (criteria == null) {
-			// No criteria for branch, nothing to do.
+			LOGGER.info("ProjectAcceptanceCriteria not found for branch; nothing to process.");
 			return;
 		}
 
-		Set<CriteriaItem> criteriaItems = getCriteriaItemsAndMarkSignOff(branchPathReceivingChanges, criteria);
-		Set<String> itemsToReject = getCriteriaItemsToUnaccept(criteriaItems);
-		Integer projectIteration = criteria.getProjectIteration();
-		if (commitInformation.isContent()) {
-			Set<String> itemsAlreadyAccepted = getCriteriaItemsAlreadyAccepted(criteriaItems, itemsToReject);
-			Set<String> itemsShouldBeAccepted = getCriteriaItemsThatShouldBeAccepted(commitInformation, criteria, branchPathReceivingChanges, criteriaItems);
-			persistItemsShouldBeAccepted(itemsShouldBeAccepted, itemsAlreadyAccepted, branchPathReceivingChanges, commitInformation.getHeadTime(), projectIteration);
-		}
+		boolean classified = commitInformation.isClassified();
+		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
+		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
 
-		if (!itemsToReject.isEmpty()) {
-			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToReject, branchPathReceivingChanges, projectIteration);
-			criteriaItemSignOffService.deleteItems(itemsToReject, branchPathReceivingChanges, projectIteration);
+		final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, branchPath);
+		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
+
+		// Includes role check
+		Set<String> itemsShouldBeAccepted = items.stream()
+				.filter(item ->
+						(item.getId().equals(CriteriaItem.PROJECT_CLASSIFICATION_CLEAN) && projectLevel && classified && userHasRole(item, branchRoles)) ||
+								(item.getId().equals(CriteriaItem.TASK_CLASSIFICATION_CLEAN) && taskLevel && classified && userHasRole(item, branchRoles))
+				)
+				.map(CriteriaItem::getId)
+				.collect(Collectors.toSet());
+
+		// Intentionally does not include a user role check
+		Set<String> itemsToUnaccept = items.stream()
+				.filter(item -> item.isExpiresOnCommit() && item.isComplete())
+				.map(CriteriaItem::getId)
+				.collect(Collectors.toSet());
+
+		final Set<String> acceptedItems = items.stream()
+				.filter(item -> item.isComplete() && !itemsToUnaccept.contains(item.getId()))
+				.map(CriteriaItem::getId)
+				.collect(Collectors.toSet());
+
+
+		if (!itemsToUnaccept.isEmpty()) {
+			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToUnaccept, branchPath, criteria.getProjectIteration());
+			criteriaItemSignOffService.deleteItems(itemsToUnaccept, branchPath, criteria.getProjectIteration());
 		} else {
 			LOGGER.info("No Criteria Items to reject.");
 		}
+
+		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
 	}
 
 	@Async
@@ -168,7 +189,10 @@ public class AcceptanceService {
 		toPersist.removeAll(itemsAlreadyAccepted);
 
 		if (!toPersist.isEmpty()) {
+			LOGGER.info("Signing off items {} for branch {}, iteration {}", toPersist, branchPath, projectIteration);
 			criteriaItemSignOffService.doCreateItems(toPersist, branchPath, branchHeadTime, projectIteration);
+		} else {
+			LOGGER.info("No Criteria Items to accept.");
 		}
 	}
 
@@ -223,43 +247,5 @@ public class AcceptanceService {
 		}
 
 		return criteriaIdentifiers;
-	}
-
-	private Set<CriteriaItem> getCriteriaItemsAndMarkSignOff(String branchPath, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
-		LOGGER.info("Finding all CriteriaItem for branch {} and projectIteration {}.", branchPath, projectAcceptanceCriteria.getProjectIteration());
-		return criteriaService.findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
-	}
-
-	private Set<String> getCriteriaItemsToUnaccept(Set<CriteriaItem> criteriaItems) {
-		// Intentionally does not include a user role check
-		return criteriaItems
-				.stream()
-				.filter(item -> item.isExpiresOnCommit() && item.isComplete())
-				.map(CriteriaItem::getId)
-				.collect(Collectors.toSet());
-	}
-
-	private Set<String> getCriteriaItemsAlreadyAccepted(Set<CriteriaItem> criteriaItems, Set<String> itemsToUnaccept) {
-		return criteriaItems
-				.stream()
-				.filter(item -> item.isComplete() && !itemsToUnaccept.contains(item.getId()))
-				.map(CriteriaItem::getId)
-				.collect(Collectors.toSet());
-	}
-
-	private Set<String> getCriteriaItemsThatShouldBeAccepted(CommitInformation commitInformation, ProjectAcceptanceCriteria criteria, String branchPath, Set<CriteriaItem> criteriaItems) {
-		boolean classified = commitInformation.isClassified();
-		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
-		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
-		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
-		// Includes role check
-		return criteriaItems
-				.stream()
-				.filter(item ->
-						(item.getId().equals(CriteriaItem.PROJECT_CLASSIFICATION_CLEAN) && projectLevel && classified && userHasRole(item, branchRoles)) ||
-								(item.getId().equals(CriteriaItem.TASK_CLASSIFICATION_CLEAN) && taskLevel && classified && userHasRole(item, branchRoles))
-				)
-				.map(CriteriaItem::getId)
-				.collect(Collectors.toSet());
 	}
 }

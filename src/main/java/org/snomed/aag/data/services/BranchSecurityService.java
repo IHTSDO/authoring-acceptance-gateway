@@ -71,7 +71,7 @@ public class BranchSecurityService {
 		try {
 			final Branch branch = getBranchOrThrow(branchPath);
 			if (branch != null) {
-				branch.getUserRoles();// This already includes any global roles
+				return branch.getUserRoles();// This already includes any global roles
 			}
 		} catch (RestClientException e) {
 			LOGGER.debug("Failed to fetch branch {}", branchPath, e);
