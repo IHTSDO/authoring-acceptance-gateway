@@ -104,19 +104,19 @@ public class AcceptanceService {
 	 * @param commitInformation Commit information including branch path and metadata.
 	 */
 	public void processCommit(CommitInformation commitInformation) {
-		final String branchPath = commitInformation.getPath();
-		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
+		final String sourceBranchPath = commitInformation.getSourceBranchPath();
+		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(sourceBranchPath);
 		if (criteria == null) {
 			// No criteria for branch, nothing to do.
 			return;
 		}
 
 		boolean classified = commitInformation.isClassified();
-		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
-		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
+		boolean projectLevel = criteria.isBranchProjectLevel(sourceBranchPath);
+		boolean taskLevel = criteria.isBranchTaskLevel(sourceBranchPath);
 
-		final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, branchPath);
-		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
+		final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, sourceBranchPath);
+		final Set<String> branchRoles = securityService.getBranchRoles(sourceBranchPath);
 
 		// Includes role check
 		Set<String> itemsShouldBeAccepted = items.stream()
@@ -140,10 +140,13 @@ public class AcceptanceService {
 
 
 		if (!itemsToUnaccept.isEmpty()) {
-			criteriaItemSignOffService.deleteItems(itemsToUnaccept, branchPath, criteria.getProjectIteration());
+			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToUnaccept, sourceBranchPath, criteria.getProjectIteration());
+			criteriaItemSignOffService.deleteItems(itemsToUnaccept, sourceBranchPath, criteria.getProjectIteration());
+		} else {
+			LOGGER.info("No Criteria Items to reject.");
 		}
 
-		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
+		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, sourceBranchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
 	}
 
 	@Async

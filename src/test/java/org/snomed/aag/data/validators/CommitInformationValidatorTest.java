@@ -5,6 +5,7 @@ import org.snomed.aag.data.pojo.CommitInformation;
 
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CommitInformationValidatorTest {
@@ -32,12 +33,24 @@ class CommitInformationValidatorTest {
 	}
 
 	@Test
-	void validate_ShouldThrowException_WhenGivenNoPath() {
+	void validate_ShouldThrowException_WhenGivenNoSourceBranchPath() {
 		// given
 		CommitInformation commitInformation = new CommitInformation(null, CommitInformation.CommitType.PROMOTION, 10L, Collections.emptyMap());
 
 		// then
 		assertThrows(IllegalArgumentException.class, () -> {
+			// when
+			target.validate(commitInformation);
+		});
+	}
+
+	@Test
+	void validate_ShouldNotThrowException_WhenGivenNoTargetBranchPath() {
+		// given
+		CommitInformation commitInformation = new CommitInformation("source", null, CommitInformation.CommitType.PROMOTION, 10L, Collections.emptyMap());
+
+		// then
+		assertDoesNotThrow(() -> {
 			// when
 			target.validate(commitInformation);
 		});

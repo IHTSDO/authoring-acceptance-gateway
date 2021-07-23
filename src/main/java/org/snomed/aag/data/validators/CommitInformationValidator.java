@@ -21,9 +21,9 @@ public class CommitInformationValidator {
 			throw new IllegalArgumentException("No CommitType specified.");
 		}
 
-		String path = commitInformation.getPath();
-		if (path == null) {
-			throw new IllegalArgumentException("No path specified.");
+		String sourceBranchPath = commitInformation.getSourceBranchPath();
+		if (sourceBranchPath == null) {
+			throw new IllegalArgumentException("No sourceBranchPath specified.");
 		}
 
 		long headTime = commitInformation.getHeadTime();
