@@ -73,7 +73,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 
 		// then
 		assertResponseStatus(resultActions, 400);
-		assertResponseBody(resultActions, buildErrorResponse(HttpStatus.BAD_REQUEST, "No path specified."));
+		assertResponseBody(resultActions, buildErrorResponse(HttpStatus.BAD_REQUEST, "No sourceBranchPath specified."));
 	}
 
 	@Test

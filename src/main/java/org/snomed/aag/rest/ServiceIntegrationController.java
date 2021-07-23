@@ -65,10 +65,10 @@ public class ServiceIntegrationController {
 		} else {
 			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(commitInformation);
 			if (pacComplete) {
-				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", commitInformation.getPath());
+				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", commitInformation.getSourceBranchPath());
 				return ResponseEntity.status(HttpStatus.OK).build();
 			} else {
-				logger.info("Project Acceptance Criteria for {} is incomplete. Promotion is not recommended.", commitInformation.getPath());
+				logger.info("Project Acceptance Criteria for {} is incomplete. Promotion is not recommended.", commitInformation.getSourceBranchPath());
 				return ResponseEntity.status(HttpStatus.CONFLICT).build();
 			}
 		}
