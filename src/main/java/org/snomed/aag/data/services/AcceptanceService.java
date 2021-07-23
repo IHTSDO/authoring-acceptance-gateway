@@ -107,7 +107,7 @@ public class AcceptanceService {
 		final String branchPath = commitInformation.getPath();
 		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
 		if (criteria == null) {
-			// No criteria for branch, nothing to do.
+			LOGGER.info("ProjectAcceptanceCriteria not found for branch; nothing to process.");
 			return;
 		}
 
@@ -140,7 +140,10 @@ public class AcceptanceService {
 
 
 		if (!itemsToUnaccept.isEmpty()) {
+			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToUnaccept, branchPath, criteria.getProjectIteration());
 			criteriaItemSignOffService.deleteItems(itemsToUnaccept, branchPath, criteria.getProjectIteration());
+		} else {
+			LOGGER.info("No Criteria Items to reject.");
 		}
 
 		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
@@ -186,7 +189,10 @@ public class AcceptanceService {
 		toPersist.removeAll(itemsAlreadyAccepted);
 
 		if (!toPersist.isEmpty()) {
+			LOGGER.info("Signing off items {} for branch {}, iteration {}", toPersist, branchPath, projectIteration);
 			criteriaItemSignOffService.doCreateItems(toPersist, branchPath, branchHeadTime, projectIteration);
+		} else {
+			LOGGER.info("No Criteria Items to accept.");
 		}
 	}
 
