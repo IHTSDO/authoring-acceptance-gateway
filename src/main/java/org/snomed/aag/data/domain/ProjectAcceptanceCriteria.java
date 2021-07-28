@@ -157,24 +157,6 @@ public class ProjectAcceptanceCriteria {
 		return projectAcceptanceCriteria;
 	}
 
-	public boolean hasCriteria() {
-		if (this.selectedProjectCriteriaIds == null && this.selectedTaskCriteriaIds == null) {
-			return false;
-		}
-
-		boolean projectCriteria = false;
-		if (this.selectedProjectCriteriaIds != null) {
-			projectCriteria = this.selectedProjectCriteriaIds.isEmpty();
-		}
-
-		boolean taskCriteria = false;
-		if (this.selectedTaskCriteriaIds != null) {
-			taskCriteria = this.selectedTaskCriteriaIds.isEmpty();
-		}
-
-		return !projectCriteria || !taskCriteria;
-	}
-
 	@Override
 	public String toString() {
 		return "ProjectAcceptanceCriteria{" +
