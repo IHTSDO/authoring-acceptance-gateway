@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.pojo.ValidationInformation;
 import org.snomed.aag.data.services.AcceptanceService;
@@ -46,7 +47,7 @@ public class ServiceIntegrationController {
 					"This information is used to perform automatic actions within this service like accepting or expiring acceptance items. "
 	)
 	@PostMapping("/snowstorm/commit")
-	public ResponseEntity<Void> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
+	public ResponseEntity<?> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
 		final String username = SecurityUtil.getUsername();
 		logger.info("Received commit information {} from user {}", commitInformation, username);
 
@@ -63,12 +64,22 @@ public class ServiceIntegrationController {
 
 			return ResponseEntity.status(HttpStatus.OK).build();
 		} else {
-			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(commitInformation);
+			String sourceBranchPath = commitInformation.getSourceBranchPath();
+			ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findEffectiveCriteriaWithMandatoryItems(sourceBranchPath);
+			if (projectAcceptanceCriteria == null) {
+				String message = String.format("No Project Acceptance Criteria found for branch %s. Returning %s.", sourceBranchPath, HttpStatus.NO_CONTENT);
+				logger.info(message);
+				return ResponseEntity
+						.status(HttpStatus.NO_CONTENT)
+						.body(message);
+			}
+
+			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranchPath);
 			if (pacComplete) {
-				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", commitInformation.getSourceBranchPath());
+				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", sourceBranchPath);
 				return ResponseEntity.status(HttpStatus.OK).build();
 			} else {
-				logger.info("Project Acceptance Criteria for {} is incomplete. Promotion is not recommended.", commitInformation.getSourceBranchPath());
+				logger.info("Project Acceptance Criteria for {} is incomplete. Promotion is not recommended.", sourceBranchPath);
 				return ResponseEntity.status(HttpStatus.CONFLICT).build();
 			}
 		}

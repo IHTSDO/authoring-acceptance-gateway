@@ -127,29 +127,8 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 				);
 
 		// then
-		assertResponseStatus(resultActions, 404);
-		assertResponseBody(resultActions, buildErrorResponse(404, "No Project Acceptance Criteria found for branch."));
-	}
-
-	@Test
-	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenPACHasNoCriteriaItems() throws Exception {
-		// given
-		String requestUrl = receiveCommitInformation();
-		String branchPath = "MAIN/projectA/taskB";
-		CommitInformation commitInformation = new CommitInformation(branchPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
-
-		givenProjectAcceptanceCriteriaExists(branchPath, 1);
-
-		// when
-		ResultActions resultActions = mockMvc
-				.perform(post(requestUrl)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(asJson(commitInformation))
-				);
-
-		// then
-		assertResponseStatus(resultActions, 409);
-		assertResponseBody(resultActions, buildErrorResponse(HttpStatus.CONFLICT.value(), "Project Acceptance Criteria has no Criteria Items."));
+		assertResponseStatus(resultActions, 204);
+		assertResponseBody(resultActions, String.format("No Project Acceptance Criteria found for branch %s. Returning " + HttpStatus.NO_CONTENT + ".", branchPath));
 	}
 
 	@Test
