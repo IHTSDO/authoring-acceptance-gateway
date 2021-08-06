@@ -271,18 +271,27 @@ public class ProjectAcceptanceCriteriaService {
 	}
 
     /**
-     * Return whether the latest ProjectAcceptanceCriteria for the given branch is complete. If the ProjectAcceptanceCriteria has been
-     * completed, a new entry will be added to the store.
+     * Return whether the given ProjectAcceptanceCriteria for the given branch is complete. If the given branch is for a project,
+     * then only project level CriteriaItems will be checked. Likewise, if the given branch is for a task, then only
+     * task level CriteriaItems will be checked. If the ProjectAcceptanceCriteria has been completed,
+     * a new entry will be added to the store.
      *
      * @param projectAcceptanceCriteria Entry to check if complete
      * @param branchPath                Path to help check if entry is complete
-     * @return Whether the latest ProjectAcceptanceCriteria for the given branch is complete.
+     * @return Whether the given ProjectAcceptanceCriteria for the given branch is complete.
      * @throws IllegalArgumentException If arguments are invalid.
      */
     public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
         verifyParams(projectAcceptanceCriteria, branchPath);
 
-        boolean allCriteriaItemsComplete = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath).stream().allMatch(CriteriaItem::isComplete);
+        Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
+        boolean allCriteriaItemsComplete = false;
+        if (projectAcceptanceCriteria.isBranchProjectLevel(branchPath)) {
+            allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
+        } else if (projectAcceptanceCriteria.isBranchTaskLevel(branchPath)) {
+            allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.TASK == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
+        }
+
         if (allCriteriaItemsComplete) {
             // New entry to get new creation date.
             ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
