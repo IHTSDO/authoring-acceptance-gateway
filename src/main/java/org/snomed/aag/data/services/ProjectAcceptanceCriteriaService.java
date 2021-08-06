@@ -3,7 +3,6 @@ package org.snomed.aag.data.services;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
-import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaCreateValidator;
 import org.snomed.aag.rest.util.PathUtil;
@@ -61,8 +60,8 @@ public class ProjectAcceptanceCriteriaService {
         }
     }
 
-    private static void verifyParams(CommitInformation commitInformation) {
-        if (commitInformation == null) {
+    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
+        if (projectAcceptanceCriteria == null || branchPath == null) {
             throw new IllegalArgumentException();
         }
     }
@@ -246,8 +245,7 @@ public class ProjectAcceptanceCriteriaService {
     public ProjectAcceptanceCriteria update(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
         verifyParams(projectAcceptanceCriteria);
         // Must exist
-        ProjectAcceptanceCriteria existing = findByBranchPathAndProjectIterationOrThrow(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
-        projectAcceptanceCriteria.setCreationDate(existing.getCreationDate());
+        findByBranchPathAndProjectIterationOrThrow(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
         projectAcceptanceCriteriaCreateValidator.validate(projectAcceptanceCriteria);
         return repository.save(projectAcceptanceCriteria);
     }
@@ -275,35 +273,26 @@ public class ProjectAcceptanceCriteriaService {
     /**
      * Return whether the given ProjectAcceptanceCriteria for the given branch is complete. If the given branch is for a project,
      * then only project level CriteriaItems will be checked. Likewise, if the given branch is for a task, then only
-     * task level CriteriaItems will be checked. If the given branchPath is for the project and
-     * the ProjectAcceptanceCriteria has been completed, a new entry will be added to the store.
+     * task level CriteriaItems will be checked. If the ProjectAcceptanceCriteria has been completed,
+     * a new entry will be added to the store.
      *
-     * @param commitInformation Request from client.
-     * @return Whether the latest ProjectAcceptanceCriteria for the given branch is complete.
-     **/
-    public boolean incrementIfComplete(CommitInformation commitInformation) {
-        verifyParams(commitInformation);
+     * @param projectAcceptanceCriteria Entry to check if complete
+     * @param branchPath                Path to help check if entry is complete
+     * @return Whether the given ProjectAcceptanceCriteria for the given branch is complete.
+     * @throws IllegalArgumentException If arguments are invalid.
+     */
+    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
+        verifyParams(projectAcceptanceCriteria, branchPath);
 
-        String path = commitInformation.getSourceBranchPath();
-        ProjectAcceptanceCriteria projectAcceptanceCriteria = findEffectiveCriteriaWithMandatoryItems(path);
-        if (projectAcceptanceCriteria == null) {
-            throw new ServiceRuntimeException("No Project Acceptance Criteria found for branch.", HttpStatus.NOT_FOUND);
-        }
-
-        if (!projectAcceptanceCriteria.hasCriteria()) {
-            throw new ServiceRuntimeException("Project Acceptance Criteria has no Criteria Items.", HttpStatus.CONFLICT);
-        }
-
-        Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, path);
+        Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
         boolean allCriteriaItemsComplete = false;
-        boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(path);
-        if (branchProjectLevel) {
+        if (projectAcceptanceCriteria.isBranchProjectLevel(branchPath)) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
-        } else if (projectAcceptanceCriteria.isBranchTaskLevel(path)) {
+        } else if (projectAcceptanceCriteria.isBranchTaskLevel(branchPath)) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.TASK == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
         }
 
-        if (allCriteriaItemsComplete && branchProjectLevel) {
+        if (allCriteriaItemsComplete) {
             // New entry to get new creation date.
             ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
             create(incrementedProjectAcceptanceCriteria);
