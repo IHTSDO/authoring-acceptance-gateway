@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
+import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
@@ -156,16 +157,16 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenPACIsComplete() throws Exception {
 		// given
 		String requestUrl = receiveCommitInformation();
-		String branchPath = "MAIN/projectA/taskB";
-		CommitInformation commitInformation = new CommitInformation(branchPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
+		String projectPath = "MAIN/projectA";
+		String taskPath = "MAIN/projectA/taskB";
+		CommitInformation commitInformation = new CommitInformation(taskPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
 		String projectCriteriaId = "project-criteria-id";
 		String taskCriteriaId = "task-criteria-id";
 
-		givenProjectAcceptanceCriteriaExists(branchPath, 1, projectCriteriaId, taskCriteriaId);
-		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId);
-		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId);
-		givenCriteriaItemSignOffExists(branchPath, projectCriteriaId);
-		givenCriteriaItemSignOffExists(branchPath, taskCriteriaId);
+		givenProjectAcceptanceCriteriaExists(projectPath, 1, projectCriteriaId, taskCriteriaId);
+		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT);
+		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
+		givenCriteriaItemSignOffExists(taskPath, taskCriteriaId); // Only task CriteriaItem has been approved.
 
 		// when
 		ResultActions resultActions = mockMvc
@@ -190,8 +191,8 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		String taskCriteriaId = "task-criteria-id";
 
 		givenProjectAcceptanceCriteriaExists(branchPath, 1, projectCriteriaId, taskCriteriaId);
-		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId);
-		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId);
+		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT);
+		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
 		givenCriteriaItemSignOffExists(branchPath, projectCriteriaId);
 		givenCriteriaItemSignOffExists(branchPath, taskCriteriaId);
 
@@ -209,14 +210,15 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenPACIsIncomplete() throws Exception {
 		// given
 		String requestUrl = receiveCommitInformation();
-		String branchPath = "MAIN/projectA/taskB";
-		CommitInformation commitInformation = new CommitInformation(branchPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
+		String projectPath = "MAIN/projectA";
+		String taskBranch = "MAIN/projectA/taskB";
+		CommitInformation commitInformation = new CommitInformation(taskBranch, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
 		String projectCriteriaId = "project-criteria-id";
 		String taskCriteriaId = "task-criteria-id";
 
-		givenProjectAcceptanceCriteriaExists(branchPath, 1, projectCriteriaId, taskCriteriaId);
-		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId);
-		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId);
+		givenProjectAcceptanceCriteriaExists(projectPath, 1, projectCriteriaId, taskCriteriaId);
+		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT);
+		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
 
 		// when
 		ResultActions resultActions = mockMvc
@@ -234,16 +236,17 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenRequestingTwice() throws Exception {
 		// given
 		String requestUrl = receiveCommitInformation();
-		String branchPath = "MAIN/projectA/taskB";
-		CommitInformation commitInformation = new CommitInformation(branchPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
+		String projectPath = "MAIN/projectA";
+		String taskPath = "MAIN/projectA/taskB";
+		CommitInformation commitInformation = new CommitInformation(taskPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
 		String projectCriteriaId = "project-criteria-id";
 		String taskCriteriaId = "task-criteria-id";
 
-		givenProjectAcceptanceCriteriaExists(branchPath, 1, projectCriteriaId, taskCriteriaId);
-		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId);
-		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId);
-		givenCriteriaItemSignOffExists(branchPath, projectCriteriaId);
-		givenCriteriaItemSignOffExists(branchPath, taskCriteriaId);
+		givenProjectAcceptanceCriteriaExists(projectPath, 1, projectCriteriaId, taskCriteriaId);
+		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT);
+		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
+		givenCriteriaItemSignOffExists(taskPath, projectCriteriaId);
+		givenCriteriaItemSignOffExists(taskPath, taskCriteriaId);
 
 		// first request
 		ResultActions firstRequest = mockMvc
@@ -274,13 +277,6 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		return "/criteria/" + branchPath;
 	}
 
-	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration) {
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
-		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.emptySet());
-		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(Collections.emptySet());
-		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
-	}
-
 	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, String projectCriteriaId, String taskCriteriaId) {
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
 		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton(projectCriteriaId));
@@ -288,12 +284,20 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
 	}
 
-	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label) {
+	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration) {
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
+		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.emptySet());
+		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(Collections.emptySet());
+		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
+	}
+
+	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
 		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
+		criteriaItem.setAuthoringLevel(authoringLevel);
 
 		criteriaItemRepository.save(criteriaItem);
 	}

@@ -277,7 +277,7 @@ public class ProjectAcceptanceCriteriaService {
      *
      * @param commitInformation Request from client.
      * @return Whether the latest ProjectAcceptanceCriteria for the given branch is complete.
-     */
+     **/
     public boolean incrementIfComplete(CommitInformation commitInformation) {
         verifyParams(commitInformation);
 
@@ -291,7 +291,14 @@ public class ProjectAcceptanceCriteriaService {
             throw new ServiceRuntimeException("Project Acceptance Criteria has no Criteria Items.", HttpStatus.CONFLICT);
         }
 
-        boolean allCriteriaItemsComplete = findItemsAndMarkSignOff(projectAcceptanceCriteria, path).stream().allMatch(CriteriaItem::isComplete);
+        Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, path);
+        boolean allCriteriaItemsComplete = false;
+        if (projectAcceptanceCriteria.isBranchProjectLevel(path)) {
+            allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
+        } else if (projectAcceptanceCriteria.isBranchTaskLevel(path)) {
+            allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.TASK == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
+        }
+
         if (allCriteriaItemsComplete) {
             // New entry to get new creation date.
             ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
