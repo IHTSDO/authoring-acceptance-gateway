@@ -2,6 +2,8 @@ package org.snomed.aag.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,7 @@ import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.pojo.ValidationInformation;
 import org.snomed.aag.data.services.AcceptanceService;
+import org.snomed.aag.data.services.BranchSecurityService;
 import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
 import org.snomed.aag.data.validators.CommitInformationValidator;
 import org.springframework.http.HttpStatus;
@@ -32,12 +35,14 @@ public class ServiceIntegrationController {
 	private final CommitInformationValidator commitInformationValidator;
 	private final AcceptanceService acceptanceService;
 	private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
+	private final BranchSecurityService branchSecurityService;
 
 	public ServiceIntegrationController(CommitInformationValidator commitInformationValidator, AcceptanceService acceptanceService,
-										ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService) {
+										ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService, BranchSecurityService branchSecurityService) {
 		this.commitInformationValidator = commitInformationValidator;
 		this.acceptanceService = acceptanceService;
 		this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
+		this.branchSecurityService = branchSecurityService;
 	}
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -47,7 +52,7 @@ public class ServiceIntegrationController {
 					"This information is used to perform automatic actions within this service like accepting or expiring acceptance items. "
 	)
 	@PostMapping("/snowstorm/commit")
-	public ResponseEntity<?> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
+	public ResponseEntity<?> receiveCommitInformation(@RequestBody CommitInformation commitInformation) throws RestClientException {
 		final String username = SecurityUtil.getUsername();
 		logger.info("Received commit information {} from user {}", commitInformation, username);
 
@@ -67,7 +72,8 @@ public class ServiceIntegrationController {
 						.body(message);
 			}
 
-			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranchPath);
+			Branch sourceBranch = branchSecurityService.getBranchOrThrow(sourceBranchPath);
+			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranch);
 			if (pacComplete) {
 				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", sourceBranchPath);
 				processCommitAsync(commitInformation);

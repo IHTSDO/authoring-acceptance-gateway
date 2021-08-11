@@ -36,7 +36,8 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         this.acceptanceController = new AcceptanceController(
                 securityService,
                 projectAcceptanceCriteriaService,
-				acceptanceService
+				acceptanceService,
+                criteriaItemService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
                 projectAcceptanceCriteriaService,

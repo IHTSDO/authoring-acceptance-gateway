@@ -7,6 +7,7 @@ import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.CriteriaItemRepository;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
+import org.snomed.aag.rest.util.MetadataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -182,6 +183,21 @@ public class CriteriaItemService {
 	public void verifyManual(CriteriaItem criteriaItem, boolean expectedManual) {
 		if (criteriaItem.isManual() != expectedManual) {
 			throw new AccessDeniedException("Criteria Item cannot be changed manually.");
+		}
+	}
+
+	/**
+	 * Remove entry from collection. If entry does not have a corresponding flag in Branch metadata
+	 * or the corresponding flag in Branch metadata is false, then remove entry from collection.
+	 *
+	 * @param criteriaItems Collection to process
+	 * @param branch        Branch to cross reference
+	 */
+	public void removeNonEnabled(Set<CriteriaItem> criteriaItems, Branch branch) {
+		verifyParams(criteriaItems, branch);
+		Set<String> authorFlags = MetadataUtil.getEnabledAuthorFlags(branch);
+		if (!authorFlags.isEmpty()) {
+			criteriaItems.removeIf(item -> item.getEnabledByFlag().stream().noneMatch(authorFlags::contains));
 		}
 	}
 }
