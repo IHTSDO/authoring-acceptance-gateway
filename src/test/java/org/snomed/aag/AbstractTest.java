@@ -114,7 +114,30 @@ public abstract class AbstractTest {
 		when(securityService.getBranchOrThrow(any())).thenReturn(branch);
 	}
 
-	protected void givenUserDoesNotHavePermissionForBranch() throws RestClientException {
+	protected void givenBranchDoesExist(String path) throws RestClientException {
+		Branch branch = new Branch();
+		branch.setPath(path);
+
+		when(securityService.getBranchOrThrow(any())).thenReturn(branch);
+	}
+
+	protected void givenBranchDoesExist(long timestamp, Map<String, Object> metadata) throws RestClientException {
+		Branch branch = new Branch();
+		branch.setHeadTimestamp(timestamp);
+		branch.setMetadata(metadata);
+
+		when(securityService.getBranchOrThrow(anyString())).thenReturn(branch);
+	}
+
+	protected void givenBranchDoesExist(String branchPath, Map<String, Object> metadata) throws RestClientException {
+		Branch branch = new Branch();
+		branch.setPath(branchPath);
+		branch.setMetadata(metadata);
+
+		when(securityService.getBranchOrThrow(anyString())).thenReturn(branch);
+	}
+
+	protected void givenUserDoesNotHavePermissionForBranch() {
 		doThrow(new AccessDeniedException("User does not have desired role.")).when(securityService).verifyBranchRole(any(), any());
 	}
 

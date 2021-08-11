@@ -35,7 +35,8 @@ class AdminControllerTest extends AbstractTest {
 		this.acceptanceController = new AcceptanceController(
 				securityService,
 				projectAcceptanceCriteriaService,
-				acceptanceService
+				acceptanceService,
+				criteriaItemService
 		);
 		this.mockMvc = MockMvcBuilders
 				.standaloneSetup(adminController, acceptanceController)
