@@ -6,4 +6,9 @@ public class Constants {
 	public static final PageRequest PAGE_OF_ONE = PageRequest.of(0, 1);
 	public static final PageRequest SMALL_PAGE = PageRequest.of(0, 100);
 	public static final PageRequest LARGE_PAGE = PageRequest.of(0, 10_000);
+
+	/**
+	 * Key in Branch metadata storing collection of author flags.
+	 */
+	public static final String AUTHOR_FLAG = "authorFlags";
 }
