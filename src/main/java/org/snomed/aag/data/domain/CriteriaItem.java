@@ -7,7 +7,9 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import javax.validation.constraints.NotBlank;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Document(indexName = "criteria-item")
 public class CriteriaItem implements Comparable<CriteriaItem> {
@@ -47,6 +49,9 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 
 	@Field(type = FieldType.Keyword)
 	private String requiredRole;
+
+	@Field(type = FieldType.Keyword)
+	private Set<String> enabledByFlag = new HashSet<>();
 
 	@Transient
 	private boolean complete;
@@ -136,6 +141,14 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 
 	public void setRequiredRole(String requiredRole) {
 		this.requiredRole = requiredRole;
+	}
+
+	public Set<String> getEnabledByFlag() {
+		return enabledByFlag;
+	}
+
+	public void setEnabledByFlag(Set<String> enabledByFlag) {
+		this.enabledByFlag = enabledByFlag;
 	}
 
 	public boolean isComplete() {

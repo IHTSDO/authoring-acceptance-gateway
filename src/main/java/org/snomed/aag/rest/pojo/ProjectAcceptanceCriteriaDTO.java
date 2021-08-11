@@ -31,18 +31,4 @@ public class ProjectAcceptanceCriteriaDTO {
     public Set<CriteriaItem> getCriteriaItems() {
         return criteriaItems;
     }
-
-    public int getNumberOfCriteriaItemsWithCompletedValue(boolean completed) {
-        if (criteriaItems.isEmpty()) {
-            return 0;
-        }
-
-        List<CriteriaItem> numberOfCriteriaItemsWithCompletedValue =
-                criteriaItems
-                        .stream()
-                        .filter(criteriaItem -> criteriaItem.isComplete() == completed)
-                        .collect(Collectors.toList());
-
-        return numberOfCriteriaItemsWithCompletedValue.size();
-    }
 }

@@ -1,5 +1,6 @@
 package org.snomed.aag.data.services;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -60,8 +61,8 @@ public class ProjectAcceptanceCriteriaService {
         }
     }
 
-    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
-        if (projectAcceptanceCriteria == null || branchPath == null) {
+    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
+        if (projectAcceptanceCriteria == null || branch == null) {
             throw new IllegalArgumentException();
         }
     }
@@ -277,14 +278,16 @@ public class ProjectAcceptanceCriteriaService {
      * a new entry will be added to the store.
      *
      * @param projectAcceptanceCriteria Entry to check if complete
-     * @param branchPath                Path to help check if entry is complete
+     * @param branch                    Branch to cross reference
      * @return Whether the given ProjectAcceptanceCriteria for the given branch is complete.
      * @throws IllegalArgumentException If arguments are invalid.
      */
-    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
-        verifyParams(projectAcceptanceCriteria, branchPath);
+    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
+        verifyParams(projectAcceptanceCriteria, branch);
 
+        String branchPath = branch.getPath();
         Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
+        criteriaItemService.removeNonEnabled(criteriaItems, branch);
         boolean allCriteriaItemsComplete = false;
         if (projectAcceptanceCriteria.isBranchProjectLevel(branchPath)) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
