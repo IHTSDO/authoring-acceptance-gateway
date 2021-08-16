@@ -3,11 +3,13 @@ package org.snomed.aag.rest;
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
 import io.swagger.annotations.*;
 import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
-import org.snomed.aag.data.services.*;
+import org.snomed.aag.data.services.AcceptanceService;
+import org.snomed.aag.data.services.BranchSecurityService;
+import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
+import org.snomed.aag.data.services.ServiceRuntimeException;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,16 +25,11 @@ public class AcceptanceController {
     private final BranchSecurityService securityService;
     private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
     private final AcceptanceService acceptanceService;
-	private final CriteriaItemService criteriaItemService;
 
-    public AcceptanceController(BranchSecurityService securityService,
-			ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService,
-			AcceptanceService acceptanceService, CriteriaItemService criteriaItemService) {
-
+	public AcceptanceController(BranchSecurityService securityService, ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService, AcceptanceService acceptanceService) {
         this.securityService = securityService;
         this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
         this.acceptanceService = acceptanceService;
-		this.criteriaItemService = criteriaItemService;
     }
 
     @ApiOperation(value = "View all Criteria Items for a branch.",
@@ -45,12 +42,11 @@ public class AcceptanceController {
             @ApiResponse(code = 200, message = "When the branch (or its parent) has acceptance criteria.", response = ProjectAcceptanceCriteriaDTO.class)
     })
 	@GetMapping("/{branchPath}")
-	public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branchPath") String branchPath,
-											   @ApiParam("Toggle whether to only return criteria matching authoring flags stored on Branch.") @RequestParam(required = false) boolean matchAuthorFlags) throws RestClientException {
+	public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branchPath") String branchPath) throws RestClientException {
 		branchPath = BranchPathUriUtil.decodePath(branchPath);
 
 		// Check branch exists
-		Branch branch = securityService.getBranchOrThrow(branchPath);
+		securityService.getBranchOrThrow(branchPath);
 
 		//Find ProjectAcceptanceCriteria (including mandatory items)
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
@@ -60,10 +56,6 @@ public class AcceptanceController {
 
 		// Update complete flag for all Criteria Items on this branch
 		Set<CriteriaItem> items = projectAcceptanceCriteriaService.findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
-
-		if (matchAuthorFlags) {
-			criteriaItemService.removeNonEnabled(items, branch);
-		}
 
 		return ResponseEntity
 				.status(HttpStatus.OK)

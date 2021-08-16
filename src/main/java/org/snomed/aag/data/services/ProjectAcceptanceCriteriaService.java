@@ -1,11 +1,13 @@
 package org.snomed.aag.data.services;
 
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaCreateValidator;
+import org.snomed.aag.rest.util.MetadataUtil;
 import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,9 @@ public class ProjectAcceptanceCriteriaService {
 	@Autowired
     private CriteriaItemSignOffService criteriaItemSignOffService;
 
+    @Autowired
+    private BranchSecurityService branchSecurityService;
+
 	private static void verifyParams(String branchPath, Integer projectIteration) {
         if (branchPath == null || projectIteration == null || projectIteration < 0) {
             throw new IllegalArgumentException(INVALID_PARAMETERS);
@@ -61,8 +66,8 @@ public class ProjectAcceptanceCriteriaService {
         }
     }
 
-    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
-        if (projectAcceptanceCriteria == null || branch == null) {
+    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
+        if (projectAcceptanceCriteria == null || branchPath == null) {
             throw new IllegalArgumentException();
         }
     }
@@ -159,6 +164,17 @@ public class ProjectAcceptanceCriteriaService {
         }
         for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
 			criteria.addToSelectedTaskCriteria(criteriaItem);
+        }
+
+        // Join criteria items with matching authoring flag(s) in Branch metadata
+        Set<String> enabledAuthorFlags = MetadataUtil.getEnabledAuthorFlags(getBranchOrThrow(branchPath));
+        if (!enabledAuthorFlags.isEmpty()) {
+            for (CriteriaItem criteriaItem : criteriaItemService.findAllByEnabledByFlagInAndAuthoringLevel(enabledAuthorFlags, AuthoringLevel.PROJECT)) {
+                criteria.addToSelectedProjectCriteria(criteriaItem);
+            }
+            for (CriteriaItem criteriaItem : criteriaItemService.findAllByEnabledByFlagInAndAuthoringLevel(enabledAuthorFlags, AuthoringLevel.TASK)) {
+                criteria.addToSelectedTaskCriteria(criteriaItem);
+            }
         }
 
         return criteria;
@@ -278,16 +294,14 @@ public class ProjectAcceptanceCriteriaService {
      * a new entry will be added to the store.
      *
      * @param projectAcceptanceCriteria Entry to check if complete
-     * @param branch                    Branch to cross reference
+     * @param branchPath                Branch to cross reference
      * @return Whether the given ProjectAcceptanceCriteria for the given branch is complete.
      * @throws IllegalArgumentException If arguments are invalid.
      */
-    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
-        verifyParams(projectAcceptanceCriteria, branch);
+    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
+        verifyParams(projectAcceptanceCriteria, branchPath);
 
-        String branchPath = branch.getPath();
         Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
-        criteriaItemService.removeNonEnabled(criteriaItems, branch);
         boolean allCriteriaItemsComplete = false;
         if (projectAcceptanceCriteria.isBranchProjectLevel(branchPath)) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
@@ -302,5 +316,13 @@ public class ProjectAcceptanceCriteriaService {
         }
 
         return allCriteriaItemsComplete;
+    }
+
+    private Branch getBranchOrThrow(String branchPath) {
+        try {
+            return branchSecurityService.getBranchOrThrow(branchPath);
+        } catch (RestClientException e) {
+            throw new ServiceRuntimeException(String.format("Cannot find branch %s", branchPath), HttpStatus.NOT_FOUND);
+        }
     }
 }

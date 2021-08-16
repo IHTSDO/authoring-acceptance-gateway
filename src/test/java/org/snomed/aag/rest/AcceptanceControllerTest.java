@@ -40,8 +40,7 @@ class AcceptanceControllerTest extends AbstractTest {
         this.acceptanceController = new AcceptanceController(
                 securityService,
                 projectAcceptanceCriteriaService,
-				acceptanceService,
-                criteriaItemService
+				acceptanceService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
                 projectAcceptanceCriteriaService,
@@ -617,7 +616,7 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
-    void viewCriteriaItems_ShouldReturnAllItems_WhenBranchHasNoAuthorFlags() throws Exception {
+    void viewCriteriaItems_ShouldReturnExpectedItems_WhenBranchHasAuthorFlags() throws Exception {
         //given
         String projectBranch = "MAIN/projectA";
         String taskBranch = projectBranch + "/taskA";
@@ -625,84 +624,21 @@ class AcceptanceControllerTest extends AbstractTest {
         String projectCriteriaItemId = UUID.randomUUID().toString();
         String taskCriteriaItemId1 = UUID.randomUUID().toString();
         String taskCriteriaItemId2 = UUID.randomUUID().toString();
-        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch), true);
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch));
 
-        givenBranchDoesExist(System.currentTimeMillis());
-        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
-        givenCriteriaItemExists(projectCriteriaItemId, true, 1, projectCriteriaItemId);
-        givenCriteriaItemExists(taskCriteriaItemId1, true, 1, taskCriteriaItemId1);
-        givenCriteriaItemExists(taskCriteriaItemId2, true, 1, taskCriteriaItemId2, "complex");
-        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Set.of(taskCriteriaItemId1, taskCriteriaItemId2));
-        givenCriteriaItemSignOffExists(taskBranch, projectCriteriaItemId);
-
-        //when
-        ResultActions resultActions = mockMvc.perform(get(requestUrl));
-        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
-
-        //then
-        assertEquals(4, criteriaItems.size()); // Everything returned
-    }
-
-    @Test
-    void viewCriteriaItems_ShouldReturnSubsetOfItems_WhenBranchHasAuthorFlags() throws Exception {
-        //given
-        String projectBranch = "MAIN/projectA";
-        String taskBranch = projectBranch + "/taskA";
-        String globalCriteriaItemId = UUID.randomUUID().toString();
-        String projectCriteriaItemId = UUID.randomUUID().toString();
-        String taskCriteriaItemId1 = UUID.randomUUID().toString();
-        String taskCriteriaItemId2 = UUID.randomUUID().toString();
-        String taskCriteriaItemId3 = UUID.randomUUID().toString();
-        String taskCriteriaItemId4 = UUID.randomUUID().toString();
-        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch), true);
-
-        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
-        givenCriteriaItemExists(projectCriteriaItemId, true, 1, projectCriteriaItemId);
-        givenCriteriaItemExists(taskCriteriaItemId1, true, 1, taskCriteriaItemId1);
-        givenCriteriaItemExists(taskCriteriaItemId2, true, 1, taskCriteriaItemId2, "complex");
-        givenCriteriaItemExists(taskCriteriaItemId3, true, 1, taskCriteriaItemId3, "simple");
-        givenCriteriaItemExists(taskCriteriaItemId4, true, 1, taskCriteriaItemId4, "complicated");
-        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Set.of(taskCriteriaItemId1, taskCriteriaItemId2));
-        givenCriteriaItemSignOffExists(taskBranch, projectCriteriaItemId);
         givenBranchDoesExist(System.currentTimeMillis(), buildMetadataWithAuthorFlag("complex", true));
-
-        //when
-        ResultActions resultActions = mockMvc.perform(get(requestUrl));
-        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
-
-        //then
-        assertEquals(1, criteriaItems.size()); // Subset returned matching Branch author flags
-    }
-
-    @Test
-    void viewCriteriaItems_ShouldReturnAllItems_WhenNoEnabledAuthorFlags() throws Exception {
-        //given
-        String projectBranch = "MAIN/projectA";
-        String taskBranch = projectBranch + "/taskA";
-        String globalCriteriaItemId = UUID.randomUUID().toString();
-        String projectCriteriaItemId = UUID.randomUUID().toString();
-        String taskCriteriaItemId1 = UUID.randomUUID().toString();
-        String taskCriteriaItemId2 = UUID.randomUUID().toString();
-        String taskCriteriaItemId3 = UUID.randomUUID().toString();
-        String taskCriteriaItemId4 = UUID.randomUUID().toString();
-        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch), true);
-
         givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
         givenCriteriaItemExists(projectCriteriaItemId, true, 1, projectCriteriaItemId);
         givenCriteriaItemExists(taskCriteriaItemId1, true, 1, taskCriteriaItemId1);
         givenCriteriaItemExists(taskCriteriaItemId2, true, 1, taskCriteriaItemId2, "complex");
-        givenCriteriaItemExists(taskCriteriaItemId3, true, 1, taskCriteriaItemId3, "simple");
-        givenCriteriaItemExists(taskCriteriaItemId4, true, 1, taskCriteriaItemId4, "complicated");
-        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Set.of(taskCriteriaItemId1, taskCriteriaItemId2));
-        givenCriteriaItemSignOffExists(taskBranch, projectCriteriaItemId);
-        givenBranchDoesExist(System.currentTimeMillis(), buildMetadataWithAuthorFlag("complex", false));
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Set.of(taskCriteriaItemId1)); // Created without complex task
 
         //when
         ResultActions resultActions = mockMvc.perform(get(requestUrl));
         Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
 
         //then
-        assertEquals(4, criteriaItems.size()); // Everything returned as no enabled flags to remove
+        assertEquals(3, criteriaItems.size()); // Including items matching authoring flags
     }
 
     @Test
@@ -817,6 +753,7 @@ class AcceptanceControllerTest extends AbstractTest {
     @Test
     void rejectCriteriaItem_ShouldReturnExpectedResponse_WhenThereIsNothingToDelete() throws Exception {
         //given
+        givenBranchDoesExist();
         String branchPath = UUID.randomUUID().toString();
         String criteriaItemId = UUID.randomUUID().toString();
         String requestUrl = signOffCriteriaItem(branchPath, criteriaItemId);
@@ -899,10 +836,6 @@ class AcceptanceControllerTest extends AbstractTest {
 
     private String viewCriteriaItems(String branchPath) {
         return "/acceptance/" + branchPath;
-    }
-
-    private String viewCriteriaItems(String branchPath, boolean matchAuthorFlags) {
-        return "/acceptance/" + branchPath + "?matchAuthorFlags=true";
     }
 
     private String createProjectCriteria() {

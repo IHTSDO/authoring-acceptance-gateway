@@ -36,8 +36,8 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 
 	@BeforeEach
 	public void setUp() {
-		this.serviceIntegrationController = new ServiceIntegrationController(commitInformationValidator, acceptanceService, projectAcceptanceCriteriaService, securityService);
-		this.acceptanceController = new AcceptanceController(securityService, projectAcceptanceCriteriaService, acceptanceService, criteriaItemService);
+		this.serviceIntegrationController = new ServiceIntegrationController(commitInformationValidator, acceptanceService, projectAcceptanceCriteriaService);
+		this.acceptanceController = new AcceptanceController(securityService, projectAcceptanceCriteriaService, acceptanceService);
 		this.acceptanceCriteriaController = new AcceptanceCriteriaController(projectAcceptanceCriteriaService, projectAcceptanceCriteriaUpdateValidator);
 		this.mockMvc = MockMvcBuilders
 				.standaloneSetup(serviceIntegrationController, acceptanceController, acceptanceCriteriaController)
@@ -252,37 +252,6 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		assertResponseStatus(secondRequest, 409); // Project has been incremented and PAC hasn't been completed for that iteration.
 	}
 
-	@Test
-	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenMetadataConfiguredForSubset() throws Exception {
-		// given
-		String requestUrl = receiveCommitInformation();
-		String projectPath = "MAIN/projectA";
-		String taskPath = "MAIN/projectA/taskB";
-		CommitInformation commitInformation = new CommitInformation(taskPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
-		String projectCriteriaId = "project-criteria-id";
-		String taskCriteriaId1 = "task-criteria-id-1";
-		String taskCriteriaId2 = "task-criteria-id-2";
-
-		givenProjectAcceptanceCriteriaExists(projectPath, 1, projectCriteriaId, Set.of(taskCriteriaId1, taskCriteriaId2));
-		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT, "complex");
-		givenCriteriaItemExists(taskCriteriaId1, true, 1, taskCriteriaId1, AuthoringLevel.TASK, "complex");
-		givenCriteriaItemExists(taskCriteriaId2, true, 1, taskCriteriaId1, AuthoringLevel.TASK, "simple"); // Won't be validated as no matching flag
-		givenCriteriaItemSignOffExists(taskPath, projectCriteriaId);
-		givenCriteriaItemSignOffExists(taskPath, taskCriteriaId1);
-		givenBranchDoesExist(taskPath, buildMetadataWithAuthorFlag(new LinkedHashMap<>(Map.of("complex", true))));
-
-		// when
-		ResultActions resultActions = mockMvc
-				.perform(post(requestUrl)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(asJson(commitInformation))
-				);
-
-		// then
-		assertResponseStatus(resultActions, 200); // Only subset of PAC validated
-		assertResponseBodyIsEmpty(resultActions);
-	}
-
 	private String receiveCommitInformation() {
 		return "/integration/snowstorm/commit";
 	}
@@ -302,13 +271,6 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
 	}
 
-	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, String projectCriteriaId, Set<String> taskCriteriaIds) {
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
-		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton(projectCriteriaId));
-		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(taskCriteriaIds);
-		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
-	}
-
 	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
@@ -316,18 +278,6 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 		criteriaItem.setAuthoringLevel(authoringLevel);
-
-		criteriaItemRepository.save(criteriaItem);
-	}
-
-	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, String enabledByFlag) {
-		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
-		criteriaItem.setManual(manual);
-		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
-		criteriaItem.setOrder(order);
-		criteriaItem.setLabel(label);
-		criteriaItem.setAuthoringLevel(authoringLevel);
-		criteriaItem.setEnabledByFlag(Set.of(enabledByFlag));
 
 		criteriaItemRepository.save(criteriaItem);
 	}
@@ -346,12 +296,5 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	private ProjectAcceptanceCriteria toProjectAcceptanceCriteria(String response) throws JsonProcessingException {
 		return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
 		});
-	}
-
-	private Map<String, Object> buildMetadataWithAuthorFlag(Map<String, Object> authorFlags) {
-		Map<String, Object> metadata = new LinkedHashMap<>();
-		metadata.put(Constants.AUTHOR_FLAG, authorFlags);
-
-		return metadata;
 	}
 }

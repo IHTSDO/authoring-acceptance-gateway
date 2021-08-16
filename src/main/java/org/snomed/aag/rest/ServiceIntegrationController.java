@@ -2,8 +2,6 @@ package org.snomed.aag.rest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +33,12 @@ public class ServiceIntegrationController {
 	private final CommitInformationValidator commitInformationValidator;
 	private final AcceptanceService acceptanceService;
 	private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
-	private final BranchSecurityService branchSecurityService;
 
 	public ServiceIntegrationController(CommitInformationValidator commitInformationValidator, AcceptanceService acceptanceService,
-										ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService, BranchSecurityService branchSecurityService) {
+										ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService) {
 		this.commitInformationValidator = commitInformationValidator;
 		this.acceptanceService = acceptanceService;
 		this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
-		this.branchSecurityService = branchSecurityService;
 	}
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -52,7 +48,7 @@ public class ServiceIntegrationController {
 					"This information is used to perform automatic actions within this service like accepting or expiring acceptance items. "
 	)
 	@PostMapping("/snowstorm/commit")
-	public ResponseEntity<?> receiveCommitInformation(@RequestBody CommitInformation commitInformation) throws RestClientException {
+	public ResponseEntity<?> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
 		final String username = SecurityUtil.getUsername();
 		logger.info("Received commit information {} from user {}", commitInformation, username);
 
@@ -79,8 +75,7 @@ public class ServiceIntegrationController {
 						.body(message);
 			}
 
-			Branch sourceBranch = branchSecurityService.getBranchOrThrow(sourceBranchPath);
-			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranch);
+			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranchPath);
 			if (pacComplete) {
 				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", sourceBranchPath);
 				return ResponseEntity.status(HttpStatus.OK).build();

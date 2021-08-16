@@ -7,7 +7,6 @@ import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.CriteriaItemRepository;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
-import org.snomed.aag.rest.util.MetadataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,10 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static java.lang.String.format;
 
@@ -175,17 +171,17 @@ public class CriteriaItemService {
 	}
 
 	/**
-	 * Remove entry from collection. If entry does not have a corresponding flag in Branch metadata
-	 * or the corresponding flag in Branch metadata is false, then remove entry from collection.
+	 * Return entries in store matching enabledByFlag and authoringLevel fields.
 	 *
-	 * @param criteriaItems Collection to process
-	 * @param branch        Branch to cross reference
+	 * @param authorFlags    Field to match in query.
+	 * @param authoringLevel Field to match in query.
+	 * @return Entries in store matching enabledByFlag and authoringLevel fields.
 	 */
-	public void removeNonEnabled(Set<CriteriaItem> criteriaItems, Branch branch) {
-		verifyParams(criteriaItems, branch);
-		Set<String> authorFlags = MetadataUtil.getEnabledAuthorFlags(branch);
-		if (!authorFlags.isEmpty()) {
-			criteriaItems.removeIf(item -> item.getEnabledByFlag().stream().noneMatch(authorFlags::contains));
+	public List<CriteriaItem> findAllByEnabledByFlagInAndAuthoringLevel(Set<String> authorFlags, AuthoringLevel authoringLevel) {
+		if (authorFlags == null || authorFlags.isEmpty() || authoringLevel == null) {
+			return Collections.emptyList();
 		}
+
+		return repository.findAllByEnabledByFlagInAndAuthoringLevel(authorFlags, authoringLevel);
 	}
 }
