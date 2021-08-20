@@ -364,16 +364,29 @@ public class ProjectAcceptanceCriteriaService {
     }
 
     private List<CriteriaItem> getTaskCriteriaItemsByJoiningMandatory(ProjectAcceptanceCriteria criteria, List<CriteriaItem> mandatory) {
+        // Join mandatory CriteriaItems
         List<CriteriaItem> taskCriteriaItems = criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK);
         for (CriteriaItem criteriaItem : taskCriteriaItems) {
             criteria.addToSelectedTaskCriteria(criteriaItem);
             mandatory.add(criteriaItem);
         }
 
-        for (String selectedTaskCriteriaId : criteria.getSelectedTaskCriteriaIds()) {
-            CriteriaItem byIdOrThrow = criteriaItemService.findByIdOrThrow(selectedTaskCriteriaId);
-            taskCriteriaItems.add(byIdOrThrow);
-            mandatory.add(byIdOrThrow);
+        // Collect CriteriaItems configured but not yet in scope
+        Set<String> taskCriteriaIds = criteria.getSelectedTaskCriteriaIds();
+        for (String taskCriteriaId : taskCriteriaIds) {
+            boolean found = false;
+            for (CriteriaItem taskCriteriaItem : taskCriteriaItems) {
+                if (taskCriteriaId.equals(taskCriteriaItem.getId())) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(taskCriteriaId);
+                taskCriteriaItems.add(criteriaItem);
+                mandatory.add(criteriaItem);
+            }
         }
 
         return taskCriteriaItems;
