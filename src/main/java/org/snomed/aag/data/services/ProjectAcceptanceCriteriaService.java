@@ -15,10 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.lang.String.format;
 
@@ -138,44 +135,36 @@ public class ProjectAcceptanceCriteriaService {
     }
 
     /**
-     * Find project acceptance criteria for the latest iteration from this or the parent branch.
-	 * Add all current mandatory criteria items.
+     * Return ProjectAcceptanceCriteria with effective CriteriaItems. If no ProjectAcceptanceCriteria can be
+     * found from the given branchPath, the parent Branch will be queried. Effective CriteriaItems are defined by
+     * whether they are configured on the ProjectAcceptanceCriteria, are marked as mandatory or have an enabledByFlag value.
      *
-     * @param branchPath Field to match in query.
-     * @return The project acceptance criteria or null if none found.
+     * @param branchPath Branch path to query for ProjectAcceptanceCriteria
+     * @return ProjectAcceptanceCriteria with effective CriteriaItems
      */
-    public ProjectAcceptanceCriteria findEffectiveCriteriaWithMandatoryItems(String branchPath) {
-		ProjectAcceptanceCriteria criteria = getLatestProjectAcceptanceCriteria(branchPath);
-
+    public ProjectAcceptanceCriteria findByBranchPathWithEffectiveCriteria(String branchPath) {
+        ProjectAcceptanceCriteria criteria = getFromBranchOrParent(branchPath);
         if (criteria == null) {
-            String parentPath = PathUtil.getParentPath(branchPath);
-            if (parentPath != null) {
-                criteria = getLatestProjectAcceptanceCriteria(parentPath);
-            }
-
-            if (criteria == null) {
-                return null;
-            }
+            return null;
         }
 
-		// Join mandatory criteria items, these may have been updated since the project criteria was created
-        for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
-			criteria.addToSelectedProjectCriteria(criteriaItem);
-        }
-        for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
-			criteria.addToSelectedTaskCriteria(criteriaItem);
-        }
+        // Get Project & Task level CriteriaItems. Keep note of mandatory CriteriaItems.
+        List<CriteriaItem> mandatoryCriteriaItems = new ArrayList<>();
+        List<CriteriaItem> projectCriteriaItems = getProjectCriteriaItemsByJoiningMandatory(criteria, mandatoryCriteriaItems);
+        List<CriteriaItem> taskCriteriaItems = getTaskCriteriaItemsByJoiningMandatory(criteria, mandatoryCriteriaItems);
 
-        // Join criteria items with matching authoring flag(s) in Branch metadata
+        // Join CriteriaItems matching Branch metadata authoring flags
         Set<String> enabledAuthorFlags = MetadataUtil.getEnabledAuthorFlags(getBranchOrThrow(branchPath));
         if (!enabledAuthorFlags.isEmpty()) {
-            for (CriteriaItem criteriaItem : criteriaItemService.findAllByEnabledByFlagInAndAuthoringLevel(enabledAuthorFlags, AuthoringLevel.PROJECT)) {
-                criteria.addToSelectedProjectCriteria(criteriaItem);
-            }
-            for (CriteriaItem criteriaItem : criteriaItemService.findAllByEnabledByFlagInAndAuthoringLevel(enabledAuthorFlags, AuthoringLevel.TASK)) {
-                criteria.addToSelectedTaskCriteria(criteriaItem);
-            }
+            addToProjectCriteriaItemsMatchingFlagsAndMandatory(criteria, enabledAuthorFlags);
+            addToTaskCriteriaItemsMatchingFlagsAndMandatory(criteria, enabledAuthorFlags);
         }
+
+        // Remove CriteriaItems if conflicting authoring flags
+        Map<String, Object> authorFlags = MetadataUtil.getAuthorFlags(getBranchOrThrow(branchPath));
+        Set<String> authorFlagsKeySet = authorFlags.keySet();
+        removeProjectCriteriaItems(criteria, projectCriteriaItems, mandatoryCriteriaItems, authorFlags, authorFlagsKeySet);
+        removeTaskCriteriaItems(criteria, taskCriteriaItems, mandatoryCriteriaItems, authorFlags, authorFlagsKeySet);
 
         return criteria;
     }
@@ -282,9 +271,15 @@ public class ProjectAcceptanceCriteriaService {
 		if (criteria == null) {
 			return Collections.emptySet();
 		}
-		Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteria.getAllCriteriaIdentifiers());
-		criteriaItemSignOffService.markSignedOffItems(branchPath, criteria.getProjectIteration(), criteriaItems);
-		return criteriaItems;
+
+        Set<String> criteriaIdentifiers = criteria.getAllCriteriaIdentifiers();
+        if (criteriaIdentifiers.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteriaIdentifiers);
+        criteriaItemSignOffService.markSignedOffItems(branchPath, criteria.getProjectIteration(), criteriaItems);
+        return criteriaItems;
 	}
 
     /**
@@ -324,5 +319,138 @@ public class ProjectAcceptanceCriteriaService {
         } catch (RestClientException e) {
             throw new ServiceRuntimeException(String.format("Cannot find branch %s", branchPath), HttpStatus.NOT_FOUND);
         }
+    }
+
+    private ProjectAcceptanceCriteria getFromBranchOrParent(String branchPath) {
+        ProjectAcceptanceCriteria criteria = getLatestProjectAcceptanceCriteria(branchPath);
+
+        if (criteria == null) {
+            String parentPath = PathUtil.getParentPath(branchPath);
+            if (parentPath != null) {
+                criteria = getLatestProjectAcceptanceCriteria(parentPath);
+            }
+        }
+
+        return criteria;
+    }
+
+    private List<CriteriaItem> getProjectCriteriaItemsByJoiningMandatory(ProjectAcceptanceCriteria criteria, List<CriteriaItem> mandatory) {
+        // Join mandatory CriteriaItems
+        List<CriteriaItem> projectCriteriaItems = criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT);
+        for (CriteriaItem criteriaItem : projectCriteriaItems) {
+            criteria.addToSelectedProjectCriteria(criteriaItem);
+            mandatory.add(criteriaItem);
+        }
+
+        // Collect CriteriaItems configured but not yet in scope
+        Set<String> projectCriteriaIds = criteria.getSelectedProjectCriteriaIds();
+        for (String projectCriteriaId : projectCriteriaIds) {
+            boolean found = false;
+            for (CriteriaItem projectCriteriaItem : projectCriteriaItems) {
+                if (projectCriteriaId.equals(projectCriteriaItem.getId())) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(projectCriteriaId);
+                projectCriteriaItems.add(criteriaItem);
+                mandatory.add(criteriaItem);
+            }
+        }
+
+        return projectCriteriaItems;
+    }
+
+    private List<CriteriaItem> getTaskCriteriaItemsByJoiningMandatory(ProjectAcceptanceCriteria criteria, List<CriteriaItem> mandatory) {
+        List<CriteriaItem> taskCriteriaItems = criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK);
+        for (CriteriaItem criteriaItem : taskCriteriaItems) {
+            criteria.addToSelectedTaskCriteria(criteriaItem);
+            mandatory.add(criteriaItem);
+        }
+
+        for (String selectedTaskCriteriaId : criteria.getSelectedTaskCriteriaIds()) {
+            CriteriaItem byIdOrThrow = criteriaItemService.findByIdOrThrow(selectedTaskCriteriaId);
+            taskCriteriaItems.add(byIdOrThrow);
+            mandatory.add(byIdOrThrow);
+        }
+
+        return taskCriteriaItems;
+    }
+
+    private void addToProjectCriteriaItemsMatchingFlagsAndMandatory(ProjectAcceptanceCriteria criteria, Set<String> enabledAuthorFlags) {
+        for (CriteriaItem criteriaItem : criteriaItemService.findBy(true, AuthoringLevel.PROJECT, enabledAuthorFlags)) {
+            criteria.addToSelectedProjectCriteria(criteriaItem);
+        }
+    }
+
+    private void addToTaskCriteriaItemsMatchingFlagsAndMandatory(ProjectAcceptanceCriteria criteria, Set<String> enabledAuthorFlags) {
+        for (CriteriaItem criteriaItem : criteriaItemService.findBy(true, AuthoringLevel.TASK, enabledAuthorFlags)) {
+            criteria.addToSelectedTaskCriteria(criteriaItem);
+        }
+    }
+
+    private void removeProjectCriteriaItems(ProjectAcceptanceCriteria criteria,
+                                            List<CriteriaItem> projectCriteriaItems,
+                                            List<CriteriaItem> mandatory,
+                                            Map<String, Object> authorFlags,
+                                            Set<String> branchKeySet) {
+        criteria.getSelectedProjectCriteriaIds().removeIf(item -> removeCriteriaItemIfMismatchingAuthoringFlag(projectCriteriaItems, mandatory, authorFlags, branchKeySet, item));
+    }
+
+    private void removeTaskCriteriaItems(ProjectAcceptanceCriteria criteria,
+                                         List<CriteriaItem> projectCriteriaItems,
+                                         List<CriteriaItem> mandatory,
+                                         Map<String, Object> authorFlags,
+                                         Set<String> branchKeySet) {
+        criteria.getSelectedTaskCriteriaIds().removeIf(item -> removeCriteriaItemIfMismatchingAuthoringFlag(projectCriteriaItems, mandatory, authorFlags, branchKeySet, item));
+    }
+
+    private boolean removeCriteriaItemIfMismatchingAuthoringFlag(List<CriteriaItem> criteriaItems, List<CriteriaItem> mandatory, Map<String, Object> authorFlags, Set<String> branchKeySet, String item) {
+        // Find CriteriaItem from given identifier (context is iterating through Collection)
+        CriteriaItem criteriaItem = new CriteriaItem();
+        for (CriteriaItem projectCriteriaItem : criteriaItems) {
+            if (projectCriteriaItem.getId().equals(item)) {
+                criteriaItem = projectCriteriaItem;
+                break;
+            }
+        }
+
+        // Remove item if there's a mismatch in authoring flags
+        Set<String> enabledByFlag = criteriaItem.getEnabledByFlag();
+        boolean isMandatory = mandatory.contains(criteriaItem);
+        boolean noCriteriaItemFlags = enabledByFlag.isEmpty();
+        boolean noBranchFlags = branchKeySet.isEmpty();
+        if (isMandatory && noCriteriaItemFlags && noBranchFlags) {
+            return false;
+        }
+
+        if (isMandatory && !noCriteriaItemFlags && noBranchFlags) {
+            return true;
+        }
+
+        // If Branch metadata doesn't contain enabledByFlag, remove
+        if (!enabledByFlag.isEmpty()) {
+            boolean noneMatch = enabledByFlag.stream().noneMatch(branchKeySet::contains);
+            if (noneMatch) {
+                return true;
+            }
+        }
+
+        // If Branch metadata does contain enabledByFlag, return value of flag
+        boolean remove = false;
+        for (String flag : enabledByFlag) {
+            Object authorFlag = authorFlags.get(flag);
+            if (authorFlag != null) {
+                boolean enabled = Boolean.parseBoolean(authorFlag.toString());
+                if (!enabled) {
+                    remove = true;
+                    break;
+                }
+            }
+        }
+
+        return remove;
     }
 }

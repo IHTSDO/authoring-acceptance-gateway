@@ -25,7 +25,7 @@ public class MetadataUtil {
 	 * @return Author flags that are enabled.
 	 */
 	@SuppressWarnings("unchecked")
-	public static Map<String, Object> getAllAuthorFlags(Branch branch) {
+	public static Map<String, Object> getAuthorFlags(Branch branch) {
 		verifyParams(branch);
 		Map<String, Object> metadata = branch.getMetadata();
 		if (metadata == null) {
@@ -48,7 +48,7 @@ public class MetadataUtil {
 	 */
 	public static Set<String> getEnabledAuthorFlags(Branch branch) {
 		verifyParams(branch);
-		Map<String, Object> authorFlags = getAllAuthorFlags(branch);
+		Map<String, Object> authorFlags = getAuthorFlags(branch);
 		authorFlags.entrySet().removeIf(eS -> {
 			Object value = eS.getValue();
 			if (value == null) {

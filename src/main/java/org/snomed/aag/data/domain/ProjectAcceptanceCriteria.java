@@ -35,7 +35,7 @@ public class ProjectAcceptanceCriteria {
 	@Field(type = FieldType.Keyword)
 	private Set<String> selectedTaskCriteriaIds;
 
-	private ProjectAcceptanceCriteria() {
+	public ProjectAcceptanceCriteria() {
 	}
 
 	public ProjectAcceptanceCriteria(String branchPath) {

@@ -5,7 +5,6 @@ import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -17,8 +16,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -108,7 +105,7 @@ public class AcceptanceService {
 	 */
 	public void processCommit(CommitInformation commitInformation) {
 		final String sourceBranchPath = commitInformation.getSourceBranchPath();
-		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(sourceBranchPath);
+		final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithEffectiveCriteria(sourceBranchPath);
 		if (criteria == null) {
 			LOGGER.info("ProjectAcceptanceCriteria not found for branch; nothing to process.");
 			return;
@@ -156,7 +153,7 @@ public class AcceptanceService {
 	public void processValidationAsync(ValidationInformation validationInformation) {
 		try {
 			final String branchPath = validationInformation.getBranchPath();
-			final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
+			final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithEffectiveCriteria(branchPath);
 			if (criteria == null) {
 				return;
 			}
@@ -216,7 +213,7 @@ public class AcceptanceService {
 		securityService.verifyBranchRole(branchPath, criteriaItem.getRequiredRole());
 
 		//Verify ProjectAcceptanceCriteria
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findByBranchPathWithEffectiveCriteria(branchPath);
 		if (projectAcceptanceCriteria == null) {
 			String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
 			throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
@@ -233,7 +230,7 @@ public class AcceptanceService {
 	}
 
 	private ProjectAcceptanceCriteria getPACOrThrow(String branchPath) {
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findByBranchPathWithEffectiveCriteria(branchPath);
 		if (projectAcceptanceCriteria == null) {
 			String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
 			throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);

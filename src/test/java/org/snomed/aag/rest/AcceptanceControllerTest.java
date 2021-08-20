@@ -15,6 +15,7 @@ import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -642,6 +643,29 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
+    void viewCriteriaItems_ShouldReturnPACWithExpectedCriteria_WhenGivenVariousConfigurations() throws Exception {
+        /*
+         * Scenario             Project has Criteria            Criteria is 'mandatory'         Criteria has 'enabledByFlag'   Branch Flags    Enabled
+         * A                    Y                               -                               -                               -               Y
+         * B                    -                               Y                               -                               -               Y
+         * C                    Y                               -                               complex                         complex=true    Y
+         * D                    -                               Y                               complex                         complex=true    Y
+         * E                    -                               -                               complex                         complex=true    N
+         * F                    -                               Y                               complex                         -               N
+         * G                    Y                               -                               thing                           complex=true    N
+         * H                    -                               Y                               complex                         complex=false   N
+         * */
+        assertViewingPACRequirement("A", true, false, null, null, true);
+        assertViewingPACRequirement("B", false, true, null, null, true);
+        assertViewingPACRequirement("C", true, false, "complex", Pair.of("complex", true), true);
+        assertViewingPACRequirement("D", false, true, "complex", Pair.of("complex", true), true);
+        assertViewingPACRequirement("E", false, false, "complex", Pair.of("complex", true), false);
+        assertViewingPACRequirement("F", false, true, "complex", null, false);
+        assertViewingPACRequirement("G", true, false, "thing", Pair.of("complex", true), false);
+        assertViewingPACRequirement("H", false, true, "complex", Pair.of("complex", false), false);
+    }
+
+    @Test
     void rejectCriteriaItem_ShouldReturnExpectedStatus_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
         //given
         String branchPath = UUID.randomUUID().toString();
@@ -852,6 +876,10 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItemRepository.save(criteriaItem);
     }
 
+    private void givenCriteriaItemExists(CriteriaItem criteriaItem) {
+        criteriaItemRepository.save(criteriaItem);
+    }
+
     private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, String flag) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
@@ -872,6 +900,17 @@ class AcceptanceControllerTest extends AbstractTest {
         ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
         projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton(projectCriteria));
         projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
+    }
+
+    private void givenProjectAcceptanceCriteriaExists(ProjectAcceptanceCriteria projectAcceptanceCriteria) throws Exception {
+        String requestUrl = createProjectCriteria();
+        ResultActions resultActions = mockMvc.perform(
+                post(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(projectAcceptanceCriteria))
+        );
+
+        assertResponseStatus(resultActions, 201);
     }
 
     private void givenGloballyRequiredProjectLevelCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
@@ -936,5 +975,56 @@ class AcceptanceControllerTest extends AbstractTest {
         metadata.put(Constants.AUTHOR_FLAG, authorFlags);
 
         return metadata;
+    }
+
+    private void assertViewingPACRequirement(String scenario,
+                                             boolean projectHasCriteria,
+                                             boolean criteriaIsMandatory,
+                                             String enabledByFlag,
+                                             Pair<String, Boolean> branchFlagKeyValue,
+                                             boolean shouldBeInProject) throws Exception {
+        // Delete previous state
+        criteriaItemRepository.deleteAll();
+        projectAcceptanceCriteriaRepository.deleteAll();
+
+        // Create CriteriaItem & ProjectAcceptanceCriteria
+        CriteriaItem projectCriteriaItem = new CriteriaItem(scenario, AuthoringLevel.PROJECT, criteriaIsMandatory, true, true);
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria();
+
+        // Test specific. Add CriteriaItem to ProjectAcceptanceCriteria for certain scenarios.
+        if (projectHasCriteria) {
+            projectAcceptanceCriteria.addToSelectedProjectCriteria(projectCriteriaItem);
+        }
+
+        // Test specific. Add enabledByFlag to CriteriaItem for certain scenarios.
+        if (enabledByFlag != null) {
+            projectCriteriaItem.setEnabledByFlag(Set.of(enabledByFlag));
+        }
+
+        // Set default properties on ProjectAcceptanceCriteria
+        projectAcceptanceCriteria.setBranchPath(scenario);
+        projectAcceptanceCriteria.setProjectIteration(1);
+
+        // Write CriteriaItem & ProjectAcceptanceCriteria to store
+        givenCriteriaItemExists(projectCriteriaItem);
+        givenProjectAcceptanceCriteriaExists(projectAcceptanceCriteria);
+
+        // Test specific. Add metadata to Branch for certain scenarios.
+        if (branchFlagKeyValue != null) {
+            givenBranchDoesExist(scenario, buildMetadataWithAuthorFlag(branchFlagKeyValue.getFirst(), branchFlagKeyValue.getSecond()));
+        } else {
+            givenBranchDoesExist(scenario);
+        }
+
+        // Request ProjectAcceptanceCriteria
+        ResultActions resultActions = mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(scenario))));
+        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
+
+        // Test specific. CriteriaItem should only be present in ProjectAcceptanceCriteria for certain scenarios.
+        if (shouldBeInProject) {
+            assertEquals(1, criteriaItems.size(), String.format("Test case for scenario %s failed.", scenario));
+        } else {
+            assertEquals(0, criteriaItems.size(), String.format("Test case for scenario %s failed.", scenario));
+        }
     }
 }

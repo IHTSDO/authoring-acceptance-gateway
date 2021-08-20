@@ -171,17 +171,18 @@ public class CriteriaItemService {
 	}
 
 	/**
-	 * Return entries in store matching enabledByFlag and authoringLevel fields.
+	 * Return entries in store matching enabledByFlag, authoringLevel and mandatory fields.
 	 *
-	 * @param authorFlags    Field to match in query.
+	 * @param mandatory      Field to match in query.
 	 * @param authoringLevel Field to match in query.
-	 * @return Entries in store matching enabledByFlag and authoringLevel fields.
+	 * @param enabledByFlag  Field to match in query.
+	 * @return Entries in store matching enabledByFlag, authoringLevel and mandatory fields.
 	 */
-	public List<CriteriaItem> findAllByEnabledByFlagInAndAuthoringLevel(Set<String> authorFlags, AuthoringLevel authoringLevel) {
-		if (authorFlags == null || authorFlags.isEmpty() || authoringLevel == null) {
+	public List<CriteriaItem> findBy(boolean mandatory, AuthoringLevel authoringLevel, Set<String> enabledByFlag) {
+		if (enabledByFlag == null || enabledByFlag.isEmpty() || authoringLevel == null) {
 			return Collections.emptyList();
 		}
 
-		return repository.findAllByEnabledByFlagInAndAuthoringLevel(authorFlags, authoringLevel);
+		return repository.findAllByEnabledByFlagInAndAuthoringLevelAndMandatory(enabledByFlag, authoringLevel, mandatory);
 	}
 }

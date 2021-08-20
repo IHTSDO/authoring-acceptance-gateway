@@ -9,7 +9,6 @@ import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.pojo.ValidationInformation;
 import org.snomed.aag.data.services.AcceptanceService;
-import org.snomed.aag.data.services.BranchSecurityService;
 import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
 import org.snomed.aag.data.validators.CommitInformationValidator;
 import org.springframework.http.HttpStatus;
@@ -66,7 +65,7 @@ public class ServiceIntegrationController {
 			return ResponseEntity.status(HttpStatus.OK).build();
 		} else {
 			String sourceBranchPath = commitInformation.getSourceBranchPath();
-			ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findEffectiveCriteriaWithMandatoryItems(sourceBranchPath);
+			ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathWithEffectiveCriteria(sourceBranchPath);
 			if (projectAcceptanceCriteria == null) {
 				String message = String.format("No Project Acceptance Criteria found for branch %s. Returning %s.", sourceBranchPath, HttpStatus.NO_CONTENT);
 				logger.info(message);
