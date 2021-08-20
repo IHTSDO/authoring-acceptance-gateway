@@ -451,7 +451,7 @@ public class ProjectAcceptanceCriteriaService {
             }
         }
 
-        // If Branch metadata does contain enabledByFlag, return value of flag
+        // If Branch metadata does contain enabledByFlag, remove if not flag enabled
         boolean remove = false;
         for (String flag : enabledByFlag) {
             Object authorFlag = authorFlags.get(flag);
