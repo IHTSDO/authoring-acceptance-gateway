@@ -169,20 +169,4 @@ public class CriteriaItemService {
 			throw new AccessDeniedException("Criteria Item cannot be changed manually.");
 		}
 	}
-
-	/**
-	 * Return entries in store matching enabledByFlag, authoringLevel and mandatory fields.
-	 *
-	 * @param mandatory      Field to match in query.
-	 * @param authoringLevel Field to match in query.
-	 * @param enabledByFlag  Field to match in query.
-	 * @return Entries in store matching enabledByFlag, authoringLevel and mandatory fields.
-	 */
-	public List<CriteriaItem> findBy(boolean mandatory, AuthoringLevel authoringLevel, Set<String> enabledByFlag) {
-		if (enabledByFlag == null || enabledByFlag.isEmpty() || authoringLevel == null) {
-			return Collections.emptyList();
-		}
-
-		return repository.findAllByEnabledByFlagInAndAuthoringLevelAndMandatory(enabledByFlag, authoringLevel, mandatory);
-	}
 }
