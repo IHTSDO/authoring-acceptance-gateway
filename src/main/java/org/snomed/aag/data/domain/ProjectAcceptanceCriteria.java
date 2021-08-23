@@ -139,6 +139,29 @@ public class ProjectAcceptanceCriteria {
 		}
 	}
 
+	public void setSelectedCriteria(Set<CriteriaItem> criteriaItems) {
+		int projectCount = 0;
+		int taskCount = 0;
+		for (CriteriaItem criteriaItem : criteriaItems) {
+			AuthoringLevel authoringLevel = criteriaItem.getAuthoringLevel();
+			if (AuthoringLevel.PROJECT.equals(authoringLevel)) {
+				projectCount = projectCount + 1;
+				this.selectedProjectCriteriaIds.add(criteriaItem.getId());
+			} else {
+				taskCount = taskCount + 1;
+				this.selectedTaskCriteriaIds.add(criteriaItem.getId());
+			}
+		}
+
+		if (projectCount == 0) {
+			this.selectedProjectCriteriaIds = new HashSet<>();
+		}
+
+		if (taskCount == 0) {
+			this.selectedTaskCriteriaIds = new HashSet<>();
+		}
+	}
+
 	public boolean isBranchProjectLevel(String branchPath) {
 		return getBranchPath().equals(branchPath);
 	}

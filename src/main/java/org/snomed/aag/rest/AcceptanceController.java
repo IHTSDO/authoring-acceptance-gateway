@@ -49,7 +49,7 @@ public class AcceptanceController {
 		securityService.getBranchOrThrow(branchPath);
 
 		//Find ProjectAcceptanceCriteria (including mandatory items)
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathWithEffectiveCriteria(branchPath);
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath);
 		if (projectAcceptanceCriteria == null) {
 			throw new ServiceRuntimeException(String.format("Cannot find Acceptance Criteria for %s.", branchPath), HttpStatus.NOT_FOUND);
 		}

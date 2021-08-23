@@ -65,7 +65,7 @@ public class ServiceIntegrationController {
 			return ResponseEntity.status(HttpStatus.OK).build();
 		} else {
 			String sourceBranchPath = commitInformation.getSourceBranchPath();
-			ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathWithEffectiveCriteria(sourceBranchPath);
+			ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathWithRelevantCriteriaItems(sourceBranchPath);
 			if (projectAcceptanceCriteria == null) {
 				String message = String.format("No Project Acceptance Criteria found for branch %s. Returning %s.", sourceBranchPath, HttpStatus.NO_CONTENT);
 				logger.info(message);

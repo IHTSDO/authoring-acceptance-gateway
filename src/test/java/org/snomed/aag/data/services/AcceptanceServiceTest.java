@@ -42,7 +42,7 @@ class AcceptanceServiceTest extends AbstractTest {
 		givenBranchDoesExist();
 		final String projectBranch = "MAIN/A";
 		final String taskBranch = projectBranch + "/A-10";
-		final ProjectAcceptanceCriteria acceptanceCriteria = criteriaService.findByBranchPathWithEffectiveCriteria(taskBranch);
+		final ProjectAcceptanceCriteria acceptanceCriteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(taskBranch);
 		assertNotNull(acceptanceCriteria);
 		Map<String, CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(acceptanceCriteria, taskBranch).stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
 		assertEquals(2, items.size());
