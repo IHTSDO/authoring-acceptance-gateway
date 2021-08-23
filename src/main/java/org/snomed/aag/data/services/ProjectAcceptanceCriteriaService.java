@@ -151,12 +151,11 @@ public class ProjectAcceptanceCriteriaService {
         // Get project, task & mandatory CriteriaItems
         Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria);
 
-        // Get author flags from Branch
-        Map<String, Object> branchAuthorFlags = MetadataUtil.getAuthorFlags(getBranchOrThrow(branchPath));
-        Set<String> branchAuthorKeys = branchAuthorFlags.keySet();
+        // Get "true" author flags from Branch
+        Set<String> branchAuthorFlags = MetadataUtil.getTrueAuthorFlags(getBranchOrThrow(branchPath));
 
-        // Remove from collection if there is a flag conflict between the CriteriaItem & Branch metadata
-        relevantCriteriaItems.removeIf(isConflictBetweenAuthorFlags(branchAuthorFlags, branchAuthorKeys));
+        // Remove from collection if item is enabled by a flag but the flag is not true on the branch.
+        relevantCriteriaItems.removeIf(criteriaItem -> !criteriaItem.getEnabledByFlag().isEmpty() && Collections.disjoint(criteriaItem.getEnabledByFlag(), branchAuthorFlags));
 
         criteria.setSelectedCriteria(relevantCriteriaItems);
         return criteria;
@@ -335,60 +334,12 @@ public class ProjectAcceptanceCriteriaService {
         relevantCriteriaItems.addAll(criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK));
 
         // Collect CriteriaItems domain from ProjectAcceptanceCriteria String identifiers
-        Set<String> projectCriteriaIds = criteria.getSelectedProjectCriteriaIds();
-        for (String projectCriteriaId : projectCriteriaIds) {
-            CriteriaItem projectCriteria = criteriaItemService.findByIdOrThrow(projectCriteriaId);
+        for (String criteriaId : criteria.getAllCriteriaIdentifiers()) {
+            CriteriaItem projectCriteria = criteriaItemService.findByIdOrThrow(criteriaId);
             relevantCriteriaItems.add(projectCriteria);
-        }
-
-        Set<String> taskCriteriaIds = criteria.getSelectedTaskCriteriaIds();
-        for (String taskCriteriaId : taskCriteriaIds) {
-            CriteriaItem taskCriteria = criteriaItemService.findByIdOrThrow(taskCriteriaId);
-            relevantCriteriaItems.add(taskCriteria);
         }
 
         return relevantCriteriaItems;
     }
 
-    private Predicate<CriteriaItem> isConflictBetweenAuthorFlags(Map<String, Object> branchAuthorFlags, Set<String> branchAuthorKeys) {
-        return criteriaItem -> {
-            Set<String> enabledByFlag = criteriaItem.getEnabledByFlag();
-            boolean enabledByFlagEmpty = enabledByFlag.isEmpty();
-            boolean branchFlagsEmpty = branchAuthorKeys.isEmpty();
-            boolean isMandatory = criteriaItem.isMandatory();
-
-            if (enabledByFlagEmpty && branchFlagsEmpty) {
-                return false;
-            }
-
-            if (!enabledByFlagEmpty && branchFlagsEmpty && isMandatory) {
-                return true;
-            }
-
-            if (!enabledByFlagEmpty) {
-                // If Branch metadata doesn't contain enabledByFlag, remove
-                boolean noneMatch = enabledByFlag.stream().noneMatch(branchAuthorKeys::contains);
-                if (noneMatch) {
-                    return true;
-                }
-
-                // If Branch metadata does contain enabledByFlag, remove if flag not enabled
-                boolean remove = false;
-                for (String flag : enabledByFlag) {
-                    Object authorFlag = branchAuthorFlags.get(flag);
-                    if (authorFlag != null) {
-                        boolean enabled = Boolean.parseBoolean(authorFlag.toString());
-                        if (!enabled) {
-                            remove = true;
-                            break;
-                        }
-                    }
-                }
-
-                return remove;
-            }
-
-            return false;
-        };
-    }
 }
