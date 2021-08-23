@@ -1,5 +1,6 @@
 package org.snomed.aag.data.services;
 
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
@@ -37,10 +38,11 @@ class AcceptanceServiceTest extends AbstractTest {
 	}
 
 	@Test
-	void testProcessCommit() {
+	void testProcessCommit() throws RestClientException {
+		givenBranchDoesExist();
 		final String projectBranch = "MAIN/A";
 		final String taskBranch = projectBranch + "/A-10";
-		final ProjectAcceptanceCriteria acceptanceCriteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(taskBranch);
+		final ProjectAcceptanceCriteria acceptanceCriteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(taskBranch);
 		assertNotNull(acceptanceCriteria);
 		Map<String, CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(acceptanceCriteria, taskBranch).stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
 		assertEquals(2, items.size());
