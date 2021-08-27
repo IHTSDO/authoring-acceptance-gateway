@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -462,6 +463,32 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
 
         // then
         assertEquals(1, updatedProjectAcceptanceCriteria.getSelectedProjectCriteriaIds().size());
+    }
+
+    @Test
+    void updateProjectCriteria_ShouldNotUpdateCreationDate() throws Exception {
+        String branchPath = UUID.randomUUID().toString();
+        String createProjectCriteria = createProjectCriteria();
+        String findForBranch = findForBranch(branchPath, null);
+        String updateProjectCriteria = updateProjectCriteria(branchPath, null);
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, 1);
+
+        givenUserDoesHavePermissionForBranch();
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenCriteriaItemExists("test-criteria-item", true, 1, "An example Criteria Item.");
+
+        // Create PAC & get creationDate
+        mockMvc.perform(post(createProjectCriteria).contentType(MediaType.APPLICATION_JSON).content(asJson(projectAcceptanceCriteria)));
+        ResultActions findForBranchResponse = mockMvc.perform(get(findForBranch).contentType(MediaType.APPLICATION_JSON));
+        Date creationDate = toProjectAcceptCriteria(getResponseBody(findForBranchResponse)).getCreationDate();
+
+        // Update PAC
+        projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton("test-criteria-item"));
+        ResultActions updateProjectCriteriaResponse = mockMvc.perform(put(updateProjectCriteria).contentType(MediaType.APPLICATION_JSON).content(asJson(projectAcceptanceCriteria)));
+        Date newCreationDate = toProjectAcceptCriteria(getResponseBody(updateProjectCriteriaResponse)).getCreationDate();
+
+        // creationDate should not have changed
+        assertEquals(creationDate, newCreationDate);
     }
 
     @Test
