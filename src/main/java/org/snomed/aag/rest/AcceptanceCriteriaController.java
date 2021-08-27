@@ -72,6 +72,11 @@ public class AcceptanceCriteriaController {
 			projectIteration = service.getLatestProjectIterationOrThrow(branch);
 		}
 
+		boolean projectIterationToUpdateNotSpecified = criteria.getProjectIteration() == null;
+		if (projectIterationToUpdateNotSpecified) {
+			criteria.setProjectIteration(projectIteration);
+		}
+
 		updateValidator.validate(criteria, branch, projectIteration);
 		return service.update(criteria);
 	}

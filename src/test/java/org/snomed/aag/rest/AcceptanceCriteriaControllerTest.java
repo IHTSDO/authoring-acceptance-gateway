@@ -441,6 +441,30 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     }
 
     @Test
+    void updateProjectCriteria_ShouldUpdateLatestProjectIteration_WhenNotSpecified() throws Exception {
+        // given
+        String branchPath = UUID.randomUUID().toString();
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath);
+        projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton("test-criteria-item"));
+        String requestUrl = updateProjectCriteria(branchPath, null);
+
+        givenUserDoesHavePermissionForBranch();
+        givenAcceptanceCriteriaExists(branchPath, 1);
+        givenCriteriaItemExists("test-criteria-item", true, 1, "An example Criteria Item.");
+
+        // when
+        ResultActions resultActions = mockMvc
+                .perform(put(requestUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJson(projectAcceptanceCriteria))
+                );
+        ProjectAcceptanceCriteria updatedProjectAcceptanceCriteria = toProjectAcceptCriteria(getResponseBody(resultActions));
+
+        // then
+        assertEquals(1, updatedProjectAcceptanceCriteria.getSelectedProjectCriteriaIds().size());
+    }
+
+    @Test
     void deleteProjectCriteria_ShouldReturnExpectedResponse_WhenNoLatestProjectAcceptanceCriteriaCanBeFoundFromBranch() throws Exception {
         // given
         String branchPath = UUID.randomUUID().toString();
