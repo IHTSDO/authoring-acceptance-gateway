@@ -16,7 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 import static java.lang.String.format;
 
@@ -243,7 +242,8 @@ public class ProjectAcceptanceCriteriaService {
     public ProjectAcceptanceCriteria update(ProjectAcceptanceCriteria projectAcceptanceCriteria) {
         verifyParams(projectAcceptanceCriteria);
         // Must exist
-        findByBranchPathAndProjectIterationOrThrow(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
+        ProjectAcceptanceCriteria existing = findByBranchPathAndProjectIterationOrThrow(projectAcceptanceCriteria.getBranchPath(), projectAcceptanceCriteria.getProjectIteration());
+        projectAcceptanceCriteria.setCreationDate(existing.getCreationDate());
         projectAcceptanceCriteriaCreateValidator.validate(projectAcceptanceCriteria);
         return repository.save(projectAcceptanceCriteria);
     }
