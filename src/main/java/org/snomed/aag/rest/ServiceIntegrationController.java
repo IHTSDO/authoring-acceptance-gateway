@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiOperation;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.pojo.ValidationInformation;
 import org.snomed.aag.data.services.AcceptanceService;
@@ -46,13 +47,13 @@ public class ServiceIntegrationController {
 					"This information is used to perform automatic actions within this service like accepting or expiring acceptance items. "
 	)
 	@PostMapping("/snowstorm/commit")
-	public ResponseEntity<Void> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
+	public ResponseEntity<?> receiveCommitInformation(@RequestBody CommitInformation commitInformation) {
 		final String username = SecurityUtil.getUsername();
 		logger.info("Received commit information {} from user {}", commitInformation, username);
 
 		commitInformationValidator.validate(commitInformation);
 		final CommitInformation.CommitType commitType = commitInformation.getCommitType();
-		if (commitType != CommitInformation.CommitType.PROMOTION) {
+		if (CommitInformation.CommitType.CONTENT.equals(commitType)) {
 			// Prevent the processing of this call slowing down the snowstorm commit
 			// All business logic within the service method
 			final SecurityContext context = SecurityContextHolder.getContext();
@@ -62,7 +63,17 @@ public class ServiceIntegrationController {
 			});
 
 			return ResponseEntity.status(HttpStatus.OK).build();
-		} else {
+		} else if (CommitInformation.CommitType.PROMOTION.equals(commitType)) {
+			String sourceBranchPath = commitInformation.getSourceBranchPath();
+			ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findEffectiveCriteriaWithMandatoryItems(sourceBranchPath);
+			if (projectAcceptanceCriteria == null) {
+				String message = String.format("No Project Acceptance Criteria found for branch %s. Returning %s.", sourceBranchPath, HttpStatus.NO_CONTENT);
+				logger.info(message);
+				return ResponseEntity
+						.status(HttpStatus.NO_CONTENT)
+						.body(message);
+			}
+
 			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(commitInformation);
 			if (pacComplete) {
 				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", commitInformation.getSourceBranchPath());
@@ -72,6 +83,8 @@ public class ServiceIntegrationController {
 				return ResponseEntity.status(HttpStatus.CONFLICT).build();
 			}
 		}
+
+		return ResponseEntity.status(HttpStatus.OK).build();
 	}
 
 	@ApiOperation(value = "Receive validation report information from Authoring Services.",
