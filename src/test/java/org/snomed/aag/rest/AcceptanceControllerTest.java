@@ -639,7 +639,7 @@ class AcceptanceControllerTest extends AbstractTest {
         Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
 
         //then
-        assertEquals(3, criteriaItems.size()); // Including items matching authoring flags
+        assertEquals(4, criteriaItems.size()); // Including items matching authoring flags
     }
 
     @Test
@@ -650,7 +650,7 @@ class AcceptanceControllerTest extends AbstractTest {
          * B                    -                               Y                               -                               -               Y
          * C                    Y                               -                               complex                         complex=true    Y
          * D                    -                               Y                               complex                         complex=true    Y
-         * E                    -                               -                               complex                         complex=true    N
+         * E                    -                               -                               complex                         complex=true    Y
          * F                    -                               Y                               complex                         -               N
          * G                    Y                               -                               thing                           complex=true    N
          * H                    -                               Y                               complex                         complex=false   N
@@ -659,7 +659,7 @@ class AcceptanceControllerTest extends AbstractTest {
         assertViewingPACRequirement("B", false, true, null, null, true);
         assertViewingPACRequirement("C", true, false, "complex", Pair.of("complex", true), true);
         assertViewingPACRequirement("D", false, true, "complex", Pair.of("complex", true), true);
-        assertViewingPACRequirement("E", false, false, "complex", Pair.of("complex", true), false);
+        assertViewingPACRequirement("E", false, false, "complex", Pair.of("complex", true), true);
         assertViewingPACRequirement("F", false, true, "complex", null, false);
         assertViewingPACRequirement("G", true, false, "thing", Pair.of("complex", true), false);
         assertViewingPACRequirement("H", false, true, "complex", Pair.of("complex", false), false);

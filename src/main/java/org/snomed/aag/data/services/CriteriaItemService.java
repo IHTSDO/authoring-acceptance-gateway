@@ -129,6 +129,21 @@ public class CriteriaItemService {
 	}
 
 	/**
+	 * Return entries from store where the enabledByFlag field has a value present in
+	 * given collection.
+	 *
+	 * @param enabledByFlag Collection of potential matches.
+	 * @return Entries from store where the enabledByFlag field has a value present in given collection.
+	 */
+	public Set<CriteriaItem> findAllByEnabledByFlag(Set<String> enabledByFlag) {
+		if (enabledByFlag == null || enabledByFlag.isEmpty()) {
+			return Collections.emptySet();
+		}
+
+		return repository.findAllByEnabledByFlagIn(enabledByFlag);
+	}
+
+	/**
 	 * Replace entry in database with given CriteriaItem.
 	 *
 	 * @param criteriaItem Entry to replace the existing one with.

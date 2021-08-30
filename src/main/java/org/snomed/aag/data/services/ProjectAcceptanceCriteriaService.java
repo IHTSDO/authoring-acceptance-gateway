@@ -149,11 +149,11 @@ public class ProjectAcceptanceCriteriaService {
             return null;
         }
 
-        // Get project, task & mandatory CriteriaItems
-        Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria);
-
         // Get "true" author flags from Branch
         Set<String> branchAuthorFlags = MetadataUtil.getTrueAuthorFlags(getBranchOrThrow(branchPath));
+
+        // Get project, task, mandatory and enabledByFlag CriteriaItems
+        Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria, branchAuthorFlags);
 
         // Remove from collection if item is enabled by a flag but the flag is not true on the branch.
         relevantCriteriaItems.removeIf(criteriaItem -> !criteriaItem.getEnabledByFlag().isEmpty() && Collections.disjoint(criteriaItem.getEnabledByFlag(), branchAuthorFlags));
@@ -329,7 +329,7 @@ public class ProjectAcceptanceCriteriaService {
         return criteria;
     }
 
-    private Set<CriteriaItem> getRelevantCriteriaItems(ProjectAcceptanceCriteria criteria) {
+    private Set<CriteriaItem> getRelevantCriteriaItems(ProjectAcceptanceCriteria criteria, Set<String> enabledByFlag) {
         Set<CriteriaItem> relevantCriteriaItems = new HashSet<>();
 
         // Collect mandatory
@@ -341,6 +341,9 @@ public class ProjectAcceptanceCriteriaService {
             CriteriaItem projectCriteria = criteriaItemService.findByIdOrThrow(criteriaId);
             relevantCriteriaItems.add(projectCriteria);
         }
+
+        // Collect those with enabledByFlag
+        relevantCriteriaItems.addAll(criteriaItemService.findAllByEnabledByFlag(enabledByFlag));
 
         return relevantCriteriaItems;
     }
