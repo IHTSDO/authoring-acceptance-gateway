@@ -42,14 +42,15 @@ public class AcceptanceController {
             @ApiResponse(code = 200, message = "When the branch (or its parent) has acceptance criteria.", response = ProjectAcceptanceCriteriaDTO.class)
     })
 	@GetMapping("/{branchPath}")
-	public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branchPath") String branchPath) throws RestClientException {
+	public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branchPath") String branchPath,
+											   @RequestParam(defaultValue = "true") boolean matchAuthorFlags) throws RestClientException {
 		branchPath = BranchPathUriUtil.decodePath(branchPath);
 
 		// Check branch exists
 		securityService.getBranchOrThrow(branchPath);
 
-		//Find ProjectAcceptanceCriteria (including mandatory items)
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath);
+		//Find ProjectAcceptanceCriteria. Optionally include CriteriaItem with matching author flags.
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath, matchAuthorFlags);
 		if (projectAcceptanceCriteria == null) {
 			throw new ServiceRuntimeException(String.format("Cannot find Acceptance Criteria for %s.", branchPath), HttpStatus.NOT_FOUND);
 		}

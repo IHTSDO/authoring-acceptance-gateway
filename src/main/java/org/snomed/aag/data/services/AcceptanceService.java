@@ -105,7 +105,7 @@ public class AcceptanceService {
 	 */
 	public void processCommit(CommitInformation commitInformation) {
 		final String sourceBranchPath = commitInformation.getSourceBranchPath();
-		final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(sourceBranchPath);
+		final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(sourceBranchPath, true);
 		if (criteria == null) {
 			LOGGER.info("ProjectAcceptanceCriteria not found for branch; nothing to process.");
 			return;
@@ -153,7 +153,7 @@ public class AcceptanceService {
 	public void processValidationAsync(ValidationInformation validationInformation) {
 		try {
 			final String branchPath = validationInformation.getBranchPath();
-			final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath);
+			final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath, true);
 			if (criteria == null) {
 				return;
 			}
@@ -213,7 +213,7 @@ public class AcceptanceService {
 		securityService.verifyBranchRole(branchPath, criteriaItem.getRequiredRole());
 
 		//Verify ProjectAcceptanceCriteria
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath);
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath, true);
 		if (projectAcceptanceCriteria == null) {
 			String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
 			throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
@@ -230,7 +230,7 @@ public class AcceptanceService {
 	}
 
 	private ProjectAcceptanceCriteria getPACOrThrow(String branchPath) {
-		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath);
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath, true);
 		if (projectAcceptanceCriteria == null) {
 			String message = String.format("Cannot find Acceptance Criteria for %s.", branchPath);
 			throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
