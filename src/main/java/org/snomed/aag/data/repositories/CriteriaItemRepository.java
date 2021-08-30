@@ -12,4 +12,6 @@ public interface CriteriaItemRepository extends ElasticsearchRepository<Criteria
     List<CriteriaItem> findAllByMandatoryAndAuthoringLevel(boolean mandatory, AuthoringLevel authoringLevel);
 
     Set<CriteriaItem> findAllByIdIn(Collection<String> criteriaItemIdentifiers);
+
+	Set<CriteriaItem> findAllByEnabledByFlagIn(Set<String> enabledByFlag);
 }
