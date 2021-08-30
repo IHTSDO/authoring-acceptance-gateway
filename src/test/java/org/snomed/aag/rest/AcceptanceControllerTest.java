@@ -654,6 +654,7 @@ class AcceptanceControllerTest extends AbstractTest {
          * F                    -                               Y                               complex                         -               N
          * G                    Y                               -                               thing                           complex=true    N
          * H                    -                               Y                               complex                         complex=false   N
+         * I                    Y                               N                               complex                         complex=false   Y
          * */
         assertViewingPACRequirement("A", true, false, null, null, true);
         assertViewingPACRequirement("B", false, true, null, null, true);
@@ -663,6 +664,7 @@ class AcceptanceControllerTest extends AbstractTest {
         assertViewingPACRequirement("F", false, true, "complex", null, false);
         assertViewingPACRequirement("G", true, false, "thing", Pair.of("complex", true), false);
         assertViewingPACRequirement("H", false, true, "complex", Pair.of("complex", false), false);
+        assertViewingPACRequirement("I", true, false, "complex", Pair.of("complex", false), true);
     }
 
     @Test

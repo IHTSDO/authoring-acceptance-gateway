@@ -37,4 +37,43 @@ public class MetadataUtil {
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toSet());
 	}
+
+	/**
+	 * Return author flags where the value is true.
+	 *
+	 * @param flags Collection to read.
+	 * @return Author flags where the value is true.
+	 */
+	public static Set<String> getTrueAuthorFlags(Map<String, Object> flags) {
+		if (flags == null || flags.isEmpty()) {
+			return Collections.emptySet();
+		}
+
+		return flags.entrySet().stream()
+				.filter(entry -> Boolean.parseBoolean(entry.getValue().toString()))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Return all author flags from metadata.
+	 *
+	 * @param branch Branch to read metadata from.
+	 * @return Author flags that are enabled.
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getAuthorFlags(Branch branch) {
+		verifyParams(branch);
+		Map<String, Object> metadata = branch.getMetadata();
+		if (metadata == null) {
+			return new LinkedHashMap<>();
+		}
+
+		Object authorFlags = metadata.get(Constants.AUTHOR_FLAG);
+		if (authorFlags == null) {
+			return new LinkedHashMap<>();
+		}
+
+		return (LinkedHashMap<String, Object>) authorFlags;
+	}
 }
