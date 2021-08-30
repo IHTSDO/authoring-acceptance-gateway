@@ -149,14 +149,36 @@ public class ProjectAcceptanceCriteriaService {
             return null;
         }
 
-        // Get "true" author flags from Branch
-        Set<String> branchAuthorFlags = MetadataUtil.getTrueAuthorFlags(getBranchOrThrow(branchPath));
+        // Required data for processing
+        Branch branch = getBranchOrThrow(branchPath);
+        Map<String, Object> branchAuthorFlags = MetadataUtil.getAuthorFlags(branch);
+        Set<String> authorFlagsEnabled = MetadataUtil.getTrueAuthorFlags(branchAuthorFlags);
+        Set<String> authorFlagsAll = branchAuthorFlags.keySet();
 
-        // Get project, task, mandatory and enabledByFlag CriteriaItems
-        Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria, branchAuthorFlags, matchAuthorFlags);
+        // Get project, task and mandatory CriteriaItems. Also get CriteriaItem if enabledByFlag is enabled.
+        Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria, authorFlagsEnabled, matchAuthorFlags);
 
         // Remove from collection if item is enabled by a flag but the flag is not true on the branch.
-        relevantCriteriaItems.removeIf(criteriaItem -> !criteriaItem.getEnabledByFlag().isEmpty() && Collections.disjoint(criteriaItem.getEnabledByFlag(), branchAuthorFlags));
+
+        // Scenario I fails
+//        relevantCriteriaItems.removeIf(criteriaItem -> !criteriaItem.getEnabledByFlag().isEmpty() && Collections.disjoint(criteriaItem.getEnabledByFlag(), authorFlagsEnabled));
+
+        // Scenarios F & H fails
+//        relevantCriteriaItems.removeIf(criteriaItem -> {
+//            if (!authorFlagsEnabled.isEmpty()) {
+//                Set<String> enabledByFlag = criteriaItem.getEnabledByFlag();
+//                boolean enabledByFlagNotEmpty = !enabledByFlag.isEmpty();
+//                boolean disjoint = Collections.disjoint(enabledByFlag, authorFlagsEnabled);
+//                boolean result = enabledByFlagNotEmpty && disjoint;
+//
+//                return result;
+//            }
+//
+//            return false;
+//        });
+
+        // All scenarios pass
+        relevantCriteriaItems.removeIf(isConflictBetweenAuthorFlags(branchAuthorFlags, authorFlagsAll, authorFlagsEnabled));
 
         criteria.setSelectedCriteria(relevantCriteriaItems);
         return criteria;
@@ -348,6 +370,53 @@ public class ProjectAcceptanceCriteriaService {
         }
 
         return relevantCriteriaItems;
+    }
+
+    private Predicate<CriteriaItem> isConflictBetweenAuthorFlags(Map<String, Object> branchAuthorFlags, Set<String> authorFlagsAll, Set<String> authorFlagsEnabled) {
+        return criteriaItem -> {
+            Set<String> enabledByFlag = criteriaItem.getEnabledByFlag();
+            boolean enabledByFlagEmpty = enabledByFlag.isEmpty();
+            boolean branchFlagsEmpty = authorFlagsAll.isEmpty();
+            boolean isMandatory = criteriaItem.isMandatory();
+
+            if (enabledByFlagEmpty && branchFlagsEmpty) {
+                return false;
+            }
+
+            if (!enabledByFlagEmpty && branchFlagsEmpty && isMandatory) {
+                return true;
+            }
+
+            if (!enabledByFlagEmpty) {
+                // If item is mandatory, remove as overwritten from author flags
+                if (authorFlagsEnabled.isEmpty()) {
+                    return isMandatory;
+                }
+
+                // If Branch metadata doesn't contain enabledByFlag, remove
+                boolean noneMatch = enabledByFlag.stream().noneMatch(authorFlagsAll::contains);
+                if (noneMatch) {
+                    return true;
+                }
+
+                // If Branch metadata does contain enabledByFlag, remove if flag not enabled
+                boolean remove = false;
+                for (String flag : enabledByFlag) {
+                    Object authorFlag = branchAuthorFlags.get(flag);
+                    if (authorFlag != null) {
+                        boolean enabled = Boolean.parseBoolean(authorFlag.toString());
+                        if (!enabled) {
+                            remove = true;
+                            break;
+                        }
+                    }
+                }
+
+                return remove;
+            }
+
+            return false;
+        };
     }
 
 }
