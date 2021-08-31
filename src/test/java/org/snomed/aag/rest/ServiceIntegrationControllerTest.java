@@ -287,7 +287,53 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(asJson(commitInformation))
 				);
-		assertResponseStatus(secondRequest, 409); // Project has been incremented and PAC hasn't been completed for that iteration.
+		assertResponseStatus(secondRequest, 200); // Project has not been incremented as Project only increments if Project itself is promoted
+	}
+
+	@Test
+	void receiveCommitInformation_ShouldOnlyIncrementProject_WhenProjectIsPromoted() throws Exception {
+		// given
+		String requestUrl = receiveCommitInformation();
+		String codeSystemPath = "MAIN";
+		String projectPath = "MAIN/projectA";
+		String taskPath = "MAIN/projectA/taskB";
+		String projectCriteriaId = "project-criteria-id";
+		String taskCriteriaId = "task-criteria-id";
+		String findForBranch = findForBranch(withPipeInsteadOfSlash(projectPath));
+
+		givenProjectAcceptanceCriteriaExists(projectPath, 0, projectCriteriaId, taskCriteriaId);
+		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT);
+		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
+		givenCriteriaItemSignOffExists(projectPath, projectCriteriaId);
+		givenCriteriaItemSignOffExists(taskPath, projectCriteriaId);
+		givenCriteriaItemSignOffExists(projectPath, taskCriteriaId);
+		givenCriteriaItemSignOffExists(taskPath, taskCriteriaId);
+		givenBranchDoesExist(codeSystemPath);
+		givenBranchDoesExist(projectPath);
+
+		// Promoting task does not increment project iteration
+		CommitInformation taskPromotionRequest = new CommitInformation(taskPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
+		ResultActions promoteTaskResponse = mockMvc
+				.perform(post(requestUrl)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(asJson(taskPromotionRequest))
+				);
+		assertResponseStatus(promoteTaskResponse, 200);
+		ResultActions findForTaskResponse = mockMvc.perform(get(findForBranch).contentType(MediaType.APPLICATION_JSON));
+		ProjectAcceptanceCriteria findForTaskPAC = toProjectAcceptanceCriteria(getResponseBody(findForTaskResponse));
+		assertEquals(0, findForTaskPAC.getProjectIteration());
+
+		// Promoting project increments project iteration
+		CommitInformation projectPromotionRequest = new CommitInformation(projectPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
+		ResultActions promoteProject = mockMvc
+				.perform(post(requestUrl)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(asJson(projectPromotionRequest))
+				);
+		assertResponseStatus(promoteProject, 200);
+		ResultActions findForProjectResponse = mockMvc.perform(get(findForBranch).contentType(MediaType.APPLICATION_JSON));
+		ProjectAcceptanceCriteria findForProjectPAC = toProjectAcceptanceCriteria(getResponseBody(findForProjectResponse));
+		assertEquals(1, findForProjectPAC.getProjectIteration());
 	}
 
 	private String receiveCommitInformation() {

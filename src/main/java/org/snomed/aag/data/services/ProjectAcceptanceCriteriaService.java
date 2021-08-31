@@ -300,8 +300,8 @@ public class ProjectAcceptanceCriteriaService {
     /**
      * Return whether the given ProjectAcceptanceCriteria for the given branch is complete. If the given branch is for a project,
      * then only project level CriteriaItems will be checked. Likewise, if the given branch is for a task, then only
-     * task level CriteriaItems will be checked. If the ProjectAcceptanceCriteria has been completed,
-     * a new entry will be added to the store.
+     * task level CriteriaItems will be checked. If the given branchPath is for the project and
+     * the ProjectAcceptanceCriteria has been completed, a new entry will be added to the store.
      *
      * @param projectAcceptanceCriteria Entry to check if complete
      * @param branchPath                Branch to cross reference
@@ -313,13 +313,14 @@ public class ProjectAcceptanceCriteriaService {
 
         Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
         boolean allCriteriaItemsComplete = false;
-        if (projectAcceptanceCriteria.isBranchProjectLevel(branchPath)) {
+        boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(branchPath);
+        if (branchProjectLevel) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
         } else if (projectAcceptanceCriteria.isBranchTaskLevel(branchPath)) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.TASK == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
         }
 
-        if (allCriteriaItemsComplete) {
+        if (allCriteriaItemsComplete && branchProjectLevel) {
             // New entry to get new creation date.
             ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
             create(incrementedProjectAcceptanceCriteria);
