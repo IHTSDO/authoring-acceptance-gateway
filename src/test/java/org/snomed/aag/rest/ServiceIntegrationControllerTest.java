@@ -130,8 +130,8 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 				);
 
 		// then
-		assertResponseStatus(resultActions, 404);
-		assertResponseBody(resultActions, buildErrorResponse(404, "No Project Acceptance Criteria found for branch."));
+		assertResponseStatus(resultActions, 204);
+		assertResponseBody(resultActions, String.format("No Project Acceptance Criteria found for branch %s. Returning " + HttpStatus.NO_CONTENT + ".", branchPath));
 	}
 
 	@Test
