@@ -4,22 +4,28 @@ All notable changes to this project will be documented in this file.
 - This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The format of this changelog is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## 1.1.0 (August 31st 2021)
 
 ### Added
 - Changelog
+- Permissions & roles document
+- Admin endpoint for marking all `CriteriaItem` for a ProjectAcceptanceCriteria complete
+- Admin endpoint for marking all `CriteriaItem` for a ProjectAcceptanceCriteria incomplete
 
 ### Breaking
 - N/A
 
 ### Changed
-- N/A
+- ServiceIntegrationController to confirm whether `ProjectAcceptanceCriteria` has all relevant `CriteriaItem` marked as complete when actioning a promotion.
+- ServiceIntegrationController to not expire any `CriteriaItem` when actioning a rebase.
+- AcceptanceCriteriaController to use latest `projectIteration` if not otherwise specified when updating `ProjectAcceptanceCriteria`. 
+- Version of ihtsdo-spring-sso dependency from 2.1.0 to 2.2.0.
 
 ### Deprecated
 - N/A
 
 ### Fixed
-- N/A
+- Bug where `creationDate` field of `ProjectAcceptanceCriteria` was being changed when updating the `ProjectAcceptanceCriteria`. 
 
 ### Removed
 - N/A
