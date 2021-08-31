@@ -100,6 +100,13 @@ public abstract class AbstractTest {
 		givenBranchDoesExist(System.currentTimeMillis());
 	}
 
+	protected void givenBranchDoesExist(String branchPath) throws RestClientException {
+		Branch branch = new Branch();
+		branch.setPath(branchPath);
+
+		when(securityService.getBranchOrThrow(any())).thenReturn(branch);
+	}
+
 	protected void givenBranchDoesExist(long timestamp) throws RestClientException {
 		Branch branch = new Branch();
 		branch.setHeadTimestamp(timestamp);

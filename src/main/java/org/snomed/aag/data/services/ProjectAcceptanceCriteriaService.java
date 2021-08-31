@@ -13,7 +13,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 import static java.lang.String.format;
 
@@ -270,8 +273,10 @@ public class ProjectAcceptanceCriteriaService {
 	}
 
     /**
-     * Return whether the latest ProjectAcceptanceCriteria for the given branch is complete. If the ProjectAcceptanceCriteria
-     * has been completed, a new entry will be added to the database.
+     * Return whether the given ProjectAcceptanceCriteria for the given branch is complete. If the given branch is for a project,
+     * then only project level CriteriaItems will be checked. Likewise, if the given branch is for a task, then only
+     * task level CriteriaItems will be checked. If the given branchPath is for the project and
+     * the ProjectAcceptanceCriteria has been completed, a new entry will be added to the store.
      *
      * @param commitInformation Request from client.
      * @return Whether the latest ProjectAcceptanceCriteria for the given branch is complete.
@@ -291,13 +296,14 @@ public class ProjectAcceptanceCriteriaService {
 
         Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, path);
         boolean allCriteriaItemsComplete = false;
-        if (projectAcceptanceCriteria.isBranchProjectLevel(path)) {
+        boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(path);
+        if (branchProjectLevel) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
         } else if (projectAcceptanceCriteria.isBranchTaskLevel(path)) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.TASK == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
         }
 
-        if (allCriteriaItemsComplete) {
+        if (allCriteriaItemsComplete && branchProjectLevel) {
             // New entry to get new creation date.
             ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
             create(incrementedProjectAcceptanceCriteria);
