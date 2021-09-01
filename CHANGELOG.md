@@ -17,7 +17,6 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - ServiceIntegrationController to confirm whether `ProjectAcceptanceCriteria` has all relevant `CriteriaItem` marked as complete when actioning a promotion.
-- ServiceIntegrationController to not expire any `CriteriaItem` when actioning a rebase.
 - AcceptanceCriteriaController to use latest `projectIteration` if not otherwise specified when updating `ProjectAcceptanceCriteria`. 
 - Version of ihtsdo-spring-sso dependency from 2.1.0 to 2.2.0.
 
