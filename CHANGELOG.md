@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 - This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The format of this changelog is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## 1.1.0 (August 31st 2021)
+## 1.1.1 (September 1st 2021)
 
 ### Added
 - Changelog
