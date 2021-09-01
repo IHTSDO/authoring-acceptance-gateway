@@ -6,11 +6,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
+import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
-import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,9 +19,11 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -153,46 +155,6 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		// then
 		assertResponseStatus(resultActions, 409);
 		assertResponseBody(resultActions, buildErrorResponse(HttpStatus.CONFLICT.value(), "Project Acceptance Criteria has no Criteria Items."));
-	}
-
-	@Test
-	void receiveCommitInformation_ShouldNotExpireCriteriaItems_WhenCommitTypeIsRebase() throws Exception {
-		// given
-		String requestUrl = receiveCommitInformation();
-		String branchPath = "MAIN/projectA/taskB";
-		String taskCriteriaItem = "task-criteria-item-id";
-		String projectCriteriaItem = "project-criteria-item-id";
-
-		givenCriteriaItemExists(taskCriteriaItem, true, 0, taskCriteriaItem, AuthoringLevel.TASK);
-		givenCriteriaItemExists(projectCriteriaItem, true, 1, projectCriteriaItem, AuthoringLevel.PROJECT);
-		givenProjectAcceptanceCriteriaExists(branchPath, 0, projectCriteriaItem, taskCriteriaItem);
-		givenCriteriaItemSignOffExists(branchPath, projectCriteriaItem);
-		givenCriteriaItemSignOffExists(branchPath, taskCriteriaItem);
-
-		// Rebase
-		CommitInformation rebase = new CommitInformation(branchPath, CommitInformation.CommitType.REBASE, 1L, Collections.emptyMap());
-		ResultActions resultActions = mockMvc
-				.perform(post(requestUrl)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(asJson(rebase))
-				);
-		assertResponseStatus(resultActions, 200);
-
-		// Inspect state of PAC
-		String viewCriteriaItems = viewCriteriaItems(withPipeInsteadOfSlash(branchPath));
-		ResultActions viewCriteriaItemsResponse = mockMvc.perform(get(viewCriteriaItems));
-		String responseBody = getResponseBody(viewCriteriaItemsResponse);
-		ProjectAcceptanceCriteriaDTO projectAcceptanceCriteriaDTO = OBJECT_MAPPER.readValue(responseBody, ProjectAcceptanceCriteriaDTO.class);
-		boolean complete = true;
-		for (CriteriaItem criteriaItem : projectAcceptanceCriteriaDTO.getCriteriaItems()) {
-			boolean notComplete = !criteriaItem.isComplete();
-			if(notComplete){
-				complete = notComplete;
-				break;
-			}
-		}
-
-		assertTrue(complete);
 	}
 
 	@Test
@@ -404,9 +366,5 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	private ProjectAcceptanceCriteria toProjectAcceptanceCriteria(String response) throws JsonProcessingException {
 		return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
 		});
-	}
-
-	private String viewCriteriaItems(String branchPath) {
-		return "/acceptance/" + branchPath;
 	}
 }

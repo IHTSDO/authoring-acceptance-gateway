@@ -53,7 +53,7 @@ public class ServiceIntegrationController {
 
 		commitInformationValidator.validate(commitInformation);
 		final CommitInformation.CommitType commitType = commitInformation.getCommitType();
-		if (CommitInformation.CommitType.CONTENT.equals(commitType)) {
+		if (commitType != CommitInformation.CommitType.PROMOTION) {
 			// Prevent the processing of this call slowing down the snowstorm commit
 			// All business logic within the service method
 			final SecurityContext context = SecurityContextHolder.getContext();
@@ -63,7 +63,7 @@ public class ServiceIntegrationController {
 			});
 
 			return ResponseEntity.status(HttpStatus.OK).build();
-		} else if (CommitInformation.CommitType.PROMOTION.equals(commitType)) {
+		} else {
 			String sourceBranchPath = commitInformation.getSourceBranchPath();
 			ProjectAcceptanceCriteria projectAcceptanceCriteria = projectAcceptanceCriteriaService.findEffectiveCriteriaWithMandatoryItems(sourceBranchPath);
 			if (projectAcceptanceCriteria == null) {
@@ -83,8 +83,6 @@ public class ServiceIntegrationController {
 				return ResponseEntity.status(HttpStatus.CONFLICT).build();
 			}
 		}
-
-		return ResponseEntity.status(HttpStatus.OK).build();
 	}
 
 	@ApiOperation(value = "Receive validation report information from Authoring Services.",
