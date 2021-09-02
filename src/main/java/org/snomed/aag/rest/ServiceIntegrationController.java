@@ -54,14 +54,7 @@ public class ServiceIntegrationController {
 		commitInformationValidator.validate(commitInformation);
 		final CommitInformation.CommitType commitType = commitInformation.getCommitType();
 		if (commitType != CommitInformation.CommitType.PROMOTION) {
-			// Prevent the processing of this call slowing down the snowstorm commit
-			// All business logic within the service method
-			final SecurityContext context = SecurityContextHolder.getContext();
-			executorService.submit(() -> {
-				SecurityContextHolder.setContext(context);// Security context brought across into new thread
-				acceptanceService.processCommit(commitInformation);
-			});
-
+			processCommitAsync(commitInformation);
 			return ResponseEntity.status(HttpStatus.OK).build();
 		} else {
 			String sourceBranchPath = commitInformation.getSourceBranchPath();
@@ -76,7 +69,8 @@ public class ServiceIntegrationController {
 
 			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(commitInformation);
 			if (pacComplete) {
-				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", commitInformation.getSourceBranchPath());
+				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", sourceBranchPath);
+				processCommitAsync(commitInformation);
 				return ResponseEntity.status(HttpStatus.OK).build();
 			} else {
 				logger.info("Project Acceptance Criteria for {} is incomplete. Promotion is not recommended.", commitInformation.getSourceBranchPath());
@@ -98,6 +92,16 @@ public class ServiceIntegrationController {
 		acceptanceService.processValidationAsync(validationInformation);
 
 		return ResponseEntity.status(HttpStatus.OK).build();
+	}
+
+	private void processCommitAsync(CommitInformation commitInformation) {
+		// Prevent the processing of this call slowing down the snowstorm commit
+		// All business logic within the service method
+		final SecurityContext context = SecurityContextHolder.getContext();
+		executorService.submit(() -> {
+			SecurityContextHolder.setContext(context);// Security context brought across into new thread
+			acceptanceService.processCommit(commitInformation);
+		});
 	}
 
 }

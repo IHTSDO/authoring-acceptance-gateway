@@ -1,5 +1,7 @@
 package org.snomed.aag.data.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Map;
 
 public class CommitInformation {
@@ -62,6 +64,32 @@ public class CommitInformation {
 
 	public Map<String, Object> getMetadata() {
 		return metadata;
+	}
+
+	@JsonIgnore
+	public boolean isContent() {
+		return CommitType.CONTENT.equals(commitType);
+	}
+
+	@JsonIgnore
+	public boolean isRebase() {
+		return CommitType.REBASE.equals(commitType);
+	}
+
+	@JsonIgnore
+	public boolean isPromotion() {
+		return CommitType.PROMOTION.equals(commitType);
+	}
+
+	@JsonIgnore
+	public String getBranchPathReceivingChanges() {
+		// Content results in source Branch changing
+		if (isContent()) {
+			return getSourceBranchPath();
+		}
+
+		// Rebase & promotion results in target Branch changing
+		return getTargetBranchPath();
 	}
 
 	@Override

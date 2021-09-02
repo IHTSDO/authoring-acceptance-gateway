@@ -46,6 +46,7 @@ class AcceptanceServiceTest extends AbstractTest {
 		assertEquals(2, items.size());
 		assertFalse(items.get(TASK_CLASSIFICATION_CLEAN).isComplete(), "task classification not complete");
 
+		// Test content (with branch classified)
 		acceptanceService.processCommit(new CommitInformation(taskBranch, CommitInformation.CommitType.CONTENT, new Date().getTime(), Map.of(CommitInformation.INTERNAL,
 				Map.of(CommitInformation.CLASSIFIED, "true"))));
 
@@ -53,6 +54,15 @@ class AcceptanceServiceTest extends AbstractTest {
 		assertEquals(2, items.size());
 		assertTrue(items.get(TASK_CLASSIFICATION_CLEAN).isComplete(), "task classification is complete");
 
+		// Test content (with branch not classified)
+		acceptanceService.processCommit(new CommitInformation(taskBranch, CommitInformation.CommitType.CONTENT, new Date().getTime(), Map.of(CommitInformation.INTERNAL,
+				Map.of(CommitInformation.CLASSIFIED, "false"))));
+
+		items = criteriaService.findItemsAndMarkSignOff(acceptanceCriteria, taskBranch).stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
+		assertEquals(2, items.size());
+		assertFalse(items.get(TASK_CLASSIFICATION_CLEAN).isComplete(), "task classification is not complete");
+
+		// Test rebase
 		acceptanceService.processCommit(new CommitInformation(projectBranch, taskBranch, CommitInformation.CommitType.REBASE, new Date().getTime(),
 				Map.of(CommitInformation.INTERNAL,
 						Map.of(CommitInformation.CLASSIFIED, "false"))));
@@ -61,19 +71,14 @@ class AcceptanceServiceTest extends AbstractTest {
 		assertEquals(2, items.size());
 		assertFalse(items.get(TASK_CLASSIFICATION_CLEAN).isComplete(), "task classification not complete");
 
-		acceptanceService.processCommit(new CommitInformation(taskBranch, CommitInformation.CommitType.CONTENT, new Date().getTime(), Map.of(CommitInformation.INTERNAL,
-				Map.of(CommitInformation.CLASSIFIED, "true"))));
-
-		items = criteriaService.findItemsAndMarkSignOff(acceptanceCriteria, taskBranch).stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
-		assertEquals(2, items.size());
-		assertTrue(items.get(TASK_CLASSIFICATION_CLEAN).isComplete(), "task classification is complete");
-
-		acceptanceService.processCommit(new CommitInformation(projectBranch, CommitInformation.CommitType.PROMOTION, new Date().getTime(), Map.of(CommitInformation.INTERNAL,
+		// Test promotion
+		acceptanceService.processCommit(new CommitInformation(taskBranch, projectBranch, CommitInformation.CommitType.PROMOTION, new Date().getTime(),
+				Map.of(CommitInformation.INTERNAL,
 				Map.of(CommitInformation.CLASSIFIED, "true"))));
 
 		items = criteriaService.findItemsAndMarkSignOff(acceptanceCriteria, projectBranch).stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
 		assertEquals(2, items.size());
-		assertTrue(items.get(PROJECT_CLASSIFICATION_CLEAN).isComplete(), "task classification is complete");
+		assertFalse(items.get(PROJECT_CLASSIFICATION_CLEAN).isComplete(), "project classification is not complete");
 
 	}
 }
