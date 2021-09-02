@@ -104,19 +104,19 @@ public class AcceptanceService {
 	 * @param commitInformation Commit information including branch path and metadata.
 	 */
 	public void processCommit(CommitInformation commitInformation) {
-		final String sourceBranchPath = commitInformation.getSourceBranchPath();
-		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(sourceBranchPath);
+		String branchPath = getRelevantBranchForCommitType(commitInformation);
+		final ProjectAcceptanceCriteria criteria = criteriaService.findEffectiveCriteriaWithMandatoryItems(branchPath);
 		if (criteria == null) {
 			// No criteria for branch, nothing to do.
 			return;
 		}
 
 		boolean classified = commitInformation.isClassified();
-		boolean projectLevel = criteria.isBranchProjectLevel(sourceBranchPath);
-		boolean taskLevel = criteria.isBranchTaskLevel(sourceBranchPath);
+		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
+		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
 
-		final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, sourceBranchPath);
-		final Set<String> branchRoles = securityService.getBranchRoles(sourceBranchPath);
+		final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, branchPath);
+		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
 
 		// Includes role check
 		Set<String> itemsShouldBeAccepted = items.stream()
@@ -140,13 +140,13 @@ public class AcceptanceService {
 
 
 		if (!itemsToUnaccept.isEmpty()) {
-			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToUnaccept, sourceBranchPath, criteria.getProjectIteration());
-			criteriaItemSignOffService.deleteItems(itemsToUnaccept, sourceBranchPath, criteria.getProjectIteration());
+			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToUnaccept, branchPath, criteria.getProjectIteration());
+			criteriaItemSignOffService.deleteItems(itemsToUnaccept, branchPath, criteria.getProjectIteration());
 		} else {
 			LOGGER.info("No Criteria Items to reject.");
 		}
 
-		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, sourceBranchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
+		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
 	}
 
 	@Async
@@ -244,5 +244,15 @@ public class AcceptanceService {
 		}
 
 		return criteriaIdentifiers;
+	}
+
+	private String getRelevantBranchForCommitType(CommitInformation commitInformation) {
+		CommitInformation.CommitType commitType = commitInformation.getCommitType();
+		boolean contentOrPromotion = CommitInformation.CommitType.CONTENT.equals(commitType) || CommitInformation.CommitType.PROMOTION.equals(commitType);
+		if (contentOrPromotion) {
+			return commitInformation.getSourceBranchPath();
+		}
+
+		return commitInformation.getTargetBranchPath();
 	}
 }

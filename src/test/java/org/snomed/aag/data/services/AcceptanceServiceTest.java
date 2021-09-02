@@ -53,8 +53,9 @@ class AcceptanceServiceTest extends AbstractTest {
 		assertEquals(2, items.size());
 		assertTrue(items.get(TASK_CLASSIFICATION_CLEAN).isComplete(), "task classification is complete");
 
-		acceptanceService.processCommit(new CommitInformation(taskBranch, CommitInformation.CommitType.REBASE, new Date().getTime(), Map.of(CommitInformation.INTERNAL,
-				Map.of(CommitInformation.CLASSIFIED, "false"))));
+		acceptanceService.processCommit(new CommitInformation(projectBranch, taskBranch, CommitInformation.CommitType.REBASE, new Date().getTime(),
+				Map.of(CommitInformation.INTERNAL,
+						Map.of(CommitInformation.CLASSIFIED, "false"))));
 
 		items = criteriaService.findItemsAndMarkSignOff(acceptanceCriteria, taskBranch).stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
 		assertEquals(2, items.size());
