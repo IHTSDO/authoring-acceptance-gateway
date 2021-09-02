@@ -6,11 +6,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
-import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
+import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,9 +19,8 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -298,6 +297,44 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		assertEquals(1, findForProjectPAC.getProjectIteration());
 	}
 
+	@Test
+	void receiveCommitInformation_ShouldExpireExpectedCriteria_WhenActioningRebase() throws Exception {
+		// Set up
+		String projectPath = "MAIN/projectA";
+		String taskPath = "MAIN/projectA/taskA";
+		String projectCriteriaId = "project-criteria-id";
+		String taskCriteriaIdA = "task-criteria-id-a";
+		String taskCriteriaIdB = "task-criteria-id-b";
+
+		givenBranchDoesExist();
+		givenCriteriaItemExists(projectCriteriaId, true, 1, projectCriteriaId, AuthoringLevel.PROJECT);
+		givenCriteriaItemExists(taskCriteriaIdA, true, 2, taskCriteriaIdA, AuthoringLevel.TASK, true);
+		givenCriteriaItemExists(taskCriteriaIdB, true, 3, taskCriteriaIdB, AuthoringLevel.TASK, false);
+		givenProjectAcceptanceCriteriaExists(projectPath, 0, Set.of(projectCriteriaId), Set.of(taskCriteriaIdA, taskCriteriaIdB));
+
+		// Complete criteria for task
+		givenCriteriaItemSignOffExists(taskPath, projectCriteriaId);
+		givenCriteriaItemSignOffExists(taskPath, taskCriteriaIdA);
+		givenCriteriaItemSignOffExists(taskPath, taskCriteriaIdB);
+
+		// View task's PAC before rebase
+		String viewCriteriaItemsForTaskA = viewCriteriaItems(withPipeInsteadOfSlash(taskPath));
+		ResultActions viewPACFirstRequest = mockMvc.perform(get(viewCriteriaItemsForTaskA).contentType(MediaType.APPLICATION_JSON));
+		ProjectAcceptanceCriteriaDTO pacFirstRequest = OBJECT_MAPPER.readValue(getResponseBody(viewPACFirstRequest), ProjectAcceptanceCriteriaDTO.class);
+		assertEquals(3, pacFirstRequest.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size());
+
+		// Rebase project onto task
+		String receiveCommitInformation = receiveCommitInformation();
+		CommitInformation projectRebase = new CommitInformation(projectPath, taskPath, CommitInformation.CommitType.REBASE, 1L, Collections.emptyMap());
+		ResultActions rebaseProject = mockMvc.perform(post(receiveCommitInformation).contentType(MediaType.APPLICATION_JSON).content(asJson(projectRebase)));
+
+		// View task's PAC after rebase
+		Thread.sleep(5000); // Pause for async request to complete
+		ResultActions viewPACSecondRequest = mockMvc.perform(get(viewCriteriaItemsForTaskA).contentType(MediaType.APPLICATION_JSON));
+		ProjectAcceptanceCriteriaDTO pacSecondRequest = OBJECT_MAPPER.readValue(getResponseBody(viewPACSecondRequest), ProjectAcceptanceCriteriaDTO.class);
+		assertEquals(2, pacSecondRequest.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size());
+	}
+
 	private String receiveCommitInformation() {
 		return "/integration/snowstorm/commit";
 	}
@@ -310,10 +347,21 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		return "/criteria/" + branchPath;
 	}
 
+	private String viewCriteriaItems(String branchPath) {
+		return "/acceptance/" + branchPath;
+	}
+
 	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, String projectCriteriaId, String taskCriteriaId) {
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
 		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton(projectCriteriaId));
 		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(Collections.singleton(taskCriteriaId));
+		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
+	}
+
+	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, Set<String> projectCriteria, Set<String> taskCriteria) {
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
+		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(projectCriteria);
+		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(taskCriteria);
 		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
 	}
 
@@ -324,6 +372,18 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 		criteriaItem.setAuthoringLevel(authoringLevel);
+
+		criteriaItemRepository.save(criteriaItem);
+	}
+
+	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, boolean expiresOnCommit) {
+		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
+		criteriaItem.setManual(manual);
+		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
+		criteriaItem.setOrder(order);
+		criteriaItem.setLabel(label);
+		criteriaItem.setAuthoringLevel(authoringLevel);
+		criteriaItem.setExpiresOnCommit(expiresOnCommit);
 
 		criteriaItemRepository.save(criteriaItem);
 	}
