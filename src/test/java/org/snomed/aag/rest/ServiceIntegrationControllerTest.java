@@ -332,50 +332,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		Thread.sleep(5000); // Pause for async request to complete
 		ResultActions viewPACSecondRequest = mockMvc.perform(get(viewCriteriaItemsForTaskA).contentType(MediaType.APPLICATION_JSON));
 		ProjectAcceptanceCriteriaDTO pacSecondRequest = OBJECT_MAPPER.readValue(getResponseBody(viewPACSecondRequest), ProjectAcceptanceCriteriaDTO.class);
-		assertEquals(2, pacSecondRequest.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size()); // 1 has been expired
-	}
-
-	@Test
-	void receiveCommitInformation_ShouldExpireExpectedCriteria_WhenActioningPromotion() throws Exception {
-		// Set up
-		String projectPath = "MAIN/projectA";
-		String taskPath = "MAIN/projectA/taskA";
-		String projectCriteriaId = "project-criteria-id";
-		String taskCriteriaIdA = "task-criteria-id-a";
-		String taskCriteriaIdB = "task-criteria-id-b";
-
-		givenBranchDoesExist();
-		givenCriteriaItemExists(projectCriteriaId, true, 1, projectCriteriaId, AuthoringLevel.PROJECT);
-		givenCriteriaItemExists(taskCriteriaIdA, true, 2, taskCriteriaIdA, AuthoringLevel.TASK, true);
-		givenCriteriaItemExists(taskCriteriaIdB, true, 3, taskCriteriaIdB, AuthoringLevel.TASK, false);
-		givenProjectAcceptanceCriteriaExists(projectPath, 0, Set.of(projectCriteriaId), Set.of(taskCriteriaIdA, taskCriteriaIdB));
-
-		// Complete criteria for project (1 will expire after promotion)
-		givenCriteriaItemSignOffExists(projectPath, projectCriteriaId);
-		givenCriteriaItemSignOffExists(projectPath, taskCriteriaIdA);
-		givenCriteriaItemSignOffExists(projectPath, taskCriteriaIdB);
-
-		// Complete criteria for task (in order to promote task)
-		givenCriteriaItemSignOffExists(taskPath, projectCriteriaId);
-		givenCriteriaItemSignOffExists(taskPath, taskCriteriaIdA);
-		givenCriteriaItemSignOffExists(taskPath, taskCriteriaIdB);
-
-		// View project's PAC before promotion
-		String viewCriteriaItemsForProject = viewCriteriaItems(withPipeInsteadOfSlash(projectPath));
-		ResultActions viewPACFirstRequest = mockMvc.perform(get(viewCriteriaItemsForProject).contentType(MediaType.APPLICATION_JSON));
-		ProjectAcceptanceCriteriaDTO pacFirstRequest = OBJECT_MAPPER.readValue(getResponseBody(viewPACFirstRequest), ProjectAcceptanceCriteriaDTO.class);
-		assertEquals(3, pacFirstRequest.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size());
-
-		// Promote task to project
-		String receiveCommitInformation = receiveCommitInformation();
-		CommitInformation taskPromotion = new CommitInformation(taskPath, projectPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
-		ResultActions taskPromotionResponse = mockMvc.perform(post(receiveCommitInformation).contentType(MediaType.APPLICATION_JSON).content(asJson(taskPromotion)));
-
-		// View project's PAC after task promotion
-		Thread.sleep(5000); // Pause for async request to complete
-		ResultActions viewPACSecondRequest = mockMvc.perform(get(viewCriteriaItemsForProject).contentType(MediaType.APPLICATION_JSON));
-		ProjectAcceptanceCriteriaDTO pacSecondRequest = OBJECT_MAPPER.readValue(getResponseBody(viewPACSecondRequest), ProjectAcceptanceCriteriaDTO.class);
-		assertEquals(2, pacSecondRequest.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size()); // 1 has been expired
+		assertEquals(2, pacSecondRequest.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size());
 	}
 
 	private String receiveCommitInformation() {
