@@ -1,6 +1,5 @@
 package org.snomed.aag.data.services;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
@@ -54,12 +53,6 @@ public class CriteriaItemService {
 
 	private static void verifyParams(AuthoringLevel authoringLevel) {
 		if (authoringLevel == null) {
-			throw new IllegalArgumentException(INVALID_PARAMETERS);
-		}
-	}
-
-	private void verifyParams(Set<CriteriaItem> criteriaItems, Branch branch) {
-		if (criteriaItems == null || branch == null) {
 			throw new IllegalArgumentException(INVALID_PARAMETERS);
 		}
 	}
