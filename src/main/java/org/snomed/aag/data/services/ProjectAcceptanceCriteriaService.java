@@ -143,7 +143,7 @@ public class ProjectAcceptanceCriteriaService {
      * @param branchPath Branch path to query for ProjectAcceptanceCriteria
      * @return ProjectAcceptanceCriteria with relevant CriteriaItems
      */
-    public ProjectAcceptanceCriteria findByBranchPathWithRelevantCriteriaItems(String branchPath) {
+    public ProjectAcceptanceCriteria findByBranchPathWithRelevantCriteriaItems(String branchPath, boolean matchAuthorFlags) {
         ProjectAcceptanceCriteria criteria = getFromBranchOrParent(branchPath);
         if (criteria == null) {
             return null;
@@ -153,7 +153,7 @@ public class ProjectAcceptanceCriteriaService {
         Set<String> branchAuthorFlags = MetadataUtil.getTrueAuthorFlags(getBranchOrThrow(branchPath));
 
         // Get project, task, mandatory and enabledByFlag CriteriaItems
-        Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria, branchAuthorFlags);
+        Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria, branchAuthorFlags, matchAuthorFlags);
 
         // Remove from collection if item is enabled by a flag but the flag is not true on the branch.
         relevantCriteriaItems.removeIf(criteriaItem -> !criteriaItem.getEnabledByFlag().isEmpty() && Collections.disjoint(criteriaItem.getEnabledByFlag(), branchAuthorFlags));
@@ -329,7 +329,7 @@ public class ProjectAcceptanceCriteriaService {
         return criteria;
     }
 
-    private Set<CriteriaItem> getRelevantCriteriaItems(ProjectAcceptanceCriteria criteria, Set<String> enabledByFlag) {
+    private Set<CriteriaItem> getRelevantCriteriaItems(ProjectAcceptanceCriteria criteria, Set<String> enabledByFlag, boolean matchAuthorFlags) {
         Set<CriteriaItem> relevantCriteriaItems = new HashSet<>();
 
         // Collect mandatory
@@ -342,8 +342,10 @@ public class ProjectAcceptanceCriteriaService {
             relevantCriteriaItems.add(projectCriteria);
         }
 
-        // Collect those with enabledByFlag
-        relevantCriteriaItems.addAll(criteriaItemService.findAllByEnabledByFlag(enabledByFlag));
+        if (matchAuthorFlags) {
+            // Collect those with enabledByFlag
+            relevantCriteriaItems.addAll(criteriaItemService.findAllByEnabledByFlag(enabledByFlag));
+        }
 
         return relevantCriteriaItems;
     }
