@@ -3,9 +3,8 @@ package org.snomed.aag.rest.util;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.snomed.aag.data.Constants;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class MetadataUtil {
 	private MetadataUtil() {
@@ -19,46 +18,23 @@ public class MetadataUtil {
 	}
 
 	/**
-	 * Return all author flags from metadata.
+	 * Return all author flags from metadata where the value is true.
 	 *
 	 * @param branch Branch to read metadata from.
 	 * @return Author flags that are enabled.
 	 */
 	@SuppressWarnings("unchecked")
-	public static Map<String, Object> getAllAuthorFlags(Branch branch) {
+	public static Set<String> getTrueAuthorFlags(Branch branch) {
 		verifyParams(branch);
-		Map<String, Object> metadata = branch.getMetadata();
-		if (metadata == null) {
-			return new LinkedHashMap<>();
+
+		if (branch.getMetadata() == null) {
+			return Collections.emptySet();
 		}
 
-		Object authorFlags = metadata.get(Constants.AUTHOR_FLAG);
-		if (authorFlags == null) {
-			return new LinkedHashMap<>();
-		}
-
-		return (LinkedHashMap<String, Object>) authorFlags;
-	}
-
-	/**
-	 * Return all author flags from metadata that are enabled.
-	 *
-	 * @param branch Branch to read metadata from.
-	 * @return Author flags that are enabled.
-	 */
-	public static Set<String> getEnabledAuthorFlags(Branch branch) {
-		verifyParams(branch);
-		Map<String, Object> authorFlags = getAllAuthorFlags(branch);
-		authorFlags.entrySet().removeIf(eS -> {
-			Object value = eS.getValue();
-			if (value == null) {
-				return true;
-			}
-
-			// Don't remove if active
-			return !Boolean.parseBoolean(value.toString());
-		});
-
-		return authorFlags.keySet();
+		final Map<String, Object> flags = (Map<String, Object>) branch.getMetadata().getOrDefault(Constants.AUTHOR_FLAG, new HashMap<>());
+		return flags.entrySet().stream()
+				.filter(entry -> Boolean.parseBoolean(entry.getValue().toString()))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
 	}
 }

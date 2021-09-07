@@ -9,118 +9,322 @@ aagUrl=http://localhost:8090/authoring-acceptance-gateway
 branchPath=MAIN
 
 # ----------------------------------------
-# Criteria Items (Globally required as mandatory)
+# Criteria Items (Project Level, mandatory)
 # ----------------------------------------
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-classification-clean",
+    "label": "Classification Report Clean",
+    "description": "Project classification has been run, saved and come back with no results.",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": true,
+    "manual": false,
+    "expiresOnCommit": true,
+    "requiredRole": "RELEASE_LEAD",
+    "enabledByFlag": [],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-validation-clean",
+    "label": "RVF Report Clean",
+    "description": "Project Validation has been run and come back with no results.",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": true,
+    "manual": false,
+    "expiresOnCommit": true,
+    "requiredRole": "RELEASE_LEAD",
+    "enabledByFlag": [],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+# ----------------------------------------
+# Criteria Items (Project Level, complex)
+# ----------------------------------------
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-inactivations-associations",
+    "label": "Report: Validate Inactivations with Associations Clean",
+    "description": "Validate Inactivations with Associations Report Clean",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [
+      "complex"
+    ],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-template-validation",
+    "label": "Report: Template Compliance Clean",
+    "description": "Project Template Validation Run and Clean",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [
+      "complex"
+    ],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-patterns-report",
+    "label": "Report: KPI Patterns Clean",
+    "description": "Reporting platform patterns report run and checked.",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [
+      "complex"
+    ],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-new-descriptions",
+    "label": "Report: New Descriptions Clean",
+    "description": "New Descriptions Report Clean",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [
+      "complex"
+    ],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-duplicate-terms",
+    "label": "Report: Duplicate Terms Clean",
+    "description": "Duplicate Terms Report Clean",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [
+      "complex"
+    ],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-case-significance",
+    "label": "Report: Case Significance Clean",
+    "description": "Case Significance Report Clean",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [
+      "complex"
+    ],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-release-issues",
+    "label": "Report: Release Issues Clean",
+    "description": "Release Issues Report Clean",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [
+      "complex"
+    ],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+# ----------------------------------------
+# Criteria Items (Project Level, optional)
+# ----------------------------------------
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-release-validation-report-clean",
+    "label": "Release Lead: All Release Validation Reports Checked",
+    "description": "Release Validation Reports Checked by Release Lead(s)",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-documentation-completed",
+    "label": "Project Documentation (TIG, Editorial Guide) Complete",
+    "description": "Project Documentation (TIG, Editorial Guide) Complete.",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-mrcm",
+    "label": "Relevant MRCM Changes Implemented",
+    "description": "Any new MRCM changes implemented and sequestered into the project until all content that is impacted by the change is updated and the MRCM project validation is clean.",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "project-whitelist-review",
+    "label": "Release Lead: Exceptions Checked and Signed off",
+    "description": "Exceptions to assertions checked and signed off by Release Lead(s).",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
     "id": "project-final-signoff",
-    "label": "Project Iteration Final Sign-off",
+    "label": "Release Lead: Final Sign-Off",
     "description": "Final project iteration sign-off by a release lead.",
-    "order": 10,
+    "order": 1,
     "authoringLevel": "PROJECT",
-    "mandatory": true,
-    "manual": true,
-    "expiresOnCommit": false,
-    "requiredRole": "RELEASE_LEAD",
-    "complete": false
-  }' \
-  ${aagUrl}/criteria-items
-
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{
-    "id": "task-release-notes-produced",
-    "label": "Release Notes Produced",
-    "description": "Release notes for task have been produced.",
-    "order": 9,
-    "authoringLevel": "TASK",
-    "mandatory": true,
-    "manual": true,
-    "expiresOnCommit": false,
-    "requiredRole": "RELEASE_LEAD",
-    "complete": false
-  }' \
-  ${aagUrl}/criteria-items
-
-# ----------------------------------------
-# Criteria Items (Optional Task Level)
-# ----------------------------------------
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{
-     "id": "task-clean-classification",
-     "label": "Classified content",
-     "description": "All axiom changes and concept inactivations must be classified.",
-     "order": 1,
-     "authoringLevel": "TASK",
-     "mandatory": false,
-     "manual": false,
-     "expiresOnCommit": true,
-     "requiredRole": "AUTHOR",
-     "complete": false,
-     "enabledByFlag": [
-        "complex"
-     ]
-  }' \
-  ${aagUrl}/criteria-items
-
-curl --header "Content-Type: application/json" \
-  --request POST \
-  --data '{
-    "id": "task-manual-spellcheck",
-    "label": "Manual Spellchecking",
-    "description": "Check spellings of new descriptions manually.",
-    "order": 2,
-    "authoringLevel": "TASK",
     "mandatory": false,
     "manual": true,
     "expiresOnCommit": false,
     "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
     "complete": false
-    }' \
+  }' \
   ${aagUrl}/criteria-items
 
-# ----------------------------------------
-# Criteria Items (Optional Project Level)
-# ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
-     "id": "project-clean-classification",
-     "label": "Classified content",
-     "description": "All axiom changes and concept inactivations must be classified.",
-     "order": 1,
-     "authoringLevel": "PROJECT",
-     "mandatory": false,
-     "manual": false,
-     "expiresOnCommit": true,
-     "requiredRole": "AUTHOR",
-     "complete": false
+    "id": "project-lead-signoff",
+    "label": "Project Lead: Signed Off Project as Ready to Promote",
+    "description": "Project Lead(s) Signed Off Project as Ready to Promote.",
+    "order": 1,
+    "authoringLevel": "PROJECT",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
+    "complete": false
   }' \
   ${aagUrl}/criteria-items
 
 # ----------------------------------------
-# Criteria Items (Purposely not in use)
+# Criteria Items (Task Level, optional)
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
   --data '{
-     "id": "project-update-documentation",
-     "label": "Update documentation",
-     "description": "Documentation must be updated to reflect change.",
-     "order": 1,
-     "authoringLevel": "PROJECT",
-     "mandatory": false,
-     "manual": true,
-     "expiresOnCommit": true,
-     "requiredRole": "AUTHOR",
-     "complete": false
+    "id": "task-manual-spellcheck",
+    "label": "Manual spellcheck.",
+    "description": "Confirm there are no spelling mistakes.",
+    "order": 1,
+    "authoringLevel": "TASK",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
+    "complete": false
+  }' \
+  ${aagUrl}/criteria-items
+
+curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{
+    "id": "task-validation-clean",
+    "label": "RVF Report Clean",
+    "description": "Task Validation has been run and come back with no results.",
+    "order": 1,
+    "authoringLevel": "TASK",
+    "mandatory": false,
+    "manual": true,
+    "expiresOnCommit": true,
+    "requiredRole": "AUTHOR",
+    "enabledByFlag": [],
+    "complete": false
   }' \
   ${aagUrl}/criteria-items
 
 # ----------------------------------------
-# Criteria
+# Project Acceptance Criteria (only subset explicitly configured)
 # ----------------------------------------
 curl --header "Content-Type: application/json" \
   --request POST \
@@ -128,11 +332,16 @@ curl --header "Content-Type: application/json" \
   \"branchPath\": \"$branchPath\",
   \"projectIteration\": 1,
   \"selectedProjectCriteriaIds\": [
-    \"project-clean-classification\"
+    \"project-release-validation-report-clean\",
+    \"project-documentation-completed\",
+    \"project-mrcm\",
+    \"project-whitelist-review\",
+    \"project-final-signoff\",
+    \"project-lead-signoff\"
   ],
   \"selectedTaskCriteriaIds\": [
-    \"task-clean-classification\",
-    \"task-manual-spellcheck\"
+    \"task-manual-spellcheck\",
+    \"task-validation-clean\"
   ]
   }" \
   ${aagUrl}/criteria
