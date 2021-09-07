@@ -17,8 +17,7 @@ public class CriteriaItemSignOffFactory {
 	 * @return CriteriaItemSignOff
 	 */
 	public CriteriaItemSignOff create(String criteriaItemId, String branch, Long branchHeadTimestamp, Integer projectIteration, String userId, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
-		boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(branch);
-		if (branchProjectLevel) {
+		if (projectAcceptanceCriteria.isBranchProjectLevel(branch)) {
 			if (projectIteration == null || projectIteration < 0) {
 				throw new IllegalArgumentException("Cannot create CriteriaItemSignOff as projectIteration is invalid.");
 			}
