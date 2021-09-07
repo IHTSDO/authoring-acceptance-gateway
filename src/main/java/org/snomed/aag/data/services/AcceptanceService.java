@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
+import org.snomed.aag.data.domain.CriteriaItemSignOffFactory;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.pojo.ValidationInformation;
@@ -37,8 +38,19 @@ public class AcceptanceService {
 	@Autowired
 	private ValidationService validationService;
 
+	@Autowired
+	private CriteriaItemSignOffFactory criteriaItemSignOffFactory;
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(AcceptanceService.class);
 
+	/**
+	 * Return created CriteriaItemSignOff for given branchPath. The latest ProjectAcceptanceCriteria for the given branchPath, if present,
+	 * will have all Criteria, regardless of whether any Criteria is manual, marked as complete.
+	 *
+	 * @param branchPath Branch path for Criteria to mark complete.
+	 * @return Created CriteriaItemSignOff for given branchPath.
+	 * @throws RestClientException When Branch does not exist.
+	 */
 	public Set<CriteriaItemSignOff> acceptAllItemsForBranch(String branchPath) throws RestClientException {
 		// Verify branch
 		Branch branch = securityService.getBranchOrThrow(branchPath);
@@ -56,9 +68,16 @@ public class AcceptanceService {
 		}
 
 		// Verification complete; add record(s)
-		return criteriaItemSignOffService.createAll(criteriaItemsToAccept, branchPath, branch.getHeadTimestamp(), projectAcceptanceCriteria.getProjectIteration());
+		return criteriaItemSignOffService.createAll(criteriaItemsToAccept, branchPath, projectAcceptanceCriteria.getProjectIteration(), branch.getHeadTimestamp(), projectAcceptanceCriteria);
 	}
 
+	/**
+	 * The latest ProjectAcceptanceCriteria for the given branchPath, if present, will have all Criteria, regardless of whether any Criteria is manual,
+	 * marked as incomplete.
+	 *
+	 * @param branchPath Branch path for Criteria to mark incomplete.
+	 * @throws RestClientException When Branch does not exist.
+	 */
 	public void rejectAllItemsForBranch(String branchPath) throws RestClientException {
 		// Verify branch
 		securityService.getBranchOrThrow(branchPath);
@@ -68,31 +87,48 @@ public class AcceptanceService {
 		Set<String> criteriaIdentifiers = getCriteriaIdentifiersOrThrow(projectAcceptanceCriteria, branchPath);
 
 		// Verification complete; remove record(s)
-		criteriaItemSignOffService.deleteItems(criteriaIdentifiers, branchPath, projectAcceptanceCriteria.getProjectIteration());
+		criteriaItemSignOffService.deleteFrom(criteriaIdentifiers, branchPath, projectAcceptanceCriteria.getProjectIteration(), projectAcceptanceCriteria);
 	}
 
+	/**
+	 * Return created CriteriaItemSignOff for given branchPath and CriteriaItem. The latest ProjectAcceptanceCriteria for the given branchPath, if present,
+	 * will have its matching CriteriaItem marked as complete.
+	 *
+	 * @param branchPath Branch path for Criteria to mark complete.
+	 * @param itemId     Identifier for Criteria to mark complete.
+	 * @return Created CriteriaItemSignOff for given branchPath and CriteriaItem.
+	 * @throws RestClientException When Branch does not exist.
+	 */
 	public CriteriaItemSignOff acceptItem(String branchPath, String itemId) throws RestClientException {
 		//Verify request.
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = getProjectAcceptanceCriteriaForAcceptRejectRequestOrThrow(branchPath, itemId);
 
 		//Verification complete; add record.
-		CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(new CriteriaItemSignOff(
+		CriteriaItemSignOff criteriaItemSignOff = criteriaItemSignOffFactory.create(
 				itemId,
 				branchPath,
-				securityService.getBranchOrThrow(branchPath).getHeadTimestamp(), projectAcceptanceCriteria.getProjectIteration(),
-				SecurityUtil.getUsername()
-		));
+				securityService.getBranchOrThrow(branchPath).getHeadTimestamp(),
+				projectAcceptanceCriteria.getProjectIteration(),
+				SecurityUtil.getUsername(),
+				projectAcceptanceCriteria);
+		CriteriaItemSignOff savedCriteriaItemSignOff = criteriaItemSignOffService.create(projectAcceptanceCriteria, criteriaItemSignOff);
 		LOGGER.info("Created CriteriaItemSignOff {} for {}.", savedCriteriaItemSignOff.getId(), itemId);
 		return savedCriteriaItemSignOff;
 	}
 
+	/**
+	 * The latest ProjectAcceptanceCriteria for the given branchPath, if present, will have its matching CriteriaItem marked as incomplete.
+	 *
+	 * @param branchPath Branch path for Criteria to mark incomplete.
+	 * @param itemId     Identifier for Criteria to mark incomplete.
+	 */
 	public void rejectOrThrow(String branchPath, String itemId) {
 		//Verify request.
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = getProjectAcceptanceCriteriaForAcceptRejectRequestOrThrow(branchPath, itemId);
 
 		//Verification complete; remove record.
 		Integer projectIteration = projectAcceptanceCriteria.getProjectIteration();
-		boolean deleted = criteriaItemSignOffService.deleteByCriteriaItemIdAndBranchPathAndProjectIteration(itemId, branchPath, projectIteration);
+		boolean deleted = criteriaItemSignOffService.deleteByCriteriaItemIdAndBranchPathAndProjectIteration(itemId, branchPath, projectAcceptanceCriteria.getProjectIteration(), projectAcceptanceCriteria);
 		if (!deleted) {
 			String message = String.format("Cannot delete %s for branch %s and project iteration %d", itemId, branchPath, projectIteration);
 			throw new ServiceRuntimeException(message, HttpStatus.NOT_FOUND);
@@ -111,37 +147,18 @@ public class AcceptanceService {
 			return;
 		}
 
-		boolean classified = commitInformation.isClassified();
-		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
-		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
+		Set<CriteriaItem> criteriaItems = getCriteriaItemsAndMarkSignOff(branchPathReceivingChanges, criteria);
+		Set<String> itemsToReject = getCriteriaItemsToUnaccept(criteriaItems);
+		Integer projectIteration = criteria.getProjectIteration();
+		if (commitInformation.isContent()) {
+			Set<String> itemsAlreadyAccepted = getCriteriaItemsAlreadyAccepted(criteriaItems, itemsToReject);
+			Set<String> itemsShouldBeAccepted = getCriteriaItemsThatShouldBeAccepted(commitInformation, criteria, branchPathReceivingChanges, criteriaItems);
+			persistItemsShouldBeAccepted(itemsShouldBeAccepted, itemsAlreadyAccepted, branchPathReceivingChanges, commitInformation.getHeadTime(), projectIteration, criteria);
+		}
 
-		final Set<CriteriaItem> items = criteriaService.findItemsAndMarkSignOff(criteria, branchPath);
-		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
-
-		// Includes role check
-		Set<String> itemsShouldBeAccepted = items.stream()
-				.filter(item ->
-						(item.getId().equals(CriteriaItem.PROJECT_CLASSIFICATION_CLEAN) && projectLevel && classified && userHasRole(item, branchRoles)) ||
-								(item.getId().equals(CriteriaItem.TASK_CLASSIFICATION_CLEAN) && taskLevel && classified && userHasRole(item, branchRoles))
-				)
-				.map(CriteriaItem::getId)
-				.collect(Collectors.toSet());
-
-		// Intentionally does not include a user role check
-		Set<String> itemsToUnaccept = items.stream()
-				.filter(item -> item.isExpiresOnCommit() && item.isComplete())
-				.map(CriteriaItem::getId)
-				.collect(Collectors.toSet());
-
-		final Set<String> acceptedItems = items.stream()
-				.filter(item -> item.isComplete() && !itemsToUnaccept.contains(item.getId()))
-				.map(CriteriaItem::getId)
-				.collect(Collectors.toSet());
-
-
-		if (!itemsToUnaccept.isEmpty()) {
-			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToUnaccept, branchPath, criteria.getProjectIteration());
-			criteriaItemSignOffService.deleteItems(itemsToUnaccept, branchPath, criteria.getProjectIteration());
+		if (!itemsToReject.isEmpty()) {
+			LOGGER.info("Rejecting items {} for branch {}, iteration {}", itemsToReject, branchPathReceivingChanges, projectIteration);
+			criteriaItemSignOffService.deleteFrom(itemsToReject, branchPathReceivingChanges, projectIteration, criteria);
 		} else {
 			LOGGER.info("No Criteria Items to reject.");
 		}
@@ -149,6 +166,11 @@ public class AcceptanceService {
 		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
 	}
 
+	/**
+	 * Mark relevant CriteriaItem as complete if the corresponding validation report has no errors.
+	 *
+	 * @param validationInformation Validation information including branchPath and URL to report.
+	 */
 	@Async
 	public void processValidationAsync(ValidationInformation validationInformation) {
 		try {
@@ -171,7 +193,7 @@ public class AcceptanceService {
 						.map(CriteriaItem::getId)
 						.collect(Collectors.toSet());
 
-				persistItemsShouldBeAccepted(itemsShouldBeAccepted, getAcceptedItemIds(items), branchPath, branch.getHeadTimestamp(), criteria.getProjectIteration());
+				persistItemsShouldBeAccepted(itemsShouldBeAccepted, getAcceptedItemIds(items), branchPath, branch.getHeadTimestamp(), criteria.getProjectIteration(), criteria);
 			}
 
 		} catch (RestClientException e) {
@@ -183,14 +205,15 @@ public class AcceptanceService {
 		return items.stream().filter(CriteriaItem::isComplete).map(CriteriaItem::getId).collect(Collectors.toSet());
 	}
 
-	private void persistItemsShouldBeAccepted(Set<String> itemsShouldBeAccepted, Set<String> itemsAlreadyAccepted, String branchPath, long branchHeadTime, Integer projectIteration) {
+	private void persistItemsShouldBeAccepted(Set<String> itemsShouldBeAccepted, Set<String> itemsAlreadyAccepted, String branchPath, long branchHeadTime,
+											  Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
 		// Only accept items which are not already accepted
 		Set<String> toPersist = new HashSet<>(itemsShouldBeAccepted);
 		toPersist.removeAll(itemsAlreadyAccepted);
 
 		if (!toPersist.isEmpty()) {
 			LOGGER.info("Signing off items {} for branch {}, iteration {}", toPersist, branchPath, projectIteration);
-			criteriaItemSignOffService.doCreateItems(toPersist, branchPath, branchHeadTime, projectIteration);
+			criteriaItemSignOffService.createFrom(toPersist, branchPath, projectIteration, branchHeadTime, projectAcceptanceCriteria);
 		} else {
 			LOGGER.info("No Criteria Items to accept.");
 		}

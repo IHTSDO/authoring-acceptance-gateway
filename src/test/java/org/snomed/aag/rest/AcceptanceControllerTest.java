@@ -844,13 +844,13 @@ class AcceptanceControllerTest extends AbstractTest {
 
         givenCriteriaItemExists(criteriaItemId, true, 0, criteriaItemId);
         givenUserDoesHavePermissionForBranch();
-        givenProjectAcceptanceCriteriaExists(branchPath, 89, criteriaItemId);
+        ProjectAcceptanceCriteria projectAcceptanceCriteria = givenProjectAcceptanceCriteriaExists(branchPath, 89, criteriaItemId);
         givenCriteriaItemSignOffExists(branchPath, criteriaItemId);
 
         mockMvc.perform(delete(requestUrl));
 
         //when
-        Optional<CriteriaItemSignOff> result = criteriaItemSignOffService.findByCriteriaItemIdAndBranchPathAndProjectIteration(criteriaItemId, branchPath, 89);
+        Optional<CriteriaItemSignOff> result = criteriaItemSignOffService.findByCriteriaItemIdAndBranchPathAndProjectIteration(criteriaItemId, branchPath, 0, projectAcceptanceCriteria);
 
         //then
         assertFalse(result.isPresent());
@@ -898,10 +898,10 @@ class AcceptanceControllerTest extends AbstractTest {
         projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
     }
 
-    private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, String projectCriteria) {
+    private ProjectAcceptanceCriteria givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, String projectCriteria) {
         ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
         projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton(projectCriteria));
-        projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
+        return projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
     }
 
     private void givenProjectAcceptanceCriteriaExists(ProjectAcceptanceCriteria projectAcceptanceCriteria) throws Exception {

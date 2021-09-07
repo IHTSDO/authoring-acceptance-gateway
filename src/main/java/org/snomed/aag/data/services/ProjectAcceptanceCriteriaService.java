@@ -2,6 +2,8 @@ package org.snomed.aag.data.services;
 
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -23,7 +25,7 @@ import static java.lang.String.format;
 
 @Service
 public class ProjectAcceptanceCriteriaService {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProjectAcceptanceCriteriaService.class);
     private static final String INVALID_PARAMETERS = "Invalid parameters.";
 
     @Autowired
@@ -42,7 +44,7 @@ public class ProjectAcceptanceCriteriaService {
     private BranchSecurityService branchSecurityService;
 
 	private static void verifyParams(String branchPath, Integer projectIteration) {
-        if (branchPath == null || projectIteration == null || projectIteration < 0) {
+        if (branchPath == null || (projectIteration != null && projectIteration < 0)) {
             throw new IllegalArgumentException(INVALID_PARAMETERS);
         }
     }
@@ -294,7 +296,7 @@ public class ProjectAcceptanceCriteriaService {
         }
 
         Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteriaIdentifiers);
-        criteriaItemSignOffService.markSignedOffItems(branchPath, criteria.getProjectIteration(), criteriaItems);
+        criteriaItemSignOffService.markSignedOffItems(criteriaItems, branchPath, criteria.getProjectIteration(), criteria);
         return criteriaItems;
 	}
 
@@ -323,6 +325,7 @@ public class ProjectAcceptanceCriteriaService {
 
         if (allCriteriaItemsComplete && branchProjectLevel) {
             // New entry to get new creation date.
+            LOGGER.info("Project will be promoted; incrementing iteration.");
             ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
             create(incrementedProjectAcceptanceCriteria);
         }
