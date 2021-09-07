@@ -35,14 +35,12 @@ public class ServiceIntegrationController {
 	private final CommitInformationValidator commitInformationValidator;
 	private final AcceptanceService acceptanceService;
 	private final ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService;
-	private final BranchSecurityService branchSecurityService;
 
 	public ServiceIntegrationController(CommitInformationValidator commitInformationValidator, AcceptanceService acceptanceService,
-										ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService, BranchSecurityService branchSecurityService) {
+										ProjectAcceptanceCriteriaService projectAcceptanceCriteriaService) {
 		this.commitInformationValidator = commitInformationValidator;
 		this.acceptanceService = acceptanceService;
 		this.projectAcceptanceCriteriaService = projectAcceptanceCriteriaService;
-		this.branchSecurityService = branchSecurityService;
 	}
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -72,8 +70,7 @@ public class ServiceIntegrationController {
 						.body(message);
 			}
 
-			Branch sourceBranch = branchSecurityService.getBranchOrThrow(sourceBranchPath);
-			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranch);
+			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranchPath);
 			if (pacComplete) {
 				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", sourceBranchPath);
 				processCommitAsync(commitInformation);
