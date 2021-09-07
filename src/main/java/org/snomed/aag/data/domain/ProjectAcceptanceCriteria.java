@@ -35,7 +35,7 @@ public class ProjectAcceptanceCriteria {
 	@Field(type = FieldType.Keyword)
 	private Set<String> selectedTaskCriteriaIds;
 
-	private ProjectAcceptanceCriteria() {
+	public ProjectAcceptanceCriteria() {
 	}
 
 	public ProjectAcceptanceCriteria(String branchPath) {
@@ -136,6 +136,20 @@ public class ProjectAcceptanceCriteria {
 				this.selectedTaskCriteriaIds = new HashSet<>();
 			}
 			this.selectedTaskCriteriaIds.add(criteriaItem.getId());
+		}
+	}
+
+	public void setSelectedCriteria(Set<CriteriaItem> criteriaItems) {
+		this.selectedProjectCriteriaIds = new HashSet<>();
+		this.selectedTaskCriteriaIds = new HashSet<>();
+
+		for (CriteriaItem criteriaItem : criteriaItems) {
+			AuthoringLevel authoringLevel = criteriaItem.getAuthoringLevel();
+			if (AuthoringLevel.PROJECT.equals(authoringLevel)) {
+				this.selectedProjectCriteriaIds.add(criteriaItem.getId());
+			} else {
+				this.selectedTaskCriteriaIds.add(criteriaItem.getId());
+			}
 		}
 	}
 

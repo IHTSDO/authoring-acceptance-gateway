@@ -56,7 +56,7 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 	@Transient
 	private boolean complete;
 
-	private CriteriaItem() {
+	public CriteriaItem() {
 	}
 
 	public CriteriaItem(String id) {

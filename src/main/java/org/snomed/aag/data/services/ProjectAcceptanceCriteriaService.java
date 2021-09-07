@@ -1,5 +1,6 @@
 package org.snomed.aag.data.services;
 
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
@@ -7,6 +8,7 @@ import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaCreateValidator;
+import org.snomed.aag.rest.util.MetadataUtil;
 import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,10 +16,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Predicate;
 
 import static java.lang.String.format;
 
@@ -37,6 +37,9 @@ public class ProjectAcceptanceCriteriaService {
 
 	@Autowired
     private CriteriaItemSignOffService criteriaItemSignOffService;
+
+    @Autowired
+    private BranchSecurityService branchSecurityService;
 
 	private static void verifyParams(String branchPath, Integer projectIteration) {
         if (branchPath == null || projectIteration == null || projectIteration < 0) {
@@ -62,8 +65,8 @@ public class ProjectAcceptanceCriteriaService {
         }
     }
 
-    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
-        if (projectAcceptanceCriteria == null || branch == null) {
+    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
+        if (projectAcceptanceCriteria == null || branchPath == null) {
             throw new IllegalArgumentException();
         }
     }
@@ -134,34 +137,28 @@ public class ProjectAcceptanceCriteriaService {
     }
 
     /**
-     * Find project acceptance criteria for the latest iteration from this or the parent branch.
-	 * Add all current mandatory criteria items.
+     * Return ProjectAcceptanceCriteria with relevant CriteriaItems. If no ProjectAcceptanceCriteria can be found from the given
+     * branchPath, the parent Branch will be queried.
      *
-     * @param branchPath Field to match in query.
-     * @return The project acceptance criteria or null if none found.
+     * @param branchPath Branch path to query for ProjectAcceptanceCriteria
+     * @return ProjectAcceptanceCriteria with relevant CriteriaItems
      */
-    public ProjectAcceptanceCriteria findEffectiveCriteriaWithMandatoryItems(String branchPath) {
-		ProjectAcceptanceCriteria criteria = getLatestProjectAcceptanceCriteria(branchPath);
-
+    public ProjectAcceptanceCriteria findByBranchPathWithRelevantCriteriaItems(String branchPath) {
+        ProjectAcceptanceCriteria criteria = getFromBranchOrParent(branchPath);
         if (criteria == null) {
-            String parentPath = PathUtil.getParentPath(branchPath);
-            if (parentPath != null) {
-                criteria = getLatestProjectAcceptanceCriteria(parentPath);
-            }
-
-            if (criteria == null) {
-                return null;
-            }
+            return null;
         }
 
-		// Join mandatory criteria items, these may have been updated since the project criteria was created
-        for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT)) {
-			criteria.addToSelectedProjectCriteria(criteriaItem);
-        }
-        for (CriteriaItem criteriaItem : criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK)) {
-			criteria.addToSelectedTaskCriteria(criteriaItem);
-        }
+        // Get project, task & mandatory CriteriaItems
+        Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria);
 
+        // Get "true" author flags from Branch
+        Set<String> branchAuthorFlags = MetadataUtil.getTrueAuthorFlags(getBranchOrThrow(branchPath));
+
+        // Remove from collection if item is enabled by a flag but the flag is not true on the branch.
+        relevantCriteriaItems.removeIf(criteriaItem -> !criteriaItem.getEnabledByFlag().isEmpty() && Collections.disjoint(criteriaItem.getEnabledByFlag(), branchAuthorFlags));
+
+        criteria.setSelectedCriteria(relevantCriteriaItems);
         return criteria;
     }
 
@@ -268,9 +265,15 @@ public class ProjectAcceptanceCriteriaService {
 		if (criteria == null) {
 			return Collections.emptySet();
 		}
-		Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteria.getAllCriteriaIdentifiers());
-		criteriaItemSignOffService.markSignedOffItems(branchPath, criteria.getProjectIteration(), criteriaItems);
-		return criteriaItems;
+
+        Set<String> criteriaIdentifiers = criteria.getAllCriteriaIdentifiers();
+        if (criteriaIdentifiers.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteriaIdentifiers);
+        criteriaItemSignOffService.markSignedOffItems(branchPath, criteria.getProjectIteration(), criteriaItems);
+        return criteriaItems;
 	}
 
     /**
@@ -280,14 +283,13 @@ public class ProjectAcceptanceCriteriaService {
      * the ProjectAcceptanceCriteria has been completed, a new entry will be added to the store.
      *
      * @param projectAcceptanceCriteria Entry to check if complete
-     * @param branch                    Branch to cross reference
+     * @param branchPath                Branch to cross reference
      * @return Whether the given ProjectAcceptanceCriteria for the given branch is complete.
      * @throws IllegalArgumentException If arguments are invalid.
      */
-    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
-        verifyParams(projectAcceptanceCriteria, branch);
+    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, String branchPath) {
+        verifyParams(projectAcceptanceCriteria, branchPath);
 
-        String branchPath = branch.getPath();
         Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
         boolean allCriteriaItemsComplete = false;
         boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(branchPath);
@@ -305,4 +307,42 @@ public class ProjectAcceptanceCriteriaService {
 
         return allCriteriaItemsComplete;
     }
+
+    private Branch getBranchOrThrow(String branchPath) {
+        try {
+            return branchSecurityService.getBranchOrThrow(branchPath);
+        } catch (RestClientException e) {
+            throw new ServiceRuntimeException(String.format("Cannot find branch %s", branchPath), HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private ProjectAcceptanceCriteria getFromBranchOrParent(String branchPath) {
+        ProjectAcceptanceCriteria criteria = getLatestProjectAcceptanceCriteria(branchPath);
+
+        if (criteria == null) {
+            String parentPath = PathUtil.getParentPath(branchPath);
+            if (parentPath != null) {
+                criteria = getLatestProjectAcceptanceCriteria(parentPath);
+            }
+        }
+
+        return criteria;
+    }
+
+    private Set<CriteriaItem> getRelevantCriteriaItems(ProjectAcceptanceCriteria criteria) {
+        Set<CriteriaItem> relevantCriteriaItems = new HashSet<>();
+
+        // Collect mandatory
+        relevantCriteriaItems.addAll(criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.PROJECT));
+        relevantCriteriaItems.addAll(criteriaItemService.findAllByMandatoryAndAuthoringLevel(true, AuthoringLevel.TASK));
+
+        // Collect CriteriaItems domain from ProjectAcceptanceCriteria String identifiers
+        for (String criteriaId : criteria.getAllCriteriaIdentifiers()) {
+            CriteriaItem projectCriteria = criteriaItemService.findByIdOrThrow(criteriaId);
+            relevantCriteriaItems.add(projectCriteria);
+        }
+
+        return relevantCriteriaItems;
+    }
+
 }
