@@ -140,8 +140,8 @@ public class AcceptanceService {
 	 * @param commitInformation Commit information including branch path and metadata.
 	 */
 	public void processCommit(CommitInformation commitInformation) {
-		final String sourceBranchPath = commitInformation.getSourceBranchPath();
-		final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(sourceBranchPath, true);
+		String branchPathReceivingChanges = commitInformation.getBranchPathReceivingChanges();
+		final ProjectAcceptanceCriteria criteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPathReceivingChanges, true);
 		if (criteria == null) {
 			LOGGER.info("ProjectAcceptanceCriteria not found for branch; nothing to process.");
 			return;
@@ -162,8 +162,6 @@ public class AcceptanceService {
 		} else {
 			LOGGER.info("No Criteria Items to reject.");
 		}
-
-		persistItemsShouldBeAccepted(itemsShouldBeAccepted, acceptedItems, branchPath, commitInformation.getHeadTime(), criteria.getProjectIteration());
 	}
 
 	/**
@@ -270,5 +268,43 @@ public class AcceptanceService {
 		}
 
 		return criteriaIdentifiers;
+	}
+
+	private Set<CriteriaItem> getCriteriaItemsAndMarkSignOff(String branchPath, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+		LOGGER.info("Finding all CriteriaItem for branch {} and projectIteration {}.", branchPath, projectAcceptanceCriteria.getProjectIteration());
+		return criteriaService.findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
+	}
+
+	private Set<String> getCriteriaItemsToUnaccept(Set<CriteriaItem> criteriaItems) {
+		// Intentionally does not include a user role check
+		return criteriaItems
+				.stream()
+				.filter(item -> item.isExpiresOnCommit() && item.isComplete())
+				.map(CriteriaItem::getId)
+				.collect(Collectors.toSet());
+	}
+
+	private Set<String> getCriteriaItemsAlreadyAccepted(Set<CriteriaItem> criteriaItems, Set<String> itemsToUnaccept) {
+		return criteriaItems
+				.stream()
+				.filter(item -> item.isComplete() && !itemsToUnaccept.contains(item.getId()))
+				.map(CriteriaItem::getId)
+				.collect(Collectors.toSet());
+	}
+
+	private Set<String> getCriteriaItemsThatShouldBeAccepted(CommitInformation commitInformation, ProjectAcceptanceCriteria criteria, String branchPath, Set<CriteriaItem> criteriaItems) {
+		boolean classified = commitInformation.isClassified();
+		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
+		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
+		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
+		// Includes role check
+		return criteriaItems
+				.stream()
+				.filter(item ->
+						(item.getId().equals(CriteriaItem.PROJECT_CLASSIFICATION_CLEAN) && projectLevel && classified && userHasRole(item, branchRoles)) ||
+								(item.getId().equals(CriteriaItem.TASK_CLASSIFICATION_CLEAN) && taskLevel && classified && userHasRole(item, branchRoles))
+				)
+				.map(CriteriaItem::getId)
+				.collect(Collectors.toSet());
 	}
 }

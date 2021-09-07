@@ -6,7 +6,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
-import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -22,9 +21,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -137,27 +133,6 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		// then
 		assertResponseStatus(resultActions, 204);
 		assertResponseBody(resultActions, String.format("No Project Acceptance Criteria found for branch %s. Returning " + HttpStatus.NO_CONTENT + ".", branchPath));
-	}
-
-	@Test
-	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenPACHasNoCriteriaItems() throws Exception {
-		// given
-		String requestUrl = receiveCommitInformation();
-		String branchPath = "MAIN/projectA/taskB";
-		CommitInformation commitInformation = new CommitInformation(branchPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
-
-		givenProjectAcceptanceCriteriaExists(branchPath, 1, Collections.emptySet(), Collections.emptySet());
-
-		// when
-		ResultActions resultActions = mockMvc
-				.perform(post(requestUrl)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(asJson(commitInformation))
-				);
-
-		// then
-		assertResponseStatus(resultActions, 409);
-		assertResponseBody(resultActions, buildErrorResponse(HttpStatus.CONFLICT.value(), "Project Acceptance Criteria has no Criteria Items."));
 	}
 
 	@Test
@@ -501,15 +476,14 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		criteriaItemRepository.save(criteriaItem);
 	}
 
-
-	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, String enabledByFlag) {
+	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, boolean expiresOnCommit) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
 		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 		criteriaItem.setAuthoringLevel(authoringLevel);
-		criteriaItem.setEnabledByFlag(Set.of(enabledByFlag));
+		criteriaItem.setExpiresOnCommit(expiresOnCommit);
 
 		criteriaItemRepository.save(criteriaItem);
 	}
