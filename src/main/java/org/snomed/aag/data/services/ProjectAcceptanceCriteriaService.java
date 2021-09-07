@@ -324,9 +324,10 @@ public class ProjectAcceptanceCriteriaService {
 
         if (allCriteriaItemsComplete && branchProjectLevel) {
             // New entry to get new creation date.
-            LOGGER.info("Project will be promoted; incrementing iteration.");
             ProjectAcceptanceCriteria incrementedProjectAcceptanceCriteria = projectAcceptanceCriteria.cloneWithNextProjectIteration();
             create(incrementedProjectAcceptanceCriteria);
+            LOGGER.info("{} has all criteria complete, and will have its projectIteration value incremented.", branchPath);
+            LOGGER.debug("New ProjectAcceptanceCriteria for {}: {}", branchPath, incrementedProjectAcceptanceCriteria);
         }
 
         return allCriteriaItemsComplete;
