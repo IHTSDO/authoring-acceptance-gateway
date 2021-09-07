@@ -67,7 +67,7 @@ public class ServiceIntegrationController {
 						.body(message);
 			}
 
-			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(commitInformation);
+			boolean pacComplete = projectAcceptanceCriteriaService.incrementIfComplete(projectAcceptanceCriteria, sourceBranchPath);
 			if (pacComplete) {
 				logger.info("Project Acceptance Criteria for {} is complete. Promotion is recommended.", sourceBranchPath);
 				processCommitAsync(commitInformation);

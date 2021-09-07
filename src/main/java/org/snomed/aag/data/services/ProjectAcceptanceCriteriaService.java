@@ -1,5 +1,6 @@
 package org.snomed.aag.data.services;
 
+import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -61,8 +62,8 @@ public class ProjectAcceptanceCriteriaService {
         }
     }
 
-    private static void verifyParams(CommitInformation commitInformation) {
-        if (commitInformation == null) {
+    private static void verifyParams(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
+        if (projectAcceptanceCriteria == null || branch == null) {
             throw new IllegalArgumentException();
         }
     }
@@ -278,28 +279,21 @@ public class ProjectAcceptanceCriteriaService {
      * task level CriteriaItems will be checked. If the given branchPath is for the project and
      * the ProjectAcceptanceCriteria has been completed, a new entry will be added to the store.
      *
-     * @param commitInformation Request from client.
-     * @return Whether the latest ProjectAcceptanceCriteria for the given branch is complete.
-     **/
-    public boolean incrementIfComplete(CommitInformation commitInformation) {
-        verifyParams(commitInformation);
+     * @param projectAcceptanceCriteria Entry to check if complete
+     * @param branch                    Branch to cross reference
+     * @return Whether the given ProjectAcceptanceCriteria for the given branch is complete.
+     * @throws IllegalArgumentException If arguments are invalid.
+     */
+    public boolean incrementIfComplete(ProjectAcceptanceCriteria projectAcceptanceCriteria, Branch branch) {
+        verifyParams(projectAcceptanceCriteria, branch);
 
-        String path = commitInformation.getSourceBranchPath();
-        ProjectAcceptanceCriteria projectAcceptanceCriteria = findEffectiveCriteriaWithMandatoryItems(path);
-        if (projectAcceptanceCriteria == null) {
-            throw new ServiceRuntimeException("No Project Acceptance Criteria found for branch.", HttpStatus.NOT_FOUND);
-        }
-
-        if (!projectAcceptanceCriteria.hasCriteria()) {
-            throw new ServiceRuntimeException("Project Acceptance Criteria has no Criteria Items.", HttpStatus.CONFLICT);
-        }
-
-        Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, path);
+        String branchPath = branch.getPath();
+        Set<CriteriaItem> criteriaItems = findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
         boolean allCriteriaItemsComplete = false;
-        boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(path);
+        boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(branchPath);
         if (branchProjectLevel) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.PROJECT == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
-        } else if (projectAcceptanceCriteria.isBranchTaskLevel(path)) {
+        } else if (projectAcceptanceCriteria.isBranchTaskLevel(branchPath)) {
             allCriteriaItemsComplete = criteriaItems.stream().filter(criteriaItem -> AuthoringLevel.TASK == criteriaItem.getAuthoringLevel()).allMatch(CriteriaItem::isComplete);
         }
 
