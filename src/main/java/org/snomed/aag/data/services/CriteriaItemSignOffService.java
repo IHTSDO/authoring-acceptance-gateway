@@ -146,7 +146,7 @@ public class CriteriaItemSignOffService {
 	public Optional<CriteriaItemSignOff> findByCriteriaItemIdAndBranchPathAndProjectIteration(String criteriaItemId, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
 		verifyParams(criteriaItemId, branchPath, projectIteration, projectAcceptanceCriteria);
 
-		return doFindByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration, projectAcceptanceCriteria);
+		return doFindCriteriaItemSignOff(criteriaItemId, branchPath, projectIteration, projectAcceptanceCriteria);
 	}
 
     /**
@@ -160,7 +160,7 @@ public class CriteriaItemSignOffService {
      */
 	public List<CriteriaItemSignOff> markSignedOffItems(Set<CriteriaItem> criteriaItems, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria criteria) {
 		Map<String, CriteriaItem> criteriaItemMap = criteriaItems.stream().collect(Collectors.toMap(CriteriaItem::getId, Function.identity()));
-		List<CriteriaItemSignOff> criteriaItemSignOffs = doFindAllByBranchAndProjectIterationAndCriteriaItemIdIn(criteriaItemMap.keySet(), branchPath, projectIteration, criteria);
+		List<CriteriaItemSignOff> criteriaItemSignOffs = doFindCriteriaItemSignOff(criteriaItemMap.keySet(), branchPath, projectIteration, criteria);
 		for (CriteriaItemSignOff criteriaItemSignOff : criteriaItemSignOffs) {
 			final CriteriaItem criteriaItem = criteriaItemMap.get(criteriaItemSignOff.getCriteriaItemId());
 			if (criteriaItem != null) {
@@ -189,7 +189,7 @@ public class CriteriaItemSignOffService {
         }
 
         logger.info("Deleting item sign-offs {} for branch {}, iteration {}", Collections.singleton(criteriaItemId), branchPath, projectIteration);
-		doDeleteByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration, projectAcceptanceCriteria);
+		doDeleteCriteriaItemSignOff(criteriaItemId, branchPath, projectIteration, projectAcceptanceCriteria);
 		return true;
     }
 
@@ -198,18 +198,18 @@ public class CriteriaItemSignOffService {
 	 *
 	 * @param itemsToUnaccept           Identifiers of CriteriaItems to mark as incomplete.
 	 * @param branchPath                Branch path of CriteriaItems to mark as incomplete.
-	 * @param projectIteration          PK
+	 * @param projectIteration          Project iteration of CriteriaItems to mark as incomplete.
 	 * @param projectAcceptanceCriteria Determine whether to mark Project Criteria or Task Criteria incomplete.
 	 */
 	public void deleteFrom(Set<String> itemsToUnaccept, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
 		logger.info("Deleting item sign-offs {} for branch {}, iteration {}", itemsToUnaccept, branchPath);
 		for (String itemId : itemsToUnaccept) {
-			doDeleteByCriteriaItemIdAndBranchAndProjectIteration(itemId, branchPath, projectIteration, projectAcceptanceCriteria);
+			doDeleteCriteriaItemSignOff(itemId, branchPath, projectIteration, projectAcceptanceCriteria);
 		}
 	}
 
 	// Find differently for PROJECT & TASK CriteriaItemSignOff
-	private List<CriteriaItemSignOff> doFindAllByBranchAndProjectIterationAndCriteriaItemIdIn(Collection<String> criteriaItemIdentifiers, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+	private List<CriteriaItemSignOff> doFindCriteriaItemSignOff(Collection<String> criteriaItemIdentifiers, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
 		boolean branchProjectLevel = projectAcceptanceCriteria.isBranchProjectLevel(branchPath);
 		if (branchProjectLevel) {
 			return repository.findAllByBranchAndProjectIterationAndCriteriaItemIdIn(branchPath, projectIteration, criteriaItemIdentifiers);
@@ -219,7 +219,7 @@ public class CriteriaItemSignOffService {
 	}
 
 	// Find differently for PROJECT & TASK CriteriaItemSignOff
-	private Optional<CriteriaItemSignOff> doFindByCriteriaItemIdAndBranchAndProjectIteration(String criteriaItemId, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+	private Optional<CriteriaItemSignOff> doFindCriteriaItemSignOff(String criteriaItemId, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
 		if (projectAcceptanceCriteria.isBranchProjectLevel(branchPath)) {
 			return repository.findByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration);
 		}
@@ -228,7 +228,7 @@ public class CriteriaItemSignOffService {
 	}
 
 	// Delete differently for PROJECT & TASK CriteriaItemSignOff
-	private void doDeleteByCriteriaItemIdAndBranchAndProjectIteration(String criteriaItemId, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
+	private void doDeleteCriteriaItemSignOff(String criteriaItemId, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
 		if (projectAcceptanceCriteria.isBranchProjectLevel(branchPath)) {
 			repository.deleteByCriteriaItemIdAndBranchAndProjectIteration(criteriaItemId, branchPath, projectIteration);
 		} else {
