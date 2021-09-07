@@ -58,7 +58,10 @@ curl --header "Content-Type: application/json" \
      "manual": false,
      "expiresOnCommit": true,
      "requiredRole": "AUTHOR",
-     "complete": false
+     "complete": false,
+     "enabledByFlag": [
+        "complex"
+     ]
   }' \
   ${aagUrl}/criteria-items
 

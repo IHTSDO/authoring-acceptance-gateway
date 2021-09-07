@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
+import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
@@ -39,7 +40,8 @@ class AcceptanceControllerTest extends AbstractTest {
         this.acceptanceController = new AcceptanceController(
                 securityService,
                 projectAcceptanceCriteriaService,
-				acceptanceService
+				acceptanceService,
+                criteriaItemService
         );
         this.acceptanceCriteriaController = new AcceptanceCriteriaController(
                 projectAcceptanceCriteriaService,
@@ -615,6 +617,95 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
+    void viewCriteriaItems_ShouldReturnAllItems_WhenBranchHasNoAuthorFlags() throws Exception {
+        //given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String taskCriteriaItemId1 = UUID.randomUUID().toString();
+        String taskCriteriaItemId2 = UUID.randomUUID().toString();
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch), true);
+
+        givenBranchDoesExist(System.currentTimeMillis());
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, true, 1, projectCriteriaItemId);
+        givenCriteriaItemExists(taskCriteriaItemId1, true, 1, taskCriteriaItemId1);
+        givenCriteriaItemExists(taskCriteriaItemId2, true, 1, taskCriteriaItemId2, "complex");
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Set.of(taskCriteriaItemId1, taskCriteriaItemId2));
+        givenCriteriaItemSignOffExists(taskBranch, projectCriteriaItemId);
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
+
+        //then
+        assertEquals(4, criteriaItems.size()); // Everything returned
+    }
+
+    @Test
+    void viewCriteriaItems_ShouldReturnSubsetOfItems_WhenBranchHasAuthorFlags() throws Exception {
+        //given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String taskCriteriaItemId1 = UUID.randomUUID().toString();
+        String taskCriteriaItemId2 = UUID.randomUUID().toString();
+        String taskCriteriaItemId3 = UUID.randomUUID().toString();
+        String taskCriteriaItemId4 = UUID.randomUUID().toString();
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch), true);
+
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, true, 1, projectCriteriaItemId);
+        givenCriteriaItemExists(taskCriteriaItemId1, true, 1, taskCriteriaItemId1);
+        givenCriteriaItemExists(taskCriteriaItemId2, true, 1, taskCriteriaItemId2, "complex");
+        givenCriteriaItemExists(taskCriteriaItemId3, true, 1, taskCriteriaItemId3, "simple");
+        givenCriteriaItemExists(taskCriteriaItemId4, true, 1, taskCriteriaItemId4, "complicated");
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Set.of(taskCriteriaItemId1, taskCriteriaItemId2));
+        givenCriteriaItemSignOffExists(taskBranch, projectCriteriaItemId);
+        givenBranchDoesExist(System.currentTimeMillis(), buildMetadataWithAuthorFlag("complex", true));
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
+
+        //then
+        assertEquals(1, criteriaItems.size()); // Subset returned matching Branch author flags
+    }
+
+    @Test
+    void viewCriteriaItems_ShouldReturnAllItems_WhenNoEnabledAuthorFlags() throws Exception {
+        //given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String globalCriteriaItemId = UUID.randomUUID().toString();
+        String projectCriteriaItemId = UUID.randomUUID().toString();
+        String taskCriteriaItemId1 = UUID.randomUUID().toString();
+        String taskCriteriaItemId2 = UUID.randomUUID().toString();
+        String taskCriteriaItemId3 = UUID.randomUUID().toString();
+        String taskCriteriaItemId4 = UUID.randomUUID().toString();
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch), true);
+
+        givenGloballyRequiredProjectLevelCriteriaItemExists(globalCriteriaItemId, true, 0);
+        givenCriteriaItemExists(projectCriteriaItemId, true, 1, projectCriteriaItemId);
+        givenCriteriaItemExists(taskCriteriaItemId1, true, 1, taskCriteriaItemId1);
+        givenCriteriaItemExists(taskCriteriaItemId2, true, 1, taskCriteriaItemId2, "complex");
+        givenCriteriaItemExists(taskCriteriaItemId3, true, 1, taskCriteriaItemId3, "simple");
+        givenCriteriaItemExists(taskCriteriaItemId4, true, 1, taskCriteriaItemId4, "complicated");
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(projectCriteriaItemId), Set.of(taskCriteriaItemId1, taskCriteriaItemId2));
+        givenCriteriaItemSignOffExists(taskBranch, projectCriteriaItemId);
+        givenBranchDoesExist(System.currentTimeMillis(), buildMetadataWithAuthorFlag("complex", false));
+
+        //when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
+
+        //then
+        assertEquals(4, criteriaItems.size()); // Everything returned as no enabled flags to remove
+    }
+
+    @Test
     void rejectCriteriaItem_ShouldReturnExpectedStatus_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
         //given
         String branchPath = UUID.randomUUID().toString();
@@ -810,6 +901,10 @@ class AcceptanceControllerTest extends AbstractTest {
         return "/acceptance/" + branchPath;
     }
 
+    private String viewCriteriaItems(String branchPath, boolean matchAuthorFlags) {
+        return "/acceptance/" + branchPath + "?matchAuthorFlags=true";
+    }
+
     private String createProjectCriteria() {
         return "/criteria";
     }
@@ -820,6 +915,17 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
         criteriaItem.setOrder(order);
         criteriaItem.setLabel(label);
+
+        criteriaItemRepository.save(criteriaItem);
+    }
+
+    private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, String flag) {
+        CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
+        criteriaItem.setManual(manual);
+        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setOrder(order);
+        criteriaItem.setLabel(label);
+        criteriaItem.setEnabledByFlag(Collections.singleton(flag));
 
         criteriaItemRepository.save(criteriaItem);
     }
@@ -885,7 +991,17 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     private ProjectAcceptanceCriteriaDTO toProjectAcceptCriteria(String response) throws JsonProcessingException {
-        return OBJECT_MAPPER.readValue(response, new TypeReference<ProjectAcceptanceCriteriaDTO>() {
+        return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
+    }
+
+    private Map<String, Object> buildMetadataWithAuthorFlag(String key, Object value) {
+        Map<String, Object> authorFlags = new LinkedHashMap<>();
+        authorFlags.put(key, value);
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put(Constants.AUTHOR_FLAG, authorFlags);
+
+        return metadata;
     }
 }

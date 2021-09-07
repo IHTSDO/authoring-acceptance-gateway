@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
+import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -21,6 +22,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,8 +39,8 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 
 	@BeforeEach
 	public void setUp() {
-		this.serviceIntegrationController = new ServiceIntegrationController(commitInformationValidator, acceptanceService, projectAcceptanceCriteriaService);
-		this.acceptanceController = new AcceptanceController(securityService, projectAcceptanceCriteriaService, acceptanceService);
+		this.serviceIntegrationController = new ServiceIntegrationController(commitInformationValidator, acceptanceService, projectAcceptanceCriteriaService, securityService);
+		this.acceptanceController = new AcceptanceController(securityService, projectAcceptanceCriteriaService, acceptanceService, criteriaItemService);
 		this.acceptanceCriteriaController = new AcceptanceCriteriaController(projectAcceptanceCriteriaService, projectAcceptanceCriteriaUpdateValidator);
 		this.mockMvc = MockMvcBuilders
 				.standaloneSetup(serviceIntegrationController, acceptanceController, acceptanceCriteriaController)
@@ -170,6 +174,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT);
 		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
 		givenCriteriaItemSignOffExists(taskPath, taskCriteriaId); // Only task CriteriaItem has been approved.
+		givenBranchDoesExist(taskPath);
 
 		// when
 		ResultActions resultActions = mockMvc
@@ -198,6 +203,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
 		givenCriteriaItemSignOffExists(branchPath, projectCriteriaId);
 		givenCriteriaItemSignOffExists(branchPath, taskCriteriaId);
+		givenBranchDoesExist(branchPath);
 
 		mockMvc.perform(post(receiveCommitInformation).contentType(MediaType.APPLICATION_JSON).content(asJson(commitInformation)));
 
@@ -219,6 +225,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		String projectCriteriaId = "project-criteria-id";
 		String taskCriteriaId = "task-criteria-id";
 
+		givenBranchDoesExist(taskBranch);
 		givenProjectAcceptanceCriteriaExists(projectPath, 1, projectCriteriaId, taskCriteriaId);
 		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT);
 		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
@@ -250,6 +257,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		givenCriteriaItemExists(taskCriteriaId, true, 1, taskCriteriaId, AuthoringLevel.TASK);
 		givenCriteriaItemSignOffExists(taskPath, projectCriteriaId);
 		givenCriteriaItemSignOffExists(taskPath, taskCriteriaId);
+		givenBranchDoesExist(taskPath);
 
 		// first request
 		ResultActions firstRequest = mockMvc
@@ -395,6 +403,37 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		assertEquals(2, pacSecondRequest.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size()); // 1 has been expired
 	}
 
+	@Test
+	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenMetadataConfiguredForSubset() throws Exception {
+		// given
+		String requestUrl = receiveCommitInformation();
+		String projectPath = "MAIN/projectA";
+		String taskPath = "MAIN/projectA/taskB";
+		CommitInformation commitInformation = new CommitInformation(taskPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
+		String projectCriteriaId = "project-criteria-id";
+		String taskCriteriaId1 = "task-criteria-id-1";
+		String taskCriteriaId2 = "task-criteria-id-2";
+
+		givenProjectAcceptanceCriteriaExists(projectPath, 1, projectCriteriaId, Set.of(taskCriteriaId1, taskCriteriaId2));
+		givenCriteriaItemExists(projectCriteriaId, true, 0, projectCriteriaId, AuthoringLevel.PROJECT, "complex");
+		givenCriteriaItemExists(taskCriteriaId1, true, 1, taskCriteriaId1, AuthoringLevel.TASK, "complex");
+		givenCriteriaItemExists(taskCriteriaId2, true, 1, taskCriteriaId1, AuthoringLevel.TASK, "simple"); // Won't be validated as no matching flag
+		givenCriteriaItemSignOffExists(taskPath, projectCriteriaId);
+		givenCriteriaItemSignOffExists(taskPath, taskCriteriaId1);
+		givenBranchDoesExist(taskPath, buildMetadataWithAuthorFlag(new LinkedHashMap<>(Map.of("complex", true))));
+
+		// when
+		ResultActions resultActions = mockMvc
+				.perform(post(requestUrl)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(asJson(commitInformation))
+				);
+
+		// then
+		assertResponseStatus(resultActions, 200); // Only subset of PAC validated
+		assertResponseBodyIsEmpty(resultActions);
+	}
+
 	private String receiveCommitInformation() {
 		return "/integration/snowstorm/commit";
 	}
@@ -418,10 +457,17 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
 	}
 
+<<<<<<< HEAD
 	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, Set<String> projectCriteria, Set<String> taskCriteria) {
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
 		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(projectCriteria);
 		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(taskCriteria);
+=======
+	private void givenProjectAcceptanceCriteriaExists(String branchPath, Integer projectIteration, String projectCriteriaId, Set<String> taskCriteriaIds) {
+		ProjectAcceptanceCriteria projectAcceptanceCriteria = new ProjectAcceptanceCriteria(branchPath, projectIteration);
+		projectAcceptanceCriteria.setSelectedProjectCriteriaIds(Collections.singleton(projectCriteriaId));
+		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(taskCriteriaIds);
+>>>>>>> be8002b... FRI-182 Add enabledByFlag mechanism
 		projectAcceptanceCriteriaRepository.save(projectAcceptanceCriteria);
 	}
 
@@ -436,14 +482,22 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		criteriaItemRepository.save(criteriaItem);
 	}
 
+<<<<<<< HEAD
 	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, boolean expiresOnCommit) {
+=======
+	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, String enabledByFlag) {
+>>>>>>> be8002b... FRI-182 Add enabledByFlag mechanism
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
 		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 		criteriaItem.setAuthoringLevel(authoringLevel);
+<<<<<<< HEAD
 		criteriaItem.setExpiresOnCommit(expiresOnCommit);
+=======
+		criteriaItem.setEnabledByFlag(Set.of(enabledByFlag));
+>>>>>>> be8002b... FRI-182 Add enabledByFlag mechanism
 
 		criteriaItemRepository.save(criteriaItem);
 	}
@@ -462,5 +516,12 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	private ProjectAcceptanceCriteria toProjectAcceptanceCriteria(String response) throws JsonProcessingException {
 		return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
 		});
+	}
+
+	private Map<String, Object> buildMetadataWithAuthorFlag(Map<String, Object> authorFlags) {
+		Map<String, Object> metadata = new LinkedHashMap<>();
+		metadata.put(Constants.AUTHOR_FLAG, authorFlags);
+
+		return metadata;
 	}
 }
