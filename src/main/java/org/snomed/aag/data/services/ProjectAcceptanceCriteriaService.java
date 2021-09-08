@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
-import org.snomed.aag.data.pojo.CommitInformation;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaCreateValidator;
 import org.snomed.aag.rest.util.MetadataUtil;
@@ -160,26 +159,7 @@ public class ProjectAcceptanceCriteriaService {
         // Get project, task and mandatory CriteriaItems. Also get CriteriaItem if enabledByFlag is enabled.
         Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria, authorFlagsEnabled, matchAuthorFlags);
 
-        // Remove from collection if item is enabled by a flag but the flag is not true on the branch.
-
-        // Scenario I fails
-//        relevantCriteriaItems.removeIf(criteriaItem -> !criteriaItem.getEnabledByFlag().isEmpty() && Collections.disjoint(criteriaItem.getEnabledByFlag(), authorFlagsEnabled));
-
-        // Scenarios F & H fails
-//        relevantCriteriaItems.removeIf(criteriaItem -> {
-//            if (!authorFlagsEnabled.isEmpty()) {
-//                Set<String> enabledByFlag = criteriaItem.getEnabledByFlag();
-//                boolean enabledByFlagNotEmpty = !enabledByFlag.isEmpty();
-//                boolean disjoint = Collections.disjoint(enabledByFlag, authorFlagsEnabled);
-//                boolean result = enabledByFlagNotEmpty && disjoint;
-//
-//                return result;
-//            }
-//
-//            return false;
-//        });
-
-        // All scenarios pass
+        // Remove from collection if Criteria is no longer relevant in comparison to Branch metadata.
         relevantCriteriaItems.removeIf(isConflictBetweenAuthorFlags(branchAuthorFlags, authorFlagsAll, authorFlagsEnabled));
 
         criteria.setSelectedCriteria(relevantCriteriaItems);
@@ -376,6 +356,7 @@ public class ProjectAcceptanceCriteriaService {
         return relevantCriteriaItems;
     }
 
+    // See AcceptanceControllerTest for matrix showcasing possible scenarios.
     private Predicate<CriteriaItem> isConflictBetweenAuthorFlags(Map<String, Object> branchAuthorFlags, Set<String> authorFlagsAll, Set<String> authorFlagsEnabled) {
         return criteriaItem -> {
             Set<String> enabledByFlag = criteriaItem.getEnabledByFlag();
