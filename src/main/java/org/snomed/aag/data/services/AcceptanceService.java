@@ -294,6 +294,10 @@ public class AcceptanceService {
 
 	private Set<String> getCriteriaItemsThatShouldBeAccepted(CommitInformation commitInformation, ProjectAcceptanceCriteria criteria, String branchPath, Set<CriteriaItem> criteriaItems) {
 		boolean classified = commitInformation.isClassified();
+		if (!classified) {
+			LOGGER.info("{} or {} will not be marked as complete for {} as the branch is not classified", CriteriaItem.PROJECT_CLASSIFICATION_CLEAN, CriteriaItem.TASK_CLASSIFICATION_CLEAN, branchPath);
+		}
+
 		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
 		boolean taskLevel = criteria.isBranchTaskLevel(branchPath);
 		final Set<String> branchRoles = securityService.getBranchRoles(branchPath);
@@ -301,8 +305,28 @@ public class AcceptanceService {
 		return criteriaItems
 				.stream()
 				.filter(item ->
-						(item.getId().equals(CriteriaItem.PROJECT_CLASSIFICATION_CLEAN) && projectLevel && classified && userHasRole(item, branchRoles)) ||
-								(item.getId().equals(CriteriaItem.TASK_CLASSIFICATION_CLEAN) && taskLevel && classified && userHasRole(item, branchRoles))
+						{
+							boolean userHasRole = userHasRole(item, branchRoles);
+							if (!userHasRole) {
+								LOGGER.info("{} will not be marked as complete as the user does not have the required role for actioning the item. Required role: {}", item.getId(), item.getRequiredRole());
+								return false;
+							}
+
+							String criteriaItemId = item.getId();
+							boolean projectClassificationClean = criteriaItemId.equals(CriteriaItem.PROJECT_CLASSIFICATION_CLEAN) && projectLevel;
+							if (projectClassificationClean) {
+								LOGGER.info("{} will be marked as complete for {}.", CriteriaItem.PROJECT_CLASSIFICATION_CLEAN, branchPath);
+								return true;
+							}
+
+							boolean taskClassificationClean = criteriaItemId.equals(CriteriaItem.TASK_CLASSIFICATION_CLEAN) && taskLevel;
+							if (taskClassificationClean) {
+								LOGGER.info("{} will be marked as complete for {}.", CriteriaItem.TASK_CLASSIFICATION_CLEAN, branchPath);
+								return true;
+							}
+
+							return false;
+						}
 				)
 				.map(CriteriaItem::getId)
 				.collect(Collectors.toSet());
