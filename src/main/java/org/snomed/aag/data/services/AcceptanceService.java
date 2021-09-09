@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -295,7 +296,9 @@ public class AcceptanceService {
 	private Set<String> getCriteriaItemsThatShouldBeAccepted(CommitInformation commitInformation, ProjectAcceptanceCriteria criteria, String branchPath, Set<CriteriaItem> criteriaItems) {
 		boolean classified = commitInformation.isClassified();
 		if (!classified) {
-			LOGGER.info("{} or {} will not be marked as complete for {} as the branch is not classified", CriteriaItem.PROJECT_CLASSIFICATION_CLEAN, CriteriaItem.TASK_CLASSIFICATION_CLEAN, branchPath);
+			LOGGER.info("{} will not be automatically marked as complete for {} as the branch is not classified.", CriteriaItem.PROJECT_CLASSIFICATION_CLEAN, branchPath);
+			LOGGER.info("{} will not be automatically marked as complete for {} as the branch is not classified.", CriteriaItem.TASK_CLASSIFICATION_CLEAN, branchPath);
+			return Collections.emptySet();
 		}
 
 		boolean projectLevel = criteria.isBranchProjectLevel(branchPath);
