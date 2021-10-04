@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 - This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The format of this changelog is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 1.2.0 (October 2021)
+
+### Added
+- N/A
+
+### Breaking
+- N/A
+
+### Changed
+- CriteriaItem with a matching enabledByFlag value are included when viewing ProjectAcceptanceCriteria
+
+### Deprecated
+- N/A
+
+### Fixed
+- N/A
+
+### Removed
+- N/A
+
 ## 1.1.2 (September 2021)
 
 ### Added
