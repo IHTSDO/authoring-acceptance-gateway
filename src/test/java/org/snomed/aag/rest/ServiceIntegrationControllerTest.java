@@ -140,27 +140,6 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	}
 
 	@Test
-	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenPACHasNoCriteriaItems() throws Exception {
-		// given
-		String requestUrl = receiveCommitInformation();
-		String branchPath = "MAIN/projectA/taskB";
-		CommitInformation commitInformation = new CommitInformation(branchPath, CommitInformation.CommitType.PROMOTION, 1L, Collections.emptyMap());
-
-		givenProjectAcceptanceCriteriaExists(branchPath, 1, Collections.emptySet(), Collections.emptySet());
-
-		// when
-		ResultActions resultActions = mockMvc
-				.perform(post(requestUrl)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content(asJson(commitInformation))
-				);
-
-		// then
-		assertResponseStatus(resultActions, 409);
-		assertResponseBody(resultActions, buildErrorResponse(HttpStatus.CONFLICT.value(), "Project Acceptance Criteria has no Criteria Items."));
-	}
-
-	@Test
 	void receiveCommitInformation_ShouldReturnExpectedResponse_WhenPACIsComplete() throws Exception {
 		// given
 		String requestUrl = receiveCommitInformation();
@@ -502,14 +481,14 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	}
 
 
-	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, String enabledByFlag) {
+	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, boolean expiresOnCommit) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
 		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 		criteriaItem.setAuthoringLevel(authoringLevel);
-		criteriaItem.setEnabledByFlag(Set.of(enabledByFlag));
+		criteriaItem.setExpiresOnCommit(expiresOnCommit);
 
 		criteriaItemRepository.save(criteriaItem);
 	}
