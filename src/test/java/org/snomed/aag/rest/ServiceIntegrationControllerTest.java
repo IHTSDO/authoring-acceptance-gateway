@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
+import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -21,6 +22,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -475,6 +479,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 
 		criteriaItemRepository.save(criteriaItem);
 	}
+
 
 	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, boolean expiresOnCommit) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
