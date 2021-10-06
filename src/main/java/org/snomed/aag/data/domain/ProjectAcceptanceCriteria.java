@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -34,6 +35,9 @@ public class ProjectAcceptanceCriteria {
 
 	@Field(type = FieldType.Keyword)
 	private Set<String> selectedTaskCriteriaIds;
+
+	@Transient
+	private boolean batch;
 
 	public ProjectAcceptanceCriteria() {
 	}
@@ -169,6 +173,15 @@ public class ProjectAcceptanceCriteria {
 		projectAcceptanceCriteria.setSelectedTaskCriteriaIds(this.selectedTaskCriteriaIds);
 
 		return projectAcceptanceCriteria;
+	}
+
+	@JsonIgnore
+	public boolean isBatch() {
+		return batch;
+	}
+
+	public void setBatch(boolean batch) {
+		this.batch = batch;
 	}
 
 	@Override
