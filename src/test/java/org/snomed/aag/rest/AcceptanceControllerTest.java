@@ -668,6 +668,51 @@ class AcceptanceControllerTest extends AbstractTest {
     }
 
     @Test
+    void viewCriteriaItems_ShouldReturnPACWithExpectedCriteria_WhenTaskBranchChangedViaBatch() throws Exception {
+        // given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch));
+
+        givenBranchDoesExist(System.currentTimeMillis(), buildMetadataWithAuthorFlag(Constants.AUTHOR_FLAG_BATCH_CHANGE, true));
+        givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN);
+        givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN, true, 1, CriteriaItem.TASK_VALIDATION_CLEAN, false);
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(CriteriaItem.PROJECT_VALIDATION_CLEAN), Collections.emptySet());
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
+        CriteriaItem taskValidationClean = getCriteriaItem(CriteriaItem.TASK_VALIDATION_CLEAN, criteriaItems);
+
+        // then
+        assertEquals(2, criteriaItems.size()); // One configured; one inherited as task is batch.
+        assertNotNull(taskValidationClean);
+        assertTrue(taskValidationClean.isMandatory()); // Overwritten as configured false
+    }
+
+    @Test
+    void viewCriteriaItems_ShouldReturnPACWithExpectedCriteria_WhenTaskBranchNotChangedViaBatch() throws Exception {
+        // given
+        String projectBranch = "MAIN/projectA";
+        String taskBranch = projectBranch + "/taskA";
+        String requestUrl = viewCriteriaItems(withPipeInsteadOfSlash(taskBranch));
+
+        givenBranchDoesExist(System.currentTimeMillis(), buildMetadataWithAuthorFlag(Constants.AUTHOR_FLAG_BATCH_CHANGE, false));
+        givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN);
+        givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN, true, 1, CriteriaItem.TASK_VALIDATION_CLEAN, false);
+        givenAcceptanceCriteriaExists(projectBranch, 1, Collections.singleton(CriteriaItem.PROJECT_VALIDATION_CLEAN), Collections.emptySet());
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get(requestUrl));
+        Set<CriteriaItem> criteriaItems = toProjectAcceptCriteria(getResponseBody(resultActions)).getCriteriaItems();
+        CriteriaItem projectValidationClean = getCriteriaItem(CriteriaItem.PROJECT_VALIDATION_CLEAN, criteriaItems);
+
+        // then
+        assertEquals(1, criteriaItems.size()); // Only one configured
+        assertNotNull(projectValidationClean);
+    }
+
+    @Test
     void rejectCriteriaItem_ShouldReturnExpectedStatus_WhenCriteriaItemCannotBeFoundFromId() throws Exception {
         //given
         String branchPath = UUID.randomUUID().toString();
@@ -878,6 +923,17 @@ class AcceptanceControllerTest extends AbstractTest {
         criteriaItemRepository.save(criteriaItem);
     }
 
+    private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, boolean mandatory) {
+        CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
+        criteriaItem.setManual(manual);
+        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setOrder(order);
+        criteriaItem.setLabel(label);
+        criteriaItem.setMandatory(mandatory);
+
+        criteriaItemRepository.save(criteriaItem);
+    }
+
     private void givenCriteriaItemExists(CriteriaItem criteriaItem) {
         criteriaItemRepository.save(criteriaItem);
     }
@@ -1028,5 +1084,15 @@ class AcceptanceControllerTest extends AbstractTest {
         } else {
             assertEquals(0, criteriaItems.size(), String.format("Test case for scenario %s failed.", scenario));
         }
+    }
+
+    private CriteriaItem getCriteriaItem(String criteriaItemIdentifier, Set<CriteriaItem> criteriaItems) {
+        for (CriteriaItem criteriaItem : criteriaItems) {
+            if (criteriaItemIdentifier.equals(criteriaItem.getId())) {
+                return criteriaItem;
+            }
+        }
+
+        return null;
     }
 }

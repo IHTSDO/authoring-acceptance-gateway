@@ -4,6 +4,7 @@ import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -21,6 +22,7 @@ import java.util.*;
 import java.util.function.Predicate;
 
 import static java.lang.String.format;
+import static org.snomed.aag.data.domain.CriteriaItem.TASK_VALIDATION_CLEAN;
 
 @Service
 public class ProjectAcceptanceCriteriaService {
@@ -162,6 +164,12 @@ public class ProjectAcceptanceCriteriaService {
         // Remove from collection if Criteria is no longer relevant in comparison to Branch metadata.
         relevantCriteriaItems.removeIf(isConflictBetweenAuthorFlags(branchAuthorFlags, authorFlagsAll, authorFlagsEnabled));
 
+        // Add to collection if task Branch received content via batch
+        if (criteria.isBranchTaskLevel(branchPath) && authorFlagsEnabled.contains(Constants.AUTHOR_FLAG_BATCH_CHANGE)) {
+            criteria.setBatch(true);
+            addRelevantCriteriaItemsForBatchTask(relevantCriteriaItems);
+        }
+
         criteria.setSelectedCriteria(relevantCriteriaItems);
         return criteria;
     }
@@ -277,6 +285,11 @@ public class ProjectAcceptanceCriteriaService {
 
         Set<CriteriaItem> criteriaItems = criteriaItemService.findAllByIdentifiers(criteriaIdentifiers);
         criteriaItemSignOffService.markSignedOffItems(criteriaItems, branchPath, criteria.getProjectIteration(), criteria);
+
+        if (criteria.isBatch()) {
+            setMandatory(criteriaItems);
+        }
+
         return criteriaItems;
 	}
 
@@ -404,4 +417,28 @@ public class ProjectAcceptanceCriteriaService {
         };
     }
 
+    private void addRelevantCriteriaItemsForBatchTask(Set<CriteriaItem> relevantCriteriaItems) {
+        // Check current CriteriaItems to prevent call to store
+        boolean readFromStore = true;
+        for (CriteriaItem relevantCriteriaItem : relevantCriteriaItems) {
+            if (TASK_VALIDATION_CLEAN.equals(relevantCriteriaItem.getId())) {
+                readFromStore = false;
+                break;
+            }
+        }
+
+        if (readFromStore) {
+            CriteriaItem taskValidationClean = criteriaItemService.findByIdOrThrow(TASK_VALIDATION_CLEAN);
+            relevantCriteriaItems.add(taskValidationClean);
+        }
+    }
+
+    private void setMandatory(Set<CriteriaItem> criteriaItems) {
+        for (CriteriaItem criteriaItem : criteriaItems) {
+            if (TASK_VALIDATION_CLEAN.equals(criteriaItem.getId())) {
+                criteriaItem.setMandatory(true); // Force mandatory regardless of config
+                break;
+            }
+        }
+    }
 }
