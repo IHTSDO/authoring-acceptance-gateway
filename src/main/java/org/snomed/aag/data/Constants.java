@@ -11,4 +11,10 @@ public class Constants {
 	 * Key in Branch metadata storing collection of author flags.
 	 */
 	public static final String AUTHOR_FLAG = "authorFlags";
+
+
+	/**
+	 * Key in Branch metadata storing whether Branch received content via a batch process.
+	 */
+	public static final String AUTHOR_FLAG_BATCH_CHANGE = "batch-change";
 }
