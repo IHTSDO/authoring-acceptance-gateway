@@ -53,6 +53,9 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 	@Field(type = FieldType.Keyword)
 	private Set<String> enabledByFlag = new HashSet<>();
 
+	@Field(type = FieldType.Text)
+	private String reportName;
+
 	@Transient
 	private boolean complete;
 
@@ -157,6 +160,14 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 
 	public void setComplete(boolean complete) {
 		this.complete = complete;
+	}
+
+	public void setReportName(String reportName) {
+		this.reportName = reportName;
+	}
+
+	public String getReportName() {
+		return reportName;
 	}
 
 	@Override
