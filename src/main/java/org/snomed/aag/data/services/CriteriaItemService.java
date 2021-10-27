@@ -6,14 +6,19 @@ import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.CriteriaItemRepository;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
+import org.snomed.aag.rest.util.BranchPathUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static java.lang.String.format;
 
@@ -66,6 +71,30 @@ public class CriteriaItemService {
 	public void create(CriteriaItem criteriaItem) {
 		verifyParams(criteriaItem);
 		repository.save(criteriaItem);
+	}
+
+	/**
+	 * Find all entries in database, then filter against code system, and return as new page.
+	 *
+	 * @param branch Branch to check.
+	 * @param pageRequest Page configuration.
+	 * @return Entries after being filtered and matching page request.
+	 * @throws IllegalArgumentException If argument is invalid.
+	 */
+	public Page<CriteriaItem> findByBranch(String branch, PageRequest pageRequest) {
+		verifyParams(pageRequest);
+		final String codeSystem = BranchPathUtil.extractCodeSystem(branch);
+
+		Iterable<CriteriaItem> criteriaItems = repository.findAll();
+
+		// Filter criteria items:
+		//- notForCodeSystems field must not have the identified code system
+		//- forCodeSystems field is blank or contain the identified code system
+		List<CriteriaItem> filteredCriteriaItems = StreamSupport.stream(criteriaItems.spliterator(), false)
+				.filter(criteriaItem -> (CollectionUtils.isEmpty(criteriaItem.getForCodeSystems()) || criteriaItem.getForCodeSystems().contains(codeSystem))
+										&& (CollectionUtils.isEmpty(criteriaItem.getNotForCodeSystems()) || !criteriaItem.getNotForCodeSystems().contains(codeSystem)))
+				.collect(Collectors.toList());
+		return new PageImpl<>(filteredCriteriaItems, pageRequest, filteredCriteriaItems.size());
 	}
 
 	/**

@@ -56,6 +56,12 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 	@Field(type = FieldType.Text)
 	private String reportName;
 
+	@Field(type = FieldType.Keyword)
+	private Set<String> forCodeSystems;
+
+	@Field(type = FieldType.Keyword)
+	private Set<String> notForCodeSystems;
+
 	@Transient
 	private boolean complete;
 
@@ -168,6 +174,22 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 
 	public String getReportName() {
 		return reportName;
+	}
+
+	public void setForCodeSystems(Set <String> forCodeSystems) {
+		this.forCodeSystems = forCodeSystems;
+	}
+
+	public Set <String> getForCodeSystems() {
+		return forCodeSystems;
+	}
+
+	public void setNotForCodeSystems(Set <String> notForCodeSystems) {
+		this.notForCodeSystems = notForCodeSystems;
+	}
+
+	public Set <String> getNotForCodeSystems() {
+		return notForCodeSystems;
 	}
 
 	@Override

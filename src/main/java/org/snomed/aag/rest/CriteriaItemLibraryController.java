@@ -1,5 +1,6 @@
 package org.snomed.aag.rest;
 
+import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
 import io.swagger.annotations.Api;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.services.CriteriaItemService;
@@ -20,12 +21,13 @@ public class CriteriaItemLibraryController {
 	@Autowired
 	private CriteriaItemService service;
 
-	@GetMapping
+	@GetMapping(value = "/{branch}")
 	public Page<CriteriaItem> findCriteriaItems(
+			@PathVariable String branch,
 			@RequestParam(required = false, defaultValue = "0") int page,
 			@RequestParam(required = false, defaultValue = "100") int size) {
-
-		return service.findAll(PageRequest.of(page, size));
+		branch = BranchPathUriUtil.decodePath(branch);
+		return service.findByBranch(branch, PageRequest.of(page, size));
 	}
 
 	@PostMapping

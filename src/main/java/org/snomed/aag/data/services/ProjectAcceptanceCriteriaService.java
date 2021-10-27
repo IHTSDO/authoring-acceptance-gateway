@@ -10,6 +10,7 @@ import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.repositories.ProjectAcceptanceCriteriaRepository;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaCreateValidator;
+import org.snomed.aag.rest.util.BranchPathUtil;
 import org.snomed.aag.rest.util.MetadataUtil;
 import org.snomed.aag.rest.util.PathUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -154,12 +156,20 @@ public class ProjectAcceptanceCriteriaService {
 
         // Required data for processing
         Branch branch = getBranchOrThrow(branchPath);
+        String codeSystem = BranchPathUtil.extractCodeSystem(branchPath);
         Map<String, Object> branchAuthorFlags = MetadataUtil.getAuthorFlags(branch);
         Set<String> authorFlagsEnabled = MetadataUtil.getTrueAuthorFlags(branchAuthorFlags);
         Set<String> authorFlagsAll = branchAuthorFlags.keySet();
 
         // Get project, task and mandatory CriteriaItems. Also get CriteriaItem if enabledByFlag is enabled.
         Set<CriteriaItem> relevantCriteriaItems = getRelevantCriteriaItems(criteria, authorFlagsEnabled, matchAuthorFlags);
+
+        // Remove item from collection if:
+        //- notForCodeSystems field is not blank and contains the identified code system
+        // OR
+        //- forCodeSystems field is not blank and does not contain the identified code system
+        relevantCriteriaItems.removeIf(criteriaItem -> (!CollectionUtils.isEmpty(criteriaItem.getForCodeSystems()) && !criteriaItem.getForCodeSystems().contains(codeSystem))
+                                                    || (!CollectionUtils.isEmpty(criteriaItem.getNotForCodeSystems()) && criteriaItem.getNotForCodeSystems().contains(codeSystem)));
 
         // Remove from collection if Criteria is no longer relevant in comparison to Branch metadata.
         relevantCriteriaItems.removeIf(isConflictBetweenAuthorFlags(branchAuthorFlags, authorFlagsAll, authorFlagsEnabled));

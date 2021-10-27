@@ -11,11 +11,16 @@ import org.snomed.aag.data.services.BranchSecurityService;
 import org.snomed.aag.data.services.ProjectAcceptanceCriteriaService;
 import org.snomed.aag.data.services.ServiceRuntimeException;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
+import org.snomed.aag.rest.util.BranchPathUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @RestController
 @Api(tags = "Acceptance")
@@ -45,6 +50,7 @@ public class AcceptanceController {
 	public ResponseEntity<?> viewCriteriaItems(@ApiParam("The branch path.") @PathVariable(name = "branchPath") String branchPath,
 											   @RequestParam(defaultValue = "true") boolean matchAuthorFlags) throws RestClientException {
 		branchPath = BranchPathUriUtil.decodePath(branchPath);
+        String codeSystem = BranchPathUtil.extractCodeSystem(branchPath);
 
 		// Check branch exists
 		securityService.getBranchOrThrow(branchPath);
@@ -57,6 +63,13 @@ public class AcceptanceController {
 
 		// Update complete flag for all Criteria Items on this branch
 		Set<CriteriaItem> items = projectAcceptanceCriteriaService.findItemsAndMarkSignOff(projectAcceptanceCriteria, branchPath);
+
+		// Filter criteria items:
+        //- notForCodeSystems field must not have the identified code system
+        //- forCodeSystems field is blank or contain the identified code system
+		items = items.stream().filter(criteriaItem -> (CollectionUtils.isEmpty(criteriaItem.getForCodeSystems()) || criteriaItem.getForCodeSystems().contains(codeSystem))
+                            && (CollectionUtils.isEmpty(criteriaItem.getNotForCodeSystems()) || !criteriaItem.getNotForCodeSystems().contains(codeSystem)))
+                .collect(Collectors.toSet());
 
 		return ResponseEntity
 				.status(HttpStatus.OK)

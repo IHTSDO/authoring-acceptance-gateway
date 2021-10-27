@@ -28,6 +28,7 @@ public class URLMappingConfig {
 				"/acceptance/(.*)/item/.*/accept",
 				"/acceptance/(.*)",
 				"/whitelist-items/(.*)",
+				"/criteria-items/(.*)",
 				"/admin/criteria/(.*)/accept"
 		};
 	}
