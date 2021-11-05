@@ -114,6 +114,8 @@ public class WhitelistService {
 	public WhitelistItem create(WhitelistItem whitelistItem) {
 		whitelistItem.setId(UUID.randomUUID().toString());
 		whitelistItem.setUserId(SecurityUtil.getUsername());
+		whitelistItem.setAdditionalFields(whitelistItem.getAdditionalFields() == null ? "" : whitelistItem.getAdditionalFields());
+		whitelistItem.setComponentId(whitelistItem.getComponentId() == null ? "" : whitelistItem.getComponentId());
 		whitelistItem.setCreationDate(new Date());
 		return repository.save(whitelistItem);
 	}
