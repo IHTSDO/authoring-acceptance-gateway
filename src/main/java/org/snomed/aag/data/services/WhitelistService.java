@@ -1,6 +1,7 @@
 package org.snomed.aag.data.services;
 
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.repositories.WhitelistItemRepository;
@@ -61,18 +62,24 @@ public class WhitelistService {
 
 	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, boolean includeDescendants, PageRequest pageRequest) {
 		date = getDefaultDateIfNull(date);
-		BoolQueryBuilder branchQuery;
+		QueryBuilder query;
 		if (includeDescendants) {
-			branchQuery = boolQuery().should(termQuery(WhitelistItem.Fields.BRANCH, branchPath)).should(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*"));
+			query = boolQuery()
+					.must(boolQuery()
+							.should(termQuery(WhitelistItem.Fields.BRANCH, branchPath))
+							.should(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*"))
+					)
+					// Must not close into another code system
+					.mustNot(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*" + "SNOMEDCT*"));
 		} else {
-			branchQuery = boolQuery().must(termQuery(WhitelistItem.Fields.BRANCH, branchPath));
+			query = termQuery(WhitelistItem.Fields.BRANCH, branchPath);
 		}
 
 		BoolQueryBuilder creationDateQuery = boolQuery().must(rangeQuery(WhitelistItem.Fields.CREATION_DATE).gte(date.getTime()));
 		NativeSearchQuery nativeSearchQuery = new NativeSearchQueryBuilder()
 				.withQuery(boolQuery()
 						.must(creationDateQuery)
-						.must(branchQuery)
+						.must(query)
 				)
 				.withPageable(pageRequest)
 				.build();

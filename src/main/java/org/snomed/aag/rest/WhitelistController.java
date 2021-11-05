@@ -90,6 +90,7 @@ public class WhitelistController {
     }
 
     @GetMapping("/{branch}")
+    @ApiOperation("When including descendant branches the search will not include branches from other code systems.")
     public ResponseEntity<?> findForBranch(@PathVariable String branch, @RequestParam(required = false) Long creationDate,
                                            @RequestParam(required = false, defaultValue = "true") boolean includeDescendants,
                                            @RequestParam(required = false, defaultValue = "0") int page,
