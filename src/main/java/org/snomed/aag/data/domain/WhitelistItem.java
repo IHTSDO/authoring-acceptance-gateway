@@ -7,6 +7,7 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.util.Date;
 
 @Document(indexName = "whitelist-item")
@@ -52,6 +53,10 @@ public class WhitelistItem {
 
     @Field(type = FieldType.Keyword)
     private String additionalFields;
+
+    @Field(type = FieldType.Keyword)
+    @Size(max = 300)
+    private String assertionFailureText;
 
     public String getId() {
         return id;
@@ -124,5 +129,13 @@ public class WhitelistItem {
 
     public void setAdditionalFields(String additionalFields) {
         this.additionalFields = additionalFields;
+    }
+
+    public String getAssertionFailureText() {
+        return assertionFailureText;
+    }
+
+    public void setAssertionFailureText(String assertionFailureText) {
+        this.assertionFailureText = assertionFailureText;
     }
 }
