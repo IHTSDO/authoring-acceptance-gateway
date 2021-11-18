@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 - This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The format of this changelog is inspired by [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 1.3.0 (November 2021)
+
+### Added
+- assertionFailureText field to WhitelistItem
+- Filter for returning CriteriaItem per CodeSystem
+- reportName field to CriteriaItem
+
+### Breaking
+- N/A
+
+### Changed
+- WhitelistItem's componentId to default to empty rather than null
+- Task validation CriteriaItem to always be returned if Branch is flagged as 'batch'.
+
+### Deprecated
+- N/A
+
+### Fixed
+- WhitelistItem search crossing into other CodeSystems
+
+### Removed
+- N/A
+
 ## 1.2.0 (October 2021)
 
 ### Added
