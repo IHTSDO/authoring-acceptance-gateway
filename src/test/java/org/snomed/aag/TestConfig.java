@@ -29,7 +29,7 @@ import org.testcontainers.junit.jupiter.Container;
 public class TestConfig extends Config {
 
 	// Current version supported by AWS is 7.7.0.
-	private static final String ELASTIC_SEARCH_SERVER_VERSION = "7.7.0";
+	private static final String ELASTIC_SEARCH_SERVER_VERSION = "7.10.0";
 
 	// Set to true to use local standalone Elasticsearch instance rather than Docker test container
 	static final boolean useLocalElasticsearch = false;
@@ -57,7 +57,7 @@ public class TestConfig extends Config {
 
 	public static class TestElasticsearchContainer extends ElasticsearchContainer {
 		public TestElasticsearchContainer() {
-			super("elasticsearch:" + ELASTIC_SEARCH_SERVER_VERSION);
+			super("docker.elastic.co/elasticsearch/elasticsearch:" + ELASTIC_SEARCH_SERVER_VERSION);
 			// these are mapped ports used by the test container the actual ports used might be different
 			this.addFixedExposedPort(9235, 9235);
 			this.addFixedExposedPort(9330, 9330);
