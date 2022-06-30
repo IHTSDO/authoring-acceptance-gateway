@@ -6,12 +6,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.fail;;
+import static org.junit.jupiter.api.Assertions.assertFalse;;
 
 class URLMappingConfigTest {
     private static final String[] PATTERN_STRINGS = new URLMappingConfig().getPatternStrings();
-    private static final String[][][] TEST_DATA = {
-            {
+    private static final String [][] TEST_DATA = {
                     // Pattern,
                     // Input,
                     // Expected result
@@ -36,11 +36,11 @@ class URLMappingConfigTest {
                             "MAIN/projectA/taskB"
                     },
                     {
-                            PATTERN_STRINGS[3], // e.g. /admin/criteria/(.*)/accept
+                            PATTERN_STRINGS[5], // e.g. /admin/criteria/(.*)/accept
                             "/admin/criteria/MAIN/projectA/taskB/accept",
                             "MAIN/projectA/taskB"
                     }
-            }
+
     };
 
     /*
@@ -64,11 +64,11 @@ class URLMappingConfigTest {
 
     @Test
     void urlMappingConfig_ShouldMatchBranchPaths() {
-        for (int i = 0; i < TEST_DATA[0].length; i++) {
+        for (int i = 0; i < TEST_DATA.length; i++) {
             // given
-            String pattern = TEST_DATA[0][0][0];
-            String input = TEST_DATA[0][0][1];
-            String expectedResult = TEST_DATA[0][0][2];
+            String pattern = TEST_DATA[i][0];
+            String input = TEST_DATA[i][1];
+            String expectedResult = TEST_DATA[i][2];
             Matcher matcher = Pattern.compile(pattern).matcher(input);
 
             // then
@@ -85,4 +85,11 @@ class URLMappingConfigTest {
             fail("Should find match.");
         }
     }
+
+    @Test
+    void urlMappingConfig_ShouldNotMatchValidationRulesToBranch( ) {
+        Matcher matcher = Pattern.compile(PATTERN_STRINGS[3]).matcher("/whitelist-items/validation-rules/e1622b95-aecd-4948-9bcd-81d2e4e3670f");
+        assertFalse(matcher.matches());
+    }
+
 }
