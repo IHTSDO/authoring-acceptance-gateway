@@ -3,6 +3,7 @@ package org.snomed.aag.rest;
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
 import io.swagger.annotations.Api;
 import org.snomed.aag.data.domain.CriteriaItem;
+import org.snomed.aag.data.pojo.CriteriaItemBulkLoadRequest;
 import org.snomed.aag.data.services.CriteriaItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 @RestController
 @Api(tags = "Criteria Item Library", description = "-")
@@ -35,6 +39,18 @@ public class CriteriaItemLibraryController {
 	public ResponseEntity<Void> createCriteriaItem(@RequestBody @Valid CriteriaItem item) {
 		service.create(item);
 		return ControllerHelper.getCreatedResponse(item.getId());
+	}
+
+	@PostMapping(value = "/bulk-load")
+	@PreAuthorize("hasPermission('ADMIN', 'global')")
+	public Collection<String> createCriteriaItemsInBulk(@RequestBody @Valid CriteriaItemBulkLoadRequest bulkItems) {
+		List<String> idList = new ArrayList<>();
+
+		for (CriteriaItem item : bulkItems.getCriteriaItems()) {
+			service.create(item);
+			idList.add(item.getId());
+		}
+		return idList;
 	}
 
 	@PutMapping(value = "/{id}")
