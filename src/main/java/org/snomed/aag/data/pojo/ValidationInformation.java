@@ -6,6 +6,16 @@ public class ValidationInformation {
 	private String validationStatus;
 	private String reportUrl;
 
+	public ValidationInformation() {
+
+	}
+
+	public ValidationInformation(String branchPath, String validationStatus, String reportUrl) {
+		this.branchPath = branchPath;
+		this.validationStatus = validationStatus;
+		this.reportUrl = reportUrl;
+	}
+
 	public String getBranchPath() {
 		return branchPath;
 	}
