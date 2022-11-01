@@ -6,11 +6,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
 import org.snomed.aag.TestConfig;
-import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.AuthoringLevel;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
 import org.snomed.aag.data.pojo.CommitInformation;
+import org.snomed.aag.data.pojo.ValidationInformation;
 import org.snomed.aag.rest.pojo.ProjectAcceptanceCriteriaDTO;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -19,14 +19,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
@@ -439,8 +436,192 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		assertEquals(3, taskPacSecondResponse.getCriteriaItems().stream().filter(CriteriaItem::isComplete).collect(Collectors.toSet()).size()); // none have been expired
 	}
 
+	@Test
+	void receiveValidation_ShouldCompleteProjectValidation_WhenInternationalProjectIsClean() throws Exception {
+		// Given
+		String projectBranch = "MAIN/projectA";
+		givenBranchDoesExist(projectBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN));
+		givenValidationReportIsClean();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(projectBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(projectBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.PROJECT_VALIDATION_CLEAN);
+		assertNotNull(result);
+		assertTrue(result.isComplete());
+	}
+
+	@Test
+	void receiveValidation_ShouldNotCompleteProjectValidation_WhenInternationalProjectIsDirty() throws Exception {
+		// Given
+		String projectBranch = "MAIN/projectA";
+		givenBranchDoesExist(projectBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN));
+		givenValidationReportIsDirty();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(projectBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(projectBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.PROJECT_VALIDATION_CLEAN);
+		assertNotNull(result);
+		assertFalse(result.isComplete());
+	}
+
+	@Test
+	void receiveValidation_ShouldCompleteTaskValidation_WhenInternationalTaskIsClean() throws Exception {
+		// Given
+		String projectBranch = "MAIN/projectA";
+		String taskBranch = "MAIN/projectA/taskB";
+		givenBranchDoesExist(taskBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN));
+		givenValidationReportIsClean();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(taskBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(taskBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.TASK_VALIDATION_CLEAN);
+		assertNotNull(result);
+		assertTrue(result.isComplete());
+	}
+
+	@Test
+	void receiveValidation_ShouldNotCompleteTaskValidation_WhenInternationalTaskIsDirty() throws Exception {
+		// Given
+		String projectBranch = "MAIN/projectA";
+		String taskBranch = "MAIN/projectA/taskB";
+		givenBranchDoesExist(taskBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN));
+		givenValidationReportIsDirty();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(taskBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(taskBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.TASK_VALIDATION_CLEAN);
+		assertNotNull(result);
+		assertFalse(result.isComplete());
+	}
+
+	@Test
+	void receiveValidation_ShouldCompleteProjectValidation_WhenExtensionProjectIsClean() throws Exception {
+		// Given
+		String projectBranch = "MAIN/SNOMEDCT-TEST/projectA";
+		givenBranchDoesExist(projectBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN_MS, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN_MS));
+		givenValidationReportIsClean();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(projectBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(projectBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.PROJECT_VALIDATION_CLEAN_MS);
+		assertNotNull(result);
+		assertTrue(result.isComplete());
+	}
+
+	@Test
+	void receiveValidation_ShouldNotCompleteProjectValidation_WhenExtensionProjectIsDirty() throws Exception {
+		// Given
+		String projectBranch = "MAIN/SNOMEDCT-TEST/projectA";
+		givenBranchDoesExist(projectBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN_MS, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN_MS));
+		givenValidationReportIsDirty();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(projectBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(projectBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.PROJECT_VALIDATION_CLEAN_MS);
+		assertNotNull(result);
+		assertFalse(result.isComplete());
+	}
+
+	@Test
+	void receiveValidation_ShouldCompleteTaskValidation_WhenExtensionTaskIsClean() throws Exception {
+		// Given
+		String projectBranch = "MAIN/SNOMEDCT-TEST/projectA";
+		String taskBranch = "MAIN/SNOMEDCT-TEST/projectA/taskB";
+		givenBranchDoesExist(taskBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN_MS, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN_MS));
+		givenValidationReportIsClean();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(taskBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(taskBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.TASK_VALIDATION_CLEAN_MS);
+		assertNotNull(result);
+		assertTrue(result.isComplete());
+	}
+
+	@Test
+	void receiveValidation_ShouldNotCompleteTaskValidation_WhenExtensionTaskIsDirty() throws Exception {
+		// Given
+		String projectBranch = "MAIN/SNOMEDCT-TEST/projectA";
+		String taskBranch = "MAIN/SNOMEDCT-TEST/projectA/taskB";
+		givenBranchDoesExist(taskBranch);
+		givenCriteriaItemExists(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS, true, 1, CriteriaItem.PROJECT_VALIDATION_CLEAN, AuthoringLevel.PROJECT, true);
+		givenCriteriaItemExists(CriteriaItem.TASK_VALIDATION_CLEAN_MS, true, 2, CriteriaItem.TASK_VALIDATION_CLEAN, AuthoringLevel.TASK, true);
+		givenProjectAcceptanceCriteriaExists(projectBranch, 1, Set.of(CriteriaItem.PROJECT_VALIDATION_CLEAN_MS), Set.of(CriteriaItem.TASK_VALIDATION_CLEAN_MS));
+		givenValidationReportIsDirty();
+
+		// when
+		String receiveValidation = receiveValidation();
+		ValidationInformation validationInformation = new ValidationInformation(taskBranch, "COMPLETE", "https://www.test.com");
+		mockMvc.perform(post(receiveValidation).contentType(MediaType.APPLICATION_JSON).content(asJson(validationInformation)));
+
+		// then
+		ProjectAcceptanceCriteriaDTO projectPAC = toProjectAcceptanceCriteriaDTO(getResponseBody(mockMvc.perform(get(viewCriteriaItems(withPipeInsteadOfSlash(taskBranch))).contentType(MediaType.APPLICATION_JSON))));
+		CriteriaItem result = getCriteriaItemById(projectPAC, CriteriaItem.TASK_VALIDATION_CLEAN_MS);
+		assertNotNull(result);
+		assertFalse(result.isComplete());
+	}
+
 	private String receiveCommitInformation() {
 		return "/integration/snowstorm/commit";
+	}
+
+	private String receiveValidation() {
+		return "/integration/validation-complete";
 	}
 
 	private String signOffCriteriaItem(String branchPath, String criteriaItemId) {
@@ -507,5 +688,21 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	private ProjectAcceptanceCriteria toProjectAcceptanceCriteria(String response) throws JsonProcessingException {
 		return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
 		});
+	}
+
+	private ProjectAcceptanceCriteriaDTO toProjectAcceptanceCriteriaDTO(String response) throws JsonProcessingException {
+		return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
+		});
+	}
+
+	private CriteriaItem getCriteriaItemById(ProjectAcceptanceCriteriaDTO projectPAC, String criteriaItemId) {
+		Set<CriteriaItem> criteriaItems = projectPAC.getCriteriaItems();
+		for (CriteriaItem criteriaItem : criteriaItems) {
+			if (criteriaItemId.equals(criteriaItem.getId())) {
+				return criteriaItem;
+			}
+		}
+
+		return null;
 	}
 }

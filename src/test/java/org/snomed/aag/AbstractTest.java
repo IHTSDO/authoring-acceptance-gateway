@@ -82,6 +82,9 @@ public abstract class AbstractTest {
 	@MockBean
 	protected BranchSecurityService securityService;
 
+	@MockBean
+	protected ValidationService validationService;
+
 	@AfterEach
 	void defaultTearDown() {
 		criteriaItemRepository.deleteAll();
@@ -136,6 +139,14 @@ public abstract class AbstractTest {
 
 	protected void givenUserDoesHavePermissionForBranch() throws RestClientException {
 		when(securityService.currentUserHasRoleOnBranch(any(), any())).thenReturn(true);
+	}
+
+	protected void givenValidationReportIsClean() {
+		when(validationService.isReportClean(any(), anyLong(), any())).thenReturn(true);
+	}
+
+	protected void givenValidationReportIsDirty() {
+		when(validationService.isReportClean(any(), anyLong(), any())).thenReturn(false);
 	}
 
 	protected void givenAuthenticatedUser(String username) {
