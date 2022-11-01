@@ -186,8 +186,20 @@ public class AcceptanceService {
 
 				Set<String> itemsShouldBeAccepted = items.stream()
 						.filter(item ->
-								(item.getId().equals(CriteriaItem.PROJECT_VALIDATION_CLEAN) && criteria.isBranchProjectLevel(branchPath)) ||
-										(item.getId().equals(CriteriaItem.TASK_VALIDATION_CLEAN) && criteria.isBranchTaskLevel(branchPath))
+								{
+									String itemId = item.getId();
+									boolean branchProjectLevel = criteria.isBranchProjectLevel(branchPath);
+									if (branchProjectLevel && (CriteriaItem.PROJECT_VALIDATION_CLEAN.equals(itemId) || CriteriaItem.PROJECT_VALIDATION_CLEAN_MS.equals(itemId))) {
+										return true;
+									}
+
+									boolean branchTaskLevel = criteria.isBranchTaskLevel(branchPath);
+									if (branchTaskLevel && (CriteriaItem.TASK_VALIDATION_CLEAN.equals(itemId) || CriteriaItem.TASK_VALIDATION_CLEAN_MS.equals(itemId))) {
+										return true;
+									}
+
+									return false;
+								}
 						)
 						.map(CriteriaItem::getId)
 						.collect(Collectors.toSet());
