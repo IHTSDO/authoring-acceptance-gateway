@@ -7,6 +7,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.data.elasticsearch.core.mapping.SimpleElasticsearchMappingContext;
 import org.springframework.data.elasticsearch.core.mapping.SimpleElasticsearchPersistentEntity;
+import org.springframework.data.spel.ExtensionAwareEvaluationContextProvider;
 import org.springframework.data.util.TypeInformation;
 
 public class OTFElasticsearchMappingContext extends SimpleElasticsearchMappingContext implements ApplicationContextAware {
@@ -23,7 +24,7 @@ public class OTFElasticsearchMappingContext extends SimpleElasticsearchMappingCo
 	protected <T> SimpleElasticsearchPersistentEntity<?> createPersistentEntity(TypeInformation<T> typeInformation) {
 		SimpleElasticsearchPersistentEntity<T> persistentEntity = new OTFSimpleElasticsearchPersistentEntity<>(indexConfig, typeInformation);
 		if (this.context != null) {
-			persistentEntity.setApplicationContext(this.context);
+			persistentEntity.setEvaluationContextProvider(new ExtensionAwareEvaluationContextProvider(this.context));
 		}
 		return persistentEntity;
 	}

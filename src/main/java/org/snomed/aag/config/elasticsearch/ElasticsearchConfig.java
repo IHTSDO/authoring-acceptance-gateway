@@ -11,12 +11,12 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.elasticsearch.client.RestClients;
-import org.springframework.data.elasticsearch.core.ESRestHighLevelClient;
 import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchConverter;
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchCustomConversions;
@@ -76,7 +76,7 @@ public class ElasticsearchConfig {
 		if (awsRequestSigning != null && awsRequestSigning) {
 			restClientBuilder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.addInterceptorLast(awsInterceptor("es")));
 		}
-		return () -> new ESRestHighLevelClient(restClientBuilder);
+		return () -> new RestHighLevelClient(restClientBuilder);
 	}
 
 	private AWSRequestSigningApacheInterceptor awsInterceptor(String serviceName) {

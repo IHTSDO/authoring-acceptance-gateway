@@ -21,7 +21,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<packageName>${project.artifactId}</packageName>
 		<!-- Elasticsearch version is controlled via the spring-data-elasticsearch dependency -->
-		<elasticsearch.version>7.7.0</elasticsearch.version>
+		<elasticsearch.version>7.10.0</elasticsearch.version>
+		<testcontainers.version>1.17.6</testcontainers.version>
 		<spring-cloud.version>2020.0.5</spring-cloud.version>
 	</properties>
 	<dependencies>
@@ -75,7 +76,13 @@
 			<!-- Snomed International Fork with modifications for index name prefix -->
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>spring-data-elasticsearch</artifactId>
-			<version>4.0.4</version>
+			<version>4.1.16-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.elasticsearch</groupId>
+					<artifactId>jna</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.github.awslabs</groupId>
@@ -107,31 +114,29 @@
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-engine</artifactId>
-			<version>5.6.3</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
-			<version>5.6.3</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
-			<version>1.16.2</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>elasticsearch</artifactId>
-			<version>1.16.2</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>junit-jupiter</artifactId>
-			<version>1.16.2</version>
+			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<!-- consul and vault -->
