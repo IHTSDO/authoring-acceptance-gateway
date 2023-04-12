@@ -53,11 +53,14 @@ public class WhitelistService {
 	}
 
 	public List<WhitelistItem> findAllByValidationRuleId(String validationRuleId) {
-		return repository.findAllByValidationRuleIdIn(Collections.singleton(validationRuleId));
+		return findAllByValidationRuleIds(Collections.singleton(validationRuleId));
 	}
 
 	public List<WhitelistItem> findAllByValidationRuleIds(Set<String> validationRuleIds) {
-		return repository.findAllByValidationRuleIdIn(validationRuleIds);
+		NativeSearchQueryBuilder queryBuilder = new NativeSearchQueryBuilder().withQuery(
+				boolQuery().must(termsQuery(WhitelistItem.Fields.VALIDATION_RULE_ID, validationRuleIds))
+		).withPageable(PageRequest.of(0, 10_000));
+		return elasticsearchRestTemplate.searchForStream(queryBuilder.build(), WhitelistItem.class).stream().map(SearchHit::getContent).collect(Collectors.toList());
 	}
 
 	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, boolean includeDescendants, PageRequest pageRequest) {
@@ -97,7 +100,7 @@ public class WhitelistService {
 
 		List<WhitelistItem> validWhitelistItems = new ArrayList <>();
 		Set<String> validationRuleIds = whitelistItems.stream().map(WhitelistItem::getValidationRuleId).collect(Collectors.toSet());
-		List<WhitelistItem> persistedWhitelistItems = repository.findAllByValidationRuleIdIn(validationRuleIds);
+		List<WhitelistItem> persistedWhitelistItems = findAllByValidationRuleIds(validationRuleIds);
 		for (WhitelistItem whitelistItemTobeCompared : whitelistItems) {
 			for (WhitelistItem persistedWhitelistItem : persistedWhitelistItems) {
 				if (WHITELIST_ITEM_COMPARATOR.compare(whitelistItemTobeCompared, persistedWhitelistItem) == 0) {

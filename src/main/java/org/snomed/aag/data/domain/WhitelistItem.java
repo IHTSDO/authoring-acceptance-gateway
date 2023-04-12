@@ -9,6 +9,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.util.Date;
+import java.util.Objects;
 
 @Document(indexName = "whitelist-item")
 public class WhitelistItem {
@@ -137,5 +138,18 @@ public class WhitelistItem {
 
     public void setAssertionFailureText(String assertionFailureText) {
         this.assertionFailureText = assertionFailureText;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WhitelistItem item = (WhitelistItem) o;
+        return Objects.equals(validationRuleId, item.validationRuleId) && Objects.equals(componentId, item.componentId) && Objects.equals(conceptId, item.conceptId) && Objects.equals(additionalFields, item.additionalFields);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(validationRuleId, componentId, conceptId, additionalFields);
     }
 }
