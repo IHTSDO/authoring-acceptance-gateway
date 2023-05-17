@@ -52,7 +52,7 @@ public class AcceptanceCriteriaController {
 	}
 
 	@PostMapping
-	@PreAuthorize("hasPermission('PROJECT_MANAGER', #criteria.branchPath)")
+	@PreAuthorize("hasPermission('PROJECT_LEAD', #criteria.branchPath)")
 	public ResponseEntity<Void> createProjectCriteria(@RequestBody @Valid ProjectAcceptanceCriteria criteria) {
 		LOGGER.info("Creating ProjectAcceptanceCriteria.");
 		LOGGER.debug("Creating {}.", criteria);
@@ -61,7 +61,7 @@ public class AcceptanceCriteriaController {
 	}
 
 	@PutMapping("/{branch}")
-	@PreAuthorize("hasPermission('PROJECT_MANAGER', #branch)")
+	@PreAuthorize("hasPermission('PROJECT_LEAD', #branch)")
 	public ProjectAcceptanceCriteria updateProjectCriteria(@PathVariable String branch, @RequestBody @Valid ProjectAcceptanceCriteria criteria,
 														   @RequestParam(required = false) Integer projectIteration) {
 		branch = BranchPathUriUtil.decodePath(branch);
