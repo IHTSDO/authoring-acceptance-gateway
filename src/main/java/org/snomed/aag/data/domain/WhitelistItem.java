@@ -59,6 +59,9 @@ public class WhitelistItem {
     @Size(max = 300)
     private String assertionFailureText;
 
+    @Field(type = FieldType.Boolean)
+    private boolean temporary;
+
     public String getId() {
         return id;
     }
@@ -138,6 +141,14 @@ public class WhitelistItem {
 
     public void setAssertionFailureText(String assertionFailureText) {
         this.assertionFailureText = assertionFailureText;
+    }
+
+    public void setTemporary(boolean temporary) {
+        this.temporary = temporary;
+    }
+
+    public boolean isTemporary() {
+        return temporary;
     }
 
     @Override
