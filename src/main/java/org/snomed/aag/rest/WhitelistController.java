@@ -39,6 +39,14 @@ public class WhitelistController {
         return whitelistService.findAll(PageRequest.of(page, size));
     }
 
+    @GetMapping(value = "/item/{id}")
+    public ResponseEntity<WhitelistItem> retrieveWhitelistItem(@PathVariable String id) {
+        WhitelistItem item = whitelistService.findOrThrow(id);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(item);
+    }
+
     @ApiOperation(value = "Find whitelist items by validation rule ID")
     @GetMapping(value = "/validation-rules/{validationRuleId}")
     public List<WhitelistItem> findWhitelistItemsByValidationRuleId(@PathVariable String validationRuleId) {
