@@ -62,6 +62,9 @@ public class WhitelistItem {
     @Field(type = FieldType.Boolean)
     private boolean temporary;
 
+    @Field(type = FieldType.Keyword)
+    private String reason;
+
     public String getId() {
         return id;
     }
@@ -149,6 +152,14 @@ public class WhitelistItem {
 
     public boolean isTemporary() {
         return temporary;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getReason() {
+        return reason;
     }
 
     @Override
