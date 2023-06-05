@@ -27,8 +27,9 @@ public class URLMappingConfig {
 				"/criteria/(.*)",
 				"/acceptance/(.*)/item/.*/accept",
 				"/acceptance/(.*)",
+				"/whitelist-items/item/(.*)",
 				// negation here, otherwise 'validation-rules' or 'item' gets interpreted as a branch name
-				"/whitelist-items/(((?!validation-rules).)((?!item).)(.*))",
+				"/whitelist-items/(((?!validation-rules).)(.*))",
 				"/criteria-items/(.*)",
 				"/admin/criteria/(.*)/accept"
 		};
