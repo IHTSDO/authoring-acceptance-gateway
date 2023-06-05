@@ -22,6 +22,11 @@ public class WhitelistItem {
         String CONCEPT_ID = "conceptId";
         String BRANCH = "branch";
         String ADDITIONAL_FIELDS = "additionalFields";
+        String TEMPORARY = "temporary";
+    }
+
+    public enum WhitelistItemType {
+        ALL, PERMANENT, TEMPORARY
     }
 
     @Id

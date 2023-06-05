@@ -101,6 +101,7 @@ public class WhitelistController {
     @ApiOperation("When including descendant branches the search will not include branches from other code systems.")
     public ResponseEntity<?> findForBranch(@PathVariable String branch, @RequestParam(required = false) Long creationDate,
                                            @RequestParam(required = false, defaultValue = "true") boolean includeDescendants,
+                                           @RequestParam(required = false, defaultValue = "ALL") WhitelistItem.WhitelistItemType type,
                                            @RequestParam(required = false, defaultValue = "0") int page,
                                            @RequestParam(required = false, defaultValue = "100") int size) throws RestClientException {
         branch = BranchPathUriUtil.decodePath(branch);
@@ -111,7 +112,7 @@ public class WhitelistController {
             date = new Date(creationDate);
         }
 
-        List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(branch, date, includeDescendants, PageRequest.of(page, size));
+        List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(branch, date, type, includeDescendants, PageRequest.of(page, size));
         HttpStatus httpStatus = HttpStatus.OK;
         if (whitelistItems.isEmpty()) {
             httpStatus = HttpStatus.NO_CONTENT;

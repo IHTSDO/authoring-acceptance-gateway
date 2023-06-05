@@ -63,7 +63,7 @@ public class WhitelistService {
 		return elasticsearchRestTemplate.searchForStream(queryBuilder.build(), WhitelistItem.class).stream().map(SearchHit::getContent).collect(Collectors.toList());
 	}
 
-	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, boolean includeDescendants, PageRequest pageRequest) {
+	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, WhitelistItem.WhitelistItemType type, boolean includeDescendants, PageRequest pageRequest) {
 		date = getDefaultDateIfNull(date);
 		QueryBuilder query;
 		if (includeDescendants) {
@@ -79,15 +79,23 @@ public class WhitelistService {
 		}
 
 		BoolQueryBuilder creationDateQuery = boolQuery().must(rangeQuery(WhitelistItem.Fields.CREATION_DATE).gte(date.getTime()));
-		NativeSearchQuery nativeSearchQuery = new NativeSearchQueryBuilder()
+		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
 				.withQuery(boolQuery()
 						.must(creationDateQuery)
 						.must(query)
 				)
-				.withPageable(pageRequest)
-				.build();
+				.withPageable(pageRequest);
+		if (type != null && !WhitelistItem.WhitelistItemType.ALL.equals(type)) {
+			if (WhitelistItem.WhitelistItemType.TEMPORARY.equals(type)) {
+				nativeSearchQueryBuilder.withFilter(termQuery(WhitelistItem.Fields.TEMPORARY, true));
+			} else {
+                nativeSearchQueryBuilder.withFilter(boolQuery()
+                        .should(boolQuery().mustNot(existsQuery(WhitelistItem.Fields.TEMPORARY)))
+                        .should(termQuery(WhitelistItem.Fields.TEMPORARY, false)));
+			}
+		}
 
-		return elasticsearchRestTemplate.search(nativeSearchQuery, WhitelistItem.class)
+		return elasticsearchRestTemplate.search(nativeSearchQueryBuilder.build(), WhitelistItem.class)
 				.stream()
 				.map(SearchHit::getContent)
 				.collect(Collectors.toList());
