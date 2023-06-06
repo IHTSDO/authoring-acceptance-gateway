@@ -2,6 +2,7 @@ package org.snomed.aag.data.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
@@ -66,6 +67,9 @@ public class WhitelistItem {
 
     @Field(type = FieldType.Boolean)
     private boolean temporary;
+
+    @Field(type = FieldType.Date, format = DateFormat.date)
+    private Date expirationDate;
 
     @Field(type = FieldType.Keyword)
     private String reason;
@@ -157,6 +161,14 @@ public class WhitelistItem {
 
     public boolean isTemporary() {
         return temporary;
+    }
+
+    public void setExpirationDate(Date expirationDate) {
+        this.expirationDate = expirationDate;
+    }
+
+    public Date getExpirationDate() {
+        return expirationDate;
     }
 
     public void setReason(String reason) {
