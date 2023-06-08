@@ -56,7 +56,7 @@ public class WhitelistController {
     @ApiOperation(value = "Find whitelist items by list of validation rule ID")
     @PostMapping(value = "/validation-rules")
     public List<WhitelistItem> findWhitelistItemsByValidationRuleIds(@RequestBody Set<String> validationRuleIds) {
-        return whitelistService.findAllByValidationRuleIds(validationRuleIds);
+        return whitelistService.findAllByValidationRuleIds(validationRuleIds, false);
     }
 
     @ApiOperation(value = "Validate components against whitelist",
@@ -76,7 +76,7 @@ public class WhitelistController {
                 .body(savedWhitelistItem);
     }
 
-    @PutMapping(value = "/{id}")
+    @PutMapping(value = "/item/{id}")
     public ResponseEntity<WhitelistItem> updateWhitelistItem(@PathVariable String id, @RequestBody WhitelistItem whitelistItem) {
         WhitelistItem persistedWhitelistItem = whitelistService.findOrThrow(id);
         persistedWhitelistItem.setAdditionalFields(whitelistItem.getAdditionalFields());
@@ -91,7 +91,7 @@ public class WhitelistController {
                 .body(savedWhitelistItem);
     }
 
-    @DeleteMapping(value = "/{id}")
+    @DeleteMapping(value = "/item/{id}")
     public void deleteWhitelistItem(@PathVariable String id) {
         WhitelistItem item = whitelistService.findOrThrow(id);
         whitelistService.delete(item);

@@ -15,15 +15,11 @@ import java.util.Objects;
 @Document(indexName = "whitelist-item")
 public class WhitelistItem {
     public interface Fields {
-        String ID = "id";
-        String USER_ID = "userId";
         String CREATION_DATE = "creationDate";
         String VALIDATION_RULE_ID = "validationRuleId";
-        String COMPONENT_ID = "componentId";
-        String CONCEPT_ID = "conceptId";
         String BRANCH = "branch";
-        String ADDITIONAL_FIELDS = "additionalFields";
         String TEMPORARY = "temporary";
+        String EXPIRATION_DATE = "expirationDate";
     }
 
     public enum WhitelistItemType {
@@ -68,7 +64,7 @@ public class WhitelistItem {
     @Field(type = FieldType.Boolean)
     private boolean temporary;
 
-    @Field(type = FieldType.Date, format = DateFormat.date)
+    @Field(type = FieldType.Date, format = DateFormat.date_optional_time)
     private Date expirationDate;
 
     @Field(type = FieldType.Keyword)
