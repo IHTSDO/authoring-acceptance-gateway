@@ -84,6 +84,9 @@ public class WhitelistController {
         persistedWhitelistItem.setComponentId(whitelistItem.getComponentId());
         persistedWhitelistItem.setConceptId(whitelistItem.getConceptId());
         persistedWhitelistItem.setValidationRuleId(whitelistItem.getValidationRuleId());
+        persistedWhitelistItem.setExpirationDate(whitelistItem.getExpirationDate());
+        persistedWhitelistItem.setReason(whitelistItem.getReason());
+        persistedWhitelistItem.setTemporary(whitelistItem.isTemporary());
 
         WhitelistItem savedWhitelistItem = whitelistService.update(persistedWhitelistItem);
         return ResponseEntity
