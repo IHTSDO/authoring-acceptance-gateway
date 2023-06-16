@@ -54,25 +54,13 @@ public class WhitelistService {
 	}
 
 	public List<WhitelistItem> findAllByValidationRuleId(String validationRuleId) {
-		return findAllByValidationRuleIds(Collections.singleton(validationRuleId), false);
+		return findAllByValidationRuleIds(Collections.singleton(validationRuleId));
 	}
 
-	public List<WhitelistItem> findAllByValidationRuleIds(Set<String> validationRuleIds, boolean excludeExpiredExceptions) {
+	public List<WhitelistItem> findAllByValidationRuleIds(Set<String> validationRuleIds) {
 		NativeSearchQueryBuilder queryBuilder = new NativeSearchQueryBuilder().withQuery(
 				boolQuery().must(termsQuery(WhitelistItem.Fields.VALIDATION_RULE_ID, validationRuleIds))
 		).withPageable(PageRequest.of(0, 10_000));
-
-		if (excludeExpiredExceptions) {
-			Calendar today = Calendar.getInstance();
-			today.set(Calendar.HOUR_OF_DAY, 0);
-			today.set(Calendar.MINUTE, 0);
-			today.set(Calendar.SECOND, 0);
-			today.set(Calendar.MILLISECOND, 0);
-
-			queryBuilder.withFilter(boolQuery()
-					.should(boolQuery().mustNot(existsQuery(WhitelistItem.Fields.EXPIRATION_DATE)))
-					.should(boolQuery().must(rangeQuery(WhitelistItem.Fields.EXPIRATION_DATE).gte(today.getTime()))));
-		}
 
 		return elasticsearchRestTemplate.searchForStream(queryBuilder.build(), WhitelistItem.class).stream().map(SearchHit::getContent).collect(Collectors.toList());
 	}
@@ -122,7 +110,7 @@ public class WhitelistService {
 
 		List<WhitelistItem> validWhitelistItems = new ArrayList <>();
 		Set<String> validationRuleIds = whitelistItems.stream().map(WhitelistItem::getValidationRuleId).collect(Collectors.toSet());
-		List<WhitelistItem> persistedWhitelistItems = findAllByValidationRuleIds(validationRuleIds, true);
+		List<WhitelistItem> persistedWhitelistItems = findAllByValidationRuleIds(validationRuleIds);
 		for (WhitelistItem whitelistItemTobeCompared : whitelistItems) {
 			for (WhitelistItem persistedWhitelistItem : persistedWhitelistItems) {
 				if (WHITELIST_ITEM_COMPARATOR.compare(whitelistItemTobeCompared, persistedWhitelistItem) == 0) {

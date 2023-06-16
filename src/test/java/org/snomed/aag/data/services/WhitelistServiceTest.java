@@ -31,44 +31,6 @@ class WhitelistServiceTest extends AbstractTest {
     }
 
     @Test
-    void testFindAllByValidationRuleIdAndExpirationDate() throws ParseException {
-        String validationRuleId = "d99dbbf0-4ec9-4e1d-b4c8-5e17160abd27";
-        Set<WhitelistItem> itemsToCheck = new HashSet<>();
-        WhitelistItem firstItem = new WhitelistItem();
-        firstItem.setComponentId("4170222010");
-        firstItem.setConceptId("81835008");
-        firstItem.setValidationRuleId(validationRuleId);
-        firstItem.setAdditionalFields("Test");
-
-        itemsToCheck.add(firstItem);
-
-        WhitelistItem secondItem = new WhitelistItem();
-        secondItem.setComponentId("4170223010");
-        secondItem.setConceptId("81845008");
-        secondItem.setValidationRuleId(validationRuleId);
-        secondItem.setAdditionalFields("Test");
-
-        Calendar yesterday = Calendar.getInstance();
-        yesterday.add(Calendar.DATE, -1);
-        yesterday.set(Calendar.HOUR_OF_DAY, 0);
-        yesterday.set(Calendar.MINUTE, 0);
-        yesterday.set(Calendar.SECOND, 0);
-        yesterday.set(Calendar.MILLISECOND, 0);
-
-        secondItem.setExpirationDate(yesterday.getTime());
-
-        itemsToCheck.add(secondItem);
-        whitelistItemRepository.saveAll(itemsToCheck);
-
-        List<WhitelistItem> results = whitelistService.findAllByValidationRuleIds(Collections.singleton(validationRuleId), true);
-        assertEquals(1, results.size());
-
-        results = whitelistService.findAllByValidationRuleIds(Collections.singleton(validationRuleId), false);
-        assertEquals(2, results.size());
-
-    }
-
-    @Test
     void testValidateWhenItemsAreOver10K() {
         // Set up whitelist items over 10k for two rules
         createWhitelistItemsForTest("4ee9cfeb-3ce5-48bf-b238-de7498fde042", 5_001);

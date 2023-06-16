@@ -19,7 +19,6 @@ public class WhitelistItem {
         String VALIDATION_RULE_ID = "validationRuleId";
         String BRANCH = "branch";
         String TEMPORARY = "temporary";
-        String EXPIRATION_DATE = "expirationDate";
     }
 
     public enum WhitelistItemType {
@@ -63,9 +62,6 @@ public class WhitelistItem {
 
     @Field(type = FieldType.Boolean)
     private boolean temporary;
-
-    @Field(type = FieldType.Date, format = DateFormat.date_optional_time)
-    private Date expirationDate;
 
     @Field(type = FieldType.Keyword)
     private String reason;
@@ -157,14 +153,6 @@ public class WhitelistItem {
 
     public boolean isTemporary() {
         return temporary;
-    }
-
-    public void setExpirationDate(Date expirationDate) {
-        this.expirationDate = expirationDate;
-    }
-
-    public Date getExpirationDate() {
-        return expirationDate;
     }
 
     public void setReason(String reason) {

@@ -56,7 +56,7 @@ public class WhitelistController {
     @ApiOperation(value = "Find whitelist items by list of validation rule ID")
     @PostMapping(value = "/validation-rules")
     public List<WhitelistItem> findWhitelistItemsByValidationRuleIds(@RequestBody Set<String> validationRuleIds) {
-        return whitelistService.findAllByValidationRuleIds(validationRuleIds, false);
+        return whitelistService.findAllByValidationRuleIds(validationRuleIds);
     }
 
     @ApiOperation(value = "Validate components against whitelist",
@@ -84,7 +84,6 @@ public class WhitelistController {
         persistedWhitelistItem.setComponentId(whitelistItem.getComponentId());
         persistedWhitelistItem.setConceptId(whitelistItem.getConceptId());
         persistedWhitelistItem.setValidationRuleId(whitelistItem.getValidationRuleId());
-        persistedWhitelistItem.setExpirationDate(whitelistItem.getExpirationDate());
         persistedWhitelistItem.setReason(whitelistItem.getReason());
         persistedWhitelistItem.setTemporary(whitelistItem.isTemporary());
 
