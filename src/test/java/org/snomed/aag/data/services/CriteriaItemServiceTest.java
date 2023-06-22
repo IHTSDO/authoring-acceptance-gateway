@@ -60,7 +60,7 @@ class CriteriaItemServiceTest extends AbstractTest {
 				"label='Content has been classified.', " +
 				"description='If there are any content changes requiring classification then classification must be run and the results saved.', " +
 				"order=2, authoringLevel=null, " +
-				"mandatory=true, manual=false, expiresOnCommit=true, requiredRole='null'}", all.getContent().get(0).toString());
+				"mandatory=true, manual=false, expiresOnCommit=true, requiredRoles='null'}", all.getContent().get(0).toString());
 
 		all = service.findByBranch("MAIN/SNOMEDCT-XX/XX/XX-123", PageRequest.of(0, 100));
 		assertEquals(2, all.getTotalElements());
@@ -68,12 +68,12 @@ class CriteriaItemServiceTest extends AbstractTest {
 				"label='Content has been classified.', " +
 				"description='If there are any content changes requiring classification then classification must be run and the results saved.', " +
 				"order=2, authoringLevel=null, " +
-				"mandatory=true, manual=false, expiresOnCommit=true, requiredRole='null'}", all.getContent().get(0).toString());
+				"mandatory=true, manual=false, expiresOnCommit=true, requiredRoles='null'}", all.getContent().get(0).toString());
 		assertEquals("CriteriaItem{id='classification-clean-3', " +
 				"label='Content has been classified.', " +
 				"description='If there are any content changes requiring classification then classification must be run and the results saved.', " +
 				"order=4, authoringLevel=null, " +
-				"mandatory=true, manual=false, expiresOnCommit=true, requiredRole='null'}", all.getContent().get(1).toString());
+				"mandatory=true, manual=false, expiresOnCommit=true, requiredRoles='null'}", all.getContent().get(1).toString());
 
 		all = service.findByBranch("MAIN/SNOMEDCT-TEST/TEST/TEST-123", PageRequest.of(0, 100));
 		assertEquals(3, all.getTotalElements());
@@ -81,17 +81,17 @@ class CriteriaItemServiceTest extends AbstractTest {
 				"label='Content has been classified.', " +
 				"description='If there are any content changes requiring classification then classification must be run and the results saved.', " +
 				"order=2, authoringLevel=null, " +
-				"mandatory=true, manual=false, expiresOnCommit=true, requiredRole='null'}", all.getContent().get(0).toString());
+				"mandatory=true, manual=false, expiresOnCommit=true, requiredRoles='null'}", all.getContent().get(0).toString());
 		assertEquals("CriteriaItem{id='classification-clean-2', " +
 				"label='Content has been classified.', " +
 				"description='If there are any content changes requiring classification then classification must be run and the results saved.', " +
 				"order=3, authoringLevel=null, " +
-				"mandatory=true, manual=false, expiresOnCommit=true, requiredRole='null'}", all.getContent().get(1).toString());
+				"mandatory=true, manual=false, expiresOnCommit=true, requiredRoles='null'}", all.getContent().get(1).toString());
 		assertEquals("CriteriaItem{id='classification-clean-3', " +
 				"label='Content has been classified.', " +
 				"description='If there are any content changes requiring classification then classification must be run and the results saved.', " +
 				"order=4, authoringLevel=null, " +
-				"mandatory=true, manual=false, expiresOnCommit=true, requiredRole='null'}", all.getContent().get(2).toString());
+				"mandatory=true, manual=false, expiresOnCommit=true, requiredRoles='null'}", all.getContent().get(2).toString());
 	}
 
 	@Test
@@ -110,7 +110,7 @@ class CriteriaItemServiceTest extends AbstractTest {
 		assertEquals("CriteriaItem{id='classification-clean', label='Content has been classified.', " +
 				"description='If there are any content changes requiring classification then classification must be run" +
 				" and the results saved.', order=2, authoringLevel=null, mandatory=true, manual=false, " +
-				"expiresOnCommit=true, requiredRole='null'}", all.getContent().get(0).toString());
+				"expiresOnCommit=true, requiredRoles='null'}", all.getContent().get(0).toString());
 	}
 
 	@Test

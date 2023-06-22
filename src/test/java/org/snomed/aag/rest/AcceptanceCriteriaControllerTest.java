@@ -638,7 +638,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
-        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CRITERIA_CONTROLLER_TEST");
+        criteriaItem.setRequiredRoles(Collections.singleton("ROLE_ACCEPTANCE_CRITERIA_CONTROLLER_TEST"));
         criteriaItem.setOrder(order);
         criteriaItem.setLabel(label);
 

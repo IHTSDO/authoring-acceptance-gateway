@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -64,7 +65,7 @@ public class AcceptanceService {
 		Set<CriteriaItem> criteriaItemsToAccept = new HashSet<>();
 		for (String criteriaIdentifier : criteriaIdentifiers) {
 			CriteriaItem criteriaItem = criteriaItemService.findByIdOrThrow(criteriaIdentifier);
-			securityService.verifyBranchRole(branchPath, criteriaItem.getRequiredRole());
+			securityService.verifyBranchRole(branchPath, criteriaItem.getRequiredRoles());
 			criteriaItemsToAccept.add(criteriaItem);
 		}
 
@@ -231,7 +232,7 @@ public class AcceptanceService {
 	}
 
 	private boolean userHasRole(CriteriaItem item, Set<String> branchRoles) {
-		final boolean contains = item.getRequiredRole() == null || branchRoles.contains(item.getRequiredRole());
+		final boolean contains = CollectionUtils.isEmpty(item.getRequiredRoles()) || branchRoles.stream().filter(item.getRequiredRoles()::contains).count() > 0;
 		if (!contains) {
 			LOGGER.debug("User does not have sufficient roles to change item {}", item.getId());
 		}
@@ -244,7 +245,7 @@ public class AcceptanceService {
 		criteriaItemService.verifyManual(criteriaItem, true);
 
 		// Check that the user making the request has the required role on the branch
-		securityService.verifyBranchRole(branchPath, criteriaItem.getRequiredRole());
+		securityService.verifyBranchRole(branchPath, criteriaItem.getRequiredRoles());
 
 		//Verify ProjectAcceptanceCriteria
 		ProjectAcceptanceCriteria projectAcceptanceCriteria = criteriaService.findByBranchPathWithRelevantCriteriaItems(branchPath, true);
@@ -323,7 +324,7 @@ public class AcceptanceService {
 						{
 							boolean userHasRole = userHasRole(item, branchRoles);
 							if (!userHasRole) {
-								LOGGER.info("{} will not be marked as complete as the user does not have the required role for actioning the item. Required role: {}", item.getId(), item.getRequiredRole());
+								LOGGER.info("{} will not be marked as complete as the user does not have the required role for actioning the item. Required roles: {}", item.getId(), item.getRequiredRoles());
 								return false;
 							}
 

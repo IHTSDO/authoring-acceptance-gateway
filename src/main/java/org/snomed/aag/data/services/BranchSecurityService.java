@@ -28,24 +28,31 @@ public class BranchSecurityService {
 	 * Verify whether the branch has the expected permissions.
 	 *
 	 * @param branchPath   Branch to check.
-	 * @param requiredRole Role the branch should have.
+	 * @param requiredRoles Role the branch should have.
 	 * @throws IllegalArgumentException When given illegal arguments.
 	 * @throws AccessDeniedException    When branch does not exist or when user does not have desired role.
 	 */
-	public void verifyBranchRole(String branchPath, String requiredRole) {
-		if (branchPath == null || requiredRole == null) {
+	public void verifyBranchRole(String branchPath, Set<String> requiredRoles) {
+		if (branchPath == null || requiredRoles == null) {
 			LOGGER.error("Cannot verify branch permissions as given illegal arguments.");
-			LOGGER.debug("branchPath: {}, requiredRole: {}", branchPath, requiredRole);
+			LOGGER.debug("branchPath: {}, requiredRole: {}", branchPath, requiredRoles);
 			throw new IllegalArgumentException("Cannot verify branch permission.");
 		}
 
 		try {
-			if (!currentUserHasRoleOnBranch(requiredRole, branchPath)) {
-				LOGGER.info("User does not have desired role of {}.", requiredRole);
+			boolean contains = false;
+			for (String role : requiredRoles) {
+				if (currentUserHasRoleOnBranch(role, branchPath)) {
+					contains = true;
+					break;
+				}
+			}
+			if (!contains) {
+				LOGGER.info("User does not have desired role of {}.", requiredRoles);
 				throw new AccessDeniedException("User does not have desired role.");
 			}
 		} catch (RestClientException e) {
-			LOGGER.error("Cannot verify request for branch {} with requiredRole {}.", branchPath, requiredRole);
+			LOGGER.error("Cannot verify request for branch {} with requiredRole {}.", branchPath, requiredRoles);
 			LOGGER.debug(e.getMessage());
 			throw new AccessDeniedException("Could not ascertain user roles: Failed to communication with Snowstorm.", e);
 		}

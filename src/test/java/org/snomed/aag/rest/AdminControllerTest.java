@@ -337,7 +337,7 @@ class AdminControllerTest extends AbstractTest {
 	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
-		criteriaItem.setRequiredRole("ROLE_ADMIN_CONTROLLER_TEST");
+		criteriaItem.setRequiredRoles(Collections.singleton("ROLE_ADMIN_CONTROLLER_TEST"));
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 

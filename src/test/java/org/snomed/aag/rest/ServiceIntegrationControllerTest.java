@@ -653,7 +653,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
-		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
+		criteriaItem.setRequiredRoles(Collections.singleton("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST"));
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 		criteriaItem.setAuthoringLevel(authoringLevel);
@@ -665,7 +665,7 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 	private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, AuthoringLevel authoringLevel, boolean expiresOnCommit) {
 		CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
 		criteriaItem.setManual(manual);
-		criteriaItem.setRequiredRole("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST");
+		criteriaItem.setRequiredRoles(Collections.singleton("ROLE_SERVICE_INTEGRATION_CONTROLLER_TEST"));
 		criteriaItem.setOrder(order);
 		criteriaItem.setLabel(label);
 		criteriaItem.setAuthoringLevel(authoringLevel);

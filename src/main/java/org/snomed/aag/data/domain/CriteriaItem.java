@@ -49,8 +49,12 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 	@Field(type = FieldType.Boolean)
 	private boolean expiresOnCommit;
 
+	@Deprecated
 	@Field(type = FieldType.Keyword)
 	private String requiredRole;
+
+	@Field(type = FieldType.Keyword)
+	private Set<String> requiredRoles;
 
 	@Field(type = FieldType.Keyword)
 	private Set<String> enabledByFlag = new HashSet<>();
@@ -146,12 +150,22 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 		this.expiresOnCommit = expiresOnCommit;
 	}
 
+	@Deprecated
 	public String getRequiredRole() {
 		return requiredRole;
 	}
 
+	@Deprecated
 	public void setRequiredRole(String requiredRole) {
 		this.requiredRole = requiredRole;
+	}
+
+	public Set<String> getRequiredRoles() {
+		return requiredRoles;
+	}
+
+	public void setRequiredRoles(Set<String> requiredRoles) {
+		this.requiredRoles = requiredRoles;
 	}
 
 	public Set<String> getEnabledByFlag() {
@@ -205,7 +219,7 @@ public class CriteriaItem implements Comparable<CriteriaItem> {
 				", mandatory=" + mandatory +
 				", manual=" + manual +
 				", expiresOnCommit=" + expiresOnCommit +
-				", requiredRole='" + requiredRole + '\'' +
+				", requiredRoles='" + requiredRoles + '\'' +
 				'}';
 	}
 

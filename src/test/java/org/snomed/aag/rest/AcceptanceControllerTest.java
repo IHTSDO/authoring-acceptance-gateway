@@ -916,7 +916,7 @@ class AcceptanceControllerTest extends AbstractTest {
     private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
-        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setRequiredRoles(Collections.singleton("ROLE_ACCEPTANCE_CONTROLLER_TEST"));
         criteriaItem.setOrder(order);
         criteriaItem.setLabel(label);
 
@@ -926,7 +926,7 @@ class AcceptanceControllerTest extends AbstractTest {
     private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, boolean mandatory) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
-        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setRequiredRoles(Collections.singleton("ROLE_ACCEPTANCE_CONTROLLER_TEST"));
         criteriaItem.setOrder(order);
         criteriaItem.setLabel(label);
         criteriaItem.setMandatory(mandatory);
@@ -941,7 +941,7 @@ class AcceptanceControllerTest extends AbstractTest {
     private void givenCriteriaItemExists(String criteriaItemId, boolean manual, int order, String label, String flag) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
-        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setRequiredRoles(Collections.singleton("ROLE_ACCEPTANCE_CONTROLLER_TEST"));
         criteriaItem.setOrder(order);
         criteriaItem.setLabel(label);
         criteriaItem.setEnabledByFlag(Collections.singleton(flag));
@@ -974,7 +974,7 @@ class AcceptanceControllerTest extends AbstractTest {
     private void givenGloballyRequiredProjectLevelCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
-        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setRequiredRoles(Collections.singleton("ROLE_ACCEPTANCE_CONTROLLER_TEST"));
         criteriaItem.setOrder(order);
         criteriaItem.setMandatory(true);
         criteriaItem.setAuthoringLevel(AuthoringLevel.PROJECT);
@@ -985,7 +985,7 @@ class AcceptanceControllerTest extends AbstractTest {
     private void givenGloballyRequiredTaskLevelCriteriaItemExists(String criteriaItemId, boolean manual, int order) {
         CriteriaItem criteriaItem = new CriteriaItem(criteriaItemId);
         criteriaItem.setManual(manual);
-        criteriaItem.setRequiredRole("ROLE_ACCEPTANCE_CONTROLLER_TEST");
+        criteriaItem.setRequiredRoles(Collections.singleton("ROLE_ACCEPTANCE_CONTROLLER_TEST"));
         criteriaItem.setOrder(order);
         criteriaItem.setMandatory(true);
         criteriaItem.setAuthoringLevel(AuthoringLevel.TASK);
