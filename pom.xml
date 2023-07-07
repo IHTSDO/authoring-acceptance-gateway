@@ -11,7 +11,7 @@
 
 	<groupId>org.snomed</groupId>
 	<artifactId>authoring-acceptance-gateway</artifactId>
-	<version>1.7.0</version>
+	<version>1.8.0-SNAPSHOT</version>
 	<name>Authoring Acceptance Gateway</name>
 	<description>Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.</description>
 	<properties>
