@@ -33,6 +33,7 @@ import java.util.Map;
 public class JMSListenerSnowstormService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JMSListenerSnowstormService.class);
+	public static final int JIRA_SUMMARY_MAX_LENGTH = 255;
 
 	@Value("${snowstorm.url}")
 	private String snowstormUrl;
@@ -103,7 +104,12 @@ public class JMSListenerSnowstormService {
 			product = jiraConfigMapping.getSnomedCtProducts().get(codeSystemShortname);
 		}
 
-		return product + ", " + date + ", " + whitelistItem.getValidationRuleId() + ", " + whitelistItem.getAssertionFailureText();
+		String summary = product + ", " + date + ", " + whitelistItem.getValidationRuleId() + ", " + whitelistItem.getAssertionFailureText();
+		if (summary.length() > JIRA_SUMMARY_MAX_LENGTH) {
+			summary = summary.substring(0, JIRA_SUMMARY_MAX_LENGTH - 1);
+		}
+
+		return summary;
 	}
 
 	private String generateDescription(WhitelistItem whitelistItem) {
