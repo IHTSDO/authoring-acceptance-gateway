@@ -124,13 +124,13 @@ class CriteriaItemServiceTest extends AbstractTest {
 		criteria.getSelectedTaskCriteriaIds().add(thing.getId());
 		projectAcceptanceCriteriaService.create(criteria);
 
-		Assertions.assertThrows(ServiceRuntimeException.class, () -> {service.delete(thing);});
+		Assertions.assertThrows(ServiceRuntimeException.class, () -> service.delete(thing));
 
 		criteria.getSelectedTaskCriteriaIds().clear();
 		criteria.getSelectedProjectCriteriaIds().add(thing.getId());
 		projectAcceptanceCriteriaService.update(criteria);
 
-		Assertions.assertThrows(ServiceRuntimeException.class, () -> {service.delete(thing);});
+		Assertions.assertThrows(ServiceRuntimeException.class, () -> service.delete(thing));
 
 		criteria.getSelectedProjectCriteriaIds().clear();
 		projectAcceptanceCriteriaService.update(criteria);

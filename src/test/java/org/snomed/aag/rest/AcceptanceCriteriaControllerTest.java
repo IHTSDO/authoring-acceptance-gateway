@@ -646,13 +646,13 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     }
 
     private List<ProjectAcceptanceCriteria> toProjectAcceptCriterias(String response) throws JsonProcessingException {
-        RestResponsePage<ProjectAcceptanceCriteria> restResponsePage = OBJECT_MAPPER.readValue(response, new TypeReference<RestResponsePage<ProjectAcceptanceCriteria>>() {
+        RestResponsePage<ProjectAcceptanceCriteria> restResponsePage = OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
         return restResponsePage.getContent();
     }
 
     private ProjectAcceptanceCriteria toProjectAcceptCriteria(String response) throws JsonProcessingException {
-        return OBJECT_MAPPER.readValue(response, new TypeReference<ProjectAcceptanceCriteria>() {
+        return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
     }
 }

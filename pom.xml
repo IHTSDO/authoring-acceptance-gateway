@@ -15,14 +15,14 @@
 	<name>Authoring Acceptance Gateway</name>
 	<description>Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.</description>
 	<properties>
-		<java.version>11</java.version>
+		<java.version>17</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<packageName>${project.artifactId}</packageName>
 		<!-- Elasticsearch version is controlled via the spring-data-elasticsearch dependency -->
 		<elasticsearch.version>7.10.0</elasticsearch.version>
-		<testcontainers.version>1.17.6</testcontainers.version>
+		<testcontainers.version>1.18.3</testcontainers.version>
 		<spring-cloud.version>2020.0.5</spring-cloud.version>
 	</properties>
 	<dependencies>

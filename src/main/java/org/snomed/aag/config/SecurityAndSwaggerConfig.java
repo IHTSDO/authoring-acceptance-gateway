@@ -94,5 +94,4 @@ public class SecurityAndSwaggerConfig extends WebSecurityConfigurerAdapter {
 
 		return apiSelectorBuilder.build();
 	}
-
 }

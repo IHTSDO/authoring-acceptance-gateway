@@ -202,7 +202,7 @@ public class CriteriaItemSignOffService {
 	 * @param projectAcceptanceCriteria Determine whether to mark Project Criteria or Task Criteria incomplete.
 	 */
 	public void deleteFrom(Set<String> itemsToUnaccept, String branchPath, Integer projectIteration, ProjectAcceptanceCriteria projectAcceptanceCriteria) {
-		logger.info("Deleting item sign-offs {} for branch {}, iteration {}", itemsToUnaccept, branchPath);
+		logger.info("Deleting item sign-offs {} for branch {}}", itemsToUnaccept, branchPath);
 		for (String itemId : itemsToUnaccept) {
 			doDeleteCriteriaItemSignOff(itemId, branchPath, projectIteration, projectAcceptanceCriteria);
 		}

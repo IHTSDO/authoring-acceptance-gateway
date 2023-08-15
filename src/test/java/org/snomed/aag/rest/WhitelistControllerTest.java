@@ -214,7 +214,7 @@ class WhitelistControllerTest extends AbstractTest {
     }
 
     private List<WhitelistItem> toWhitelistItems(String response) throws JsonProcessingException {
-        return OBJECT_MAPPER.readValue(response, new TypeReference<List<WhitelistItem>>() {
+        return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
     }
 }

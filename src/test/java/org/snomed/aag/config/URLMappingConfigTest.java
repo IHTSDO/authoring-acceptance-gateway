@@ -69,11 +69,11 @@ class URLMappingConfigTest {
 
     @Test
     void urlMappingConfig_ShouldMatchBranchPaths() {
-        for (int i = 0; i < TEST_DATA.length; i++) {
+        for (String[] testDatum : TEST_DATA) {
             // given
-            String pattern = TEST_DATA[i][0];
-            String input = TEST_DATA[i][1];
-            String expectedResult = TEST_DATA[i][2];
+            String pattern = testDatum[0];
+            String input = testDatum[1];
+            String expectedResult = testDatum[2];
             Matcher matcher = Pattern.compile(pattern).matcher(input);
 
             // then
