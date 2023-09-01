@@ -25,6 +25,7 @@ import static java.lang.String.format;
 public class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
 
 	@Autowired
+	@Lazy
 	private PermissionEvaluator permissionEvaluator;
 
 	@Override
