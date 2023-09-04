@@ -1,7 +1,7 @@
 package org.snomed.aag.rest;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.pojo.CriteriaItemBulkLoadRequest;
 import org.snomed.aag.data.services.CriteriaItemService;
@@ -18,7 +18,7 @@ import java.util.Collection;
 import java.util.List;
 
 @RestController
-@Api(tags = "Criteria Item Library", description = "-")
+@Tag(name = "Criteria Item Library")
 @RequestMapping(value = "/criteria-items", produces = "application/json")
 public class CriteriaItemLibraryController {
 

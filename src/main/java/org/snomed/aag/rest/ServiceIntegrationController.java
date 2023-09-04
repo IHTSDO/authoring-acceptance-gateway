@@ -1,7 +1,7 @@
 package org.snomed.aag.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @RestController
-@Api(tags = "Service Integration")
+@Tag(name = "Service Integration")
 @RequestMapping(value = "/integration", produces = "application/json")
 public class ServiceIntegrationController {
 
@@ -42,8 +42,8 @@ public class ServiceIntegrationController {
 
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-	@ApiOperation(value = "Receive commit information from Snowstorm.",
-			notes = "This function is called by the Snowstorm Terminology server when a commit is made. " +
+	@Operation(summary = "Receive commit information from Snowstorm.",
+			description = "This function is called by the Snowstorm Terminology server when a commit is made. " +
 					"This information is used to perform automatic actions within this service like accepting or expiring acceptance items. "
 	)
 	@PostMapping("/snowstorm/commit")
@@ -79,8 +79,8 @@ public class ServiceIntegrationController {
 		}
 	}
 
-	@ApiOperation(value = "Receive validation report information from Authoring Services.",
-			notes = "This function is called by Authoring Services when an RVF validation completes. " +
+	@Operation(summary = "Receive validation report information from Authoring Services.",
+			description = "This function is called by Authoring Services when an RVF validation completes. " +
 					"This information may automatically accept a validation acceptance item. "
 	)
 	@PostMapping("/validation-complete")

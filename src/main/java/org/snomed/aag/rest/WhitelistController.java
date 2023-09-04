@@ -1,10 +1,10 @@
 package org.snomed.aag.rest;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.services.BranchSecurityService;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@Api(tags = "Whitelist")
+@Tag(name = "Whitelist")
 @RequestMapping(value = "/whitelist-items", produces = "application/json")
 public class WhitelistController {
 
@@ -47,21 +47,21 @@ public class WhitelistController {
                 .body(item);
     }
 
-    @ApiOperation(value = "Find whitelist items by validation rule ID")
+    @Operation(summary = "Find whitelist items by validation rule ID")
     @GetMapping(value = "/validation-rules/{validationRuleId}")
     public List<WhitelistItem> findWhitelistItemsByValidationRuleId(@PathVariable String validationRuleId) {
         return whitelistService.findAllByValidationRuleId(validationRuleId);
     }
 
-    @ApiOperation(value = "Find whitelist items by list of validation rule ID")
+    @Operation(summary = "Find whitelist items by list of validation rule ID")
     @PostMapping(value = "/validation-rules")
     public List<WhitelistItem> findWhitelistItemsByValidationRuleIds(@RequestBody Set<String> validationRuleIds) {
         return whitelistService.findAllByValidationRuleIds(validationRuleIds);
     }
 
-    @ApiOperation(value = "Validate components against whitelist",
-            notes = "This will be checking components if they are still whitelisted")
-    @ApiResponses(value = { @ApiResponse(code = 200, message = "Return a list of valid components.")
+    @Operation(summary = "Validate components against whitelist",
+            description = "This will be checking components if they are still whitelisted")
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = "Return a list of valid components.")
     })
     @PostMapping(value = "/bulk-validate")
     public List<WhitelistItem> bulkValidate(@RequestBody Set<WhitelistItem> whitelistItems) {
@@ -100,7 +100,7 @@ public class WhitelistController {
     }
 
     @GetMapping("/{branch}")
-    @ApiOperation("When including descendant branches the search will not include branches from other code systems.")
+    @Operation(summary = "When including descendant branches the search will not include branches from other code systems.")
     public ResponseEntity<?> findForBranch(@PathVariable String branch, @RequestParam(required = false) Long creationDate,
                                            @RequestParam(required = false, defaultValue = "true") boolean includeDescendants,
                                            @RequestParam(required = false, defaultValue = "ALL") WhitelistItem.WhitelistItemType type,

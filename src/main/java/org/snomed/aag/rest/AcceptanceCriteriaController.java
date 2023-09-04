@@ -1,7 +1,7 @@
 package org.snomed.aag.rest;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 
 @RestController
-@Api(tags = "Acceptance Criteria Maintenance", description = "-")
+@Tag(name = "Acceptance Criteria Maintenance")
 @RequestMapping(value = "/criteria", produces = "application/json")
 public class AcceptanceCriteriaController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AcceptanceCriteriaController.class);

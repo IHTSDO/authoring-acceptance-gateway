@@ -1,7 +1,7 @@
 package org.snomed.aag.rest;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
 import org.snomed.aag.data.services.AcceptanceService;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Set;
 
 @RestController
-@Api(tags = "Admin")
+@Tag(name = "Admin")
 @RequestMapping(value = "/admin", produces = "application/json")
 public class AdminController {
 	private final AcceptanceService acceptanceService;
