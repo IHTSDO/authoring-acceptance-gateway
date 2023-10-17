@@ -5,9 +5,11 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.data.elasticsearch.annotations.Setting;
 
-@Document(indexName = "criteria-item-sign-off")
+@Document(indexName = "#{@indexNameProvider.getIndexNameWithPrefix('criteria-item-sign-off')}")
+@Setting(settingPath = "elasticsearch-settings.json")
 public class CriteriaItemSignOff {
     public interface Fields {
         String ID = "id";
@@ -41,7 +43,7 @@ public class CriteriaItemSignOff {
 
     @Field(type = FieldType.Long)
     @NotBlank
-    private final Long timestamp;
+    private Long timestamp;
 
     @Field(type = FieldType.Long)
     @NotBlank
@@ -69,6 +71,10 @@ public class CriteriaItemSignOff {
         return id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public String getCriteriaItemId() {
         return criteriaItemId;
     }
@@ -87,6 +93,10 @@ public class CriteriaItemSignOff {
 
     public Long getTimestamp() {
         return timestamp;
+    }
+
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
     }
 
     public Long getBranchHeadTimestamp() {

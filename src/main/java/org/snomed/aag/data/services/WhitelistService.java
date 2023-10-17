@@ -1,18 +1,16 @@
 package org.snomed.aag.data.services;
 
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.repositories.WhitelistItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -21,21 +19,22 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders.bool;
 import static java.lang.String.format;
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.snomed.aag.data.helper.QueryHelper.*;
 
 @Service
 public class WhitelistService {
 
 	private static final Comparator<WhitelistItem> WHITELIST_ITEM_COMPARATOR = Comparator.comparing(WhitelistItem::getValidationRuleId)
-																		.thenComparing(WhitelistItem::getConceptId)
-																		.thenComparing(WhitelistItem::getComponentId)
-																		.thenComparing(WhitelistItem::getAdditionalFields);
+			.thenComparing(WhitelistItem::getConceptId)
+			.thenComparing(WhitelistItem::getComponentId)
+			.thenComparing(WhitelistItem::getAdditionalFields);
 	@Autowired
 	private WhitelistItemRepository repository;
 
 	@Autowired
-	private ElasticsearchRestTemplate elasticsearchRestTemplate;
+	private ElasticsearchTemplate elasticsearchTemplate;
 
 	private static Date getDefaultDateIfNull(Date date) {
 		if (date == null) {
@@ -58,46 +57,52 @@ public class WhitelistService {
 	}
 
 	public List<WhitelistItem> findAllByValidationRuleIds(Set<String> validationRuleIds) {
-		NativeSearchQueryBuilder queryBuilder = new NativeSearchQueryBuilder().withQuery(
-				boolQuery().must(termsQuery(WhitelistItem.Fields.VALIDATION_RULE_ID, validationRuleIds))
-		).withPageable(PageRequest.of(0, 10_000));
+		NativeQueryBuilder queryBuilder = new NativeQueryBuilder()
+				.withQuery(bool(b -> b.must(termsQuery(WhitelistItem.Fields.VALIDATION_RULE_ID, validationRuleIds))))
+				.withPageable(PageRequest.of(0, 10_000));
 
-		return elasticsearchRestTemplate.searchForStream(queryBuilder.build(), WhitelistItem.class).stream().map(SearchHit::getContent).collect(Collectors.toList());
+		return elasticsearchTemplate.searchForStream(queryBuilder.build(), WhitelistItem.class)
+				.stream()
+				.map(SearchHit::getContent)
+				.collect(Collectors.toList());
 	}
 
 	public List<WhitelistItem> findAllByBranchAndMinimumCreationDate(String branchPath, Date date, WhitelistItem.WhitelistItemType type, boolean includeDescendants, PageRequest pageRequest) {
-		date = getDefaultDateIfNull(date);
-		QueryBuilder query;
+		final Date creationDate = getDefaultDateIfNull(date);
+		Query query;
 		if (includeDescendants) {
-			query = boolQuery()
-					.must(boolQuery()
-							.should(termQuery(WhitelistItem.Fields.BRANCH, branchPath))
-							.should(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*"))
-					)
+			Query branchQuery = bool(b -> b
+					.should(termQuery(WhitelistItem.Fields.BRANCH, branchPath))
+					.should(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*")));
+			query = bool(b -> b
+					.must(branchQuery)
 					// Must not close into another code system
-					.mustNot(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*" + "SNOMEDCT*"));
+					.mustNot(wildcardQuery(WhitelistItem.Fields.BRANCH, branchPath + "/*" + "SNOMEDCT*")));
 		} else {
 			query = termQuery(WhitelistItem.Fields.BRANCH, branchPath);
 		}
 
-		BoolQueryBuilder creationDateQuery = boolQuery().must(rangeQuery(WhitelistItem.Fields.CREATION_DATE).gte(date.getTime()));
-		NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder()
-				.withQuery(boolQuery()
+		Query creationDateQuery = bool(b -> b
+				.must(rangeQuery(WhitelistItem.Fields.CREATION_DATE, creationDate.getTime(), RangeQuery.Builder::gte)));
+
+		NativeQueryBuilder nativeQueryBuilder = new NativeQueryBuilder()
+				.withQuery(bool(b -> b
 						.must(creationDateQuery)
-						.must(query)
-				)
+						.must(query)))
 				.withPageable(pageRequest);
+
 		if (type != null && !WhitelistItem.WhitelistItemType.ALL.equals(type)) {
 			if (WhitelistItem.WhitelistItemType.TEMPORARY.equals(type)) {
-				nativeSearchQueryBuilder.withFilter(termQuery(WhitelistItem.Fields.TEMPORARY, true));
+				nativeQueryBuilder.withFilter(termQuery(WhitelistItem.Fields.TEMPORARY, true));
 			} else {
-                nativeSearchQueryBuilder.withFilter(boolQuery()
-                        .should(boolQuery().mustNot(existsQuery(WhitelistItem.Fields.TEMPORARY)))
-                        .should(termQuery(WhitelistItem.Fields.TEMPORARY, false)));
+				Query mustNotExistQuery = bool(b -> b.mustNot(existsQuery(WhitelistItem.Fields.TEMPORARY)));
+				nativeQueryBuilder.withFilter(bool(b -> b
+						.should(mustNotExistQuery)
+						.should(termQuery(WhitelistItem.Fields.TEMPORARY, false))));
 			}
 		}
 
-		return elasticsearchRestTemplate.search(nativeSearchQueryBuilder.build(), WhitelistItem.class)
+		return elasticsearchTemplate.search(nativeQueryBuilder.build(), WhitelistItem.class)
 				.stream()
 				.map(SearchHit::getContent)
 				.collect(Collectors.toList());

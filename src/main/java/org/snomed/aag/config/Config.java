@@ -5,15 +5,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.aws.autoconfigure.context.ContextStackAutoConfiguration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @SpringBootApplication(
 		exclude = {
 				ElasticsearchDataAutoConfiguration.class,
-				ElasticsearchRestClientAutoConfiguration.class,
-				ContextStackAutoConfiguration.class,
+				ElasticsearchRestClientAutoConfiguration.class
 		}
 )
 @EnableElasticsearchRepositories(

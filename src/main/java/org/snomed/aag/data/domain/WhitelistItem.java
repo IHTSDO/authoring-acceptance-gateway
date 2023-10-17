@@ -2,17 +2,15 @@ package org.snomed.aag.data.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.*;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.Date;
 import java.util.Objects;
 
-@Document(indexName = "whitelist-item")
+@Document(indexName = "#{@indexNameProvider.getIndexNameWithPrefix('whitelist-item')}")
+@Setting(settingPath = "elasticsearch-settings.json")
 public class WhitelistItem {
     public interface Fields {
         String CREATION_DATE = "creationDate";

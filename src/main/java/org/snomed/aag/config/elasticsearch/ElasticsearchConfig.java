@@ -5,19 +5,13 @@ import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
 import com.amazonaws.http.AWSRequestSigningApacheInterceptor;
 import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.elasticsearch.client.RestClients;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.client.ClientConfiguration;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchClients;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchConverter;
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchCustomConversions;
 import org.springframework.data.elasticsearch.core.convert.MappingElasticsearchConverter;
@@ -27,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class ElasticsearchConfig {
+public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
 	@Value("${elasticsearch.username}")
 	private String elasticsearchUsername;
@@ -41,19 +35,13 @@ public class ElasticsearchConfig {
 	@Value("${elasticsearch.index.app.prefix}")
 	private String indexNameApplicationPrefix;
 
-	@Value("${elasticsearch.index.shards}")
-	private short indexShards;
-
-	@Value("${elasticsearch.index.replicas}")
-	private short indexReplicas;
-
 	@Value("${aag.aws.request-signing.enabled}")
 	private Boolean awsRequestSigning;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	@Bean
-	public RestClients.ElasticsearchRestClient elasticsearchRestClient() {
+	@Override
+	public ClientConfiguration clientConfiguration() {
 		final String[] urls = elasticsearchProperties().getUrls();
 		for (String url : urls) {
 			logger.info("Elasticsearch host: {}", url);
@@ -61,22 +49,23 @@ public class ElasticsearchConfig {
 		logger.info("Elasticsearch index prefix: {}", indexNamePrefix);
 		logger.info("Elasticsearch index application prefix: {}", indexNameApplicationPrefix);
 
-		RestClientBuilder restClientBuilder = RestClient.builder(getHttpHosts(urls));
-		restClientBuilder.setRequestConfigCallback(builder -> {
-			builder.setConnectionRequestTimeout(0); //Disable lease handling for the connection pool! See https://github.com/elastic/elasticsearch/issues/24069
-			return builder;
-		});
+		return ClientConfiguration.builder()
+				.connectedTo(getHosts(elasticsearchProperties().getUrls()))
+				.usingSsl("17723d59526b1454fc5ae88aff0089ac1e406e5d5cd907d47000d31729125b8f")
+				.withBasicAuth(elasticsearchUsername, elasticsearchPassword)
+				.withClientConfigurer(ElasticsearchClients.ElasticsearchRestClientConfigurationCallback
+						.from(restClientBuilder -> {
+							restClientBuilder.setRequestConfigCallback(builder -> {
+								builder.setConnectionRequestTimeout(0); //Disable lease handling for the connection pool! See https://github.com/elastic/elasticsearch/issues/24069
+								return builder;
+							});
 
-		if (elasticsearchUsername != null && !elasticsearchUsername.isEmpty()) {
-			final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-			credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(elasticsearchUsername, elasticsearchPassword));
-			restClientBuilder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-		}
-
-		if (awsRequestSigning != null && awsRequestSigning) {
-			restClientBuilder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.addInterceptorLast(awsInterceptor("es")));
-		}
-		return () -> new RestHighLevelClient(restClientBuilder);
+							if (awsRequestSigning != null && awsRequestSigning) {
+								restClientBuilder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder.addInterceptorLast(awsInterceptor("es")));
+							}
+							return restClientBuilder;
+						}))
+				.build();
 	}
 
 	private AWSRequestSigningApacheInterceptor awsInterceptor(String serviceName) {
@@ -89,12 +78,12 @@ public class ElasticsearchConfig {
 		return new AWSRequestSigningApacheInterceptor(serviceName, signer, credentialsProvider);
 	}
 
-	private static HttpHost[] getHttpHosts(String[] hosts) {
-		List<HttpHost> httpHosts = new ArrayList<>();
-		for (String host : hosts) {
-			httpHosts.add(HttpHost.create(host));
+	private String[] getHosts(String[] urls) {
+		List<String> hosts = new ArrayList<>();
+		for (String url : urls) {
+			hosts.add(HttpHost.create(url).toHostString());
 		}
-		return httpHosts.toArray(new HttpHost[]{});
+		return hosts.toArray(new String[]{});
 	}
 
 	@Bean
@@ -104,16 +93,15 @@ public class ElasticsearchConfig {
 
 	@Bean
 	public ElasticsearchConverter elasticsearchConverter() {
-		final String prefix = this.indexNamePrefix + this.indexNameApplicationPrefix;
-		SimpleElasticsearchMappingContext mappingContext = new OTFElasticsearchMappingContext(new IndexConfig(prefix, indexShards, indexReplicas));
+		SimpleElasticsearchMappingContext mappingContext = new SimpleElasticsearchMappingContext();
 		MappingElasticsearchConverter elasticsearchConverter = new MappingElasticsearchConverter(mappingContext);
 		elasticsearchConverter.setConversions(elasticsearchCustomConversions());
 		return elasticsearchConverter;
 	}
 
-	@Bean(name = { "elasticsearchOperations", "elasticsearchTemplate"})
-	public ElasticsearchRestTemplate elasticsearchRestTemplate() {
-		return new ElasticsearchRestTemplate(elasticsearchRestClient().rest(), elasticsearchConverter());
+	@Bean
+	public IndexNameProvider indexNameProvider(ElasticsearchProperties elasticsearchProperties) {
+		return new IndexNameProvider(elasticsearchProperties);
 	}
 
 	@Bean
