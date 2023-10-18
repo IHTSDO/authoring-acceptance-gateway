@@ -51,7 +51,6 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 
 		return ClientConfiguration.builder()
 				.connectedTo(getHosts(elasticsearchProperties().getUrls()))
-				.usingSsl("17723d59526b1454fc5ae88aff0089ac1e406e5d5cd907d47000d31729125b8f")
 				.withBasicAuth(elasticsearchUsername, elasticsearchPassword)
 				.withClientConfigurer(ElasticsearchClients.ElasticsearchRestClientConfigurationCallback
 						.from(restClientBuilder -> {
