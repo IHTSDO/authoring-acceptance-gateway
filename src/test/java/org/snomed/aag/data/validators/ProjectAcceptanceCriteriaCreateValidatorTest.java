@@ -2,14 +2,14 @@ package org.snomed.aag.data.validators;
 
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.data.domain.ProjectAcceptanceCriteria;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 class ProjectAcceptanceCriteriaCreateValidatorTest {
-    private final ElasticsearchRestTemplate elasticsearchRestTemplate = mock(ElasticsearchRestTemplate.class);
-    private final ProjectAcceptanceCriteriaCreateValidator target = new ProjectAcceptanceCriteriaCreateValidator(elasticsearchRestTemplate);
+    private final ElasticsearchTemplate elasticsearchTemplate = mock(ElasticsearchTemplate.class);
+    private final ProjectAcceptanceCriteriaCreateValidator target = new ProjectAcceptanceCriteriaCreateValidator(elasticsearchTemplate);
 
     @Test
     void validate_ShouldThrowException_WhenGivenNull() {

@@ -8,13 +8,15 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.Setting;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
-@Document(indexName = "project-criteria")
+@Document(indexName = "#{@indexNameProvider.getIndexNameWithPrefix('project-criteria')}")
+@Setting(settingPath = "elasticsearch-settings.json")
 public class ProjectAcceptanceCriteria {
 
 	@Id

@@ -6,12 +6,15 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.data.elasticsearch.annotations.Setting;
+
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-@Document(indexName = "criteria-item")
+@Document(indexName = "#{@indexNameProvider.getIndexNameWithPrefix('criteria-item')}")
+@Setting(settingPath = "elasticsearch-settings.json")
 public class CriteriaItem implements Comparable<CriteriaItem> {
 
 	public static final String PROJECT_CLASSIFICATION_CLEAN = "project-classification-clean";
