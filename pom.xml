@@ -81,6 +81,10 @@
 			<groupId>com.github.awslabs</groupId>
 			<artifactId>aws-request-signing-apache-interceptor</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>auth</artifactId>
+		</dependency>
 
 		<!-- SNOMED International Libraries -->
 		<dependency>
