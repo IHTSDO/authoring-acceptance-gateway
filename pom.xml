@@ -78,7 +78,7 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>com.github.awslabs</groupId>
+			<groupId>io.github.acm19</groupId>
 			<artifactId>aws-request-signing-apache-interceptor</artifactId>
 		</dependency>
 		<dependency>
