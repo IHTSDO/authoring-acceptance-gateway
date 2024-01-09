@@ -5,9 +5,13 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.RestClientException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.services.BranchSecurityService;
+import org.snomed.aag.data.services.ServiceRuntimeException;
 import org.snomed.aag.data.services.WhitelistService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,11 +22,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @RestController
 @Tag(name = "Whitelist")
 @RequestMapping(value = "/whitelist-items", produces = "application/json")
 public class WhitelistController {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WhitelistController.class);
 
     private final WhitelistService whitelistService;
     private final BranchSecurityService securityService;
@@ -69,11 +75,49 @@ public class WhitelistController {
     }
 
     @PostMapping
-    public ResponseEntity<WhitelistItem> addWhitelistItem(@RequestBody WhitelistItem whitelistItem) {
-        WhitelistItem savedWhitelistItem = whitelistService.create(whitelistItem);
-        return ResponseEntity
+    public ResponseEntity<WhitelistItem> addWhitelistItemOld(@RequestBody WhitelistItem whitelistItem) {
+        try {
+            validateSingleWhiteListItem(whitelistItem);
+
+            WhitelistItem savedWhitelistItem = whitelistService.create(whitelistItem);
+            return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(savedWhitelistItem);
+        } catch (ServiceRuntimeException ex) {
+            LOGGER.error("Unable to add whitelist item {}", whitelistItem);
+            LOGGER.error(ex.getMessage(), ex);
+        }
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    }
+
+    /**
+     * Validates a single WhitelistItem.
+     *
+     * @param whitelistItem The WhitelistItem to validate.
+     * @return true if the WhitelistItem is valid.
+     * @throws ServiceRuntimeException if the WhitelistItem is invalid.
+     */
+    private boolean validateSingleWhiteListItem(WhitelistItem whitelistItem) {
+        String error = "";
+
+        if (StringUtils.isEmpty(whitelistItem.getComponentId()) || !whitelistItem.getComponentId().matches("^\\d+$")) {
+            error += "Invalid component ID: '" + whitelistItem.getComponentId() + "'.\n";
+        }
+
+        if (StringUtils.isEmpty(whitelistItem.getConceptId()) || !whitelistItem.getConceptId().matches("^\\d+$")) {
+            error += "Invalid concept ID: '" + whitelistItem.getConceptId() + "'.\n";
+        }
+
+        if (StringUtils.isEmpty(whitelistItem.getBranch())) {
+            error += "Branch is mandatory.\n";
+        }
+
+        if (!error.isEmpty()) {
+            throw new ServiceRuntimeException(error);
+        }
+
+        return true;
     }
 
     @PutMapping(value = "/item/{id}")
