@@ -173,4 +173,21 @@ public class WhitelistItem {
     public int hashCode() {
         return Objects.hash(validationRuleId, componentId, conceptId, additionalFields);
     }
+
+    @Override
+    public String toString() {
+        return "WhitelistItem{" +
+                "id='" + id + '\'' +
+                ", userId='" + userId + '\'' +
+                ", creationDate=" + creationDate +
+                ", validationRuleId='" + validationRuleId + '\'' +
+                ", componentId='" + componentId + '\'' +
+                ", conceptId='" + conceptId + '\'' +
+                ", branch='" + branch + '\'' +
+                ", additionalFields='" + additionalFields + '\'' +
+                ", assertionFailureText='" + assertionFailureText + '\'' +
+                ", temporary=" + temporary +
+                ", reason='" + reason + '\'' +
+                '}';
+    }
 }
