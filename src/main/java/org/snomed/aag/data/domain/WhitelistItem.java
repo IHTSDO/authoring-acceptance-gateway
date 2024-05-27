@@ -193,12 +193,16 @@ public class WhitelistItem {
 
     public String toString(boolean shouldTruncate, int maxLength) {
         return "{\n\t" +
-                "\"conceptId\": " + (getConceptId() != null ? '\"' + getConceptId() + '\"' : null) + ",\n\t" +
-                "\"componentId\": " + (getComponentId() != null ? '\"' + getComponentId() + '\"' : null) + ",\n\t" +
-                "\"branchPath\": " + (getBranch() != null ? '\"' + getBranch() + '\"' : null) + ",\n\t" +
-                (getReason() != null ? "\"reason\": " + getReason() + ",\n\t" : "") +
-                "\"fullComponent\": " + (getAdditionalFields() != null && shouldTruncate ? '\"' + truncateText(getAdditionalFields(), maxLength) + '\"' : getAdditionalFields()) + "\n" +
+                "\"conceptId\": " + getTextOrNull(getConceptId()) + ",\n\t" +
+                "\"componentId\": " + getTextOrNull(getComponentId()) + ",\n\t" +
+                "\"branchPath\": " + getTextOrNull(getBranch()) + ",\n\t" +
+                (getReason() != null ? "\"reason\": " + getTextOrNull(getReason()) + ",\n\t" : "") +
+                "\"fullComponent\": " + (getAdditionalFields() != null && shouldTruncate ? '\"' + truncateText(getAdditionalFields(), maxLength) + '\"' : getTextOrNull(getAdditionalFields())) + "\n" +
                 "}";
+    }
+
+    String getTextOrNull(String text) {
+        return text != null ? '\"' + text + '\"' : null;
     }
 
     private String truncateText(String text, int maxLength) {
