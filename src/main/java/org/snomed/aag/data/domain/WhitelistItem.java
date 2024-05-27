@@ -190,4 +190,18 @@ public class WhitelistItem {
                 ", reason='" + reason + '\'' +
                 '}';
     }
+
+    public String toString(boolean shouldTruncate, int maxLength) {
+        return "{\n\t" +
+                "\"conceptId\": " + (getConceptId() != null ? '\"' + getConceptId() + '\"' : null) + ",\n\t" +
+                "\"componentId\": " + (getComponentId() != null ? '\"' + getComponentId() + '\"' : null) + ",\n\t" +
+                "\"branchPath\": " + (getBranch() != null ? '\"' + getBranch() + '\"' : null) + ",\n\t" +
+                (getReason() != null ? "\"reason\": " + getReason() + ",\n\t" : "") +
+                "\"fullComponent\": " + (getAdditionalFields() != null && shouldTruncate ? '\"' + truncateText(getAdditionalFields(), maxLength) + '\"' : getAdditionalFields()) + "\n" +
+                "}";
+    }
+
+    private String truncateText(String text, int maxLength) {
+        return text.length() <= maxLength ? text : text.substring(0, maxLength) + "...";
+    }
 }

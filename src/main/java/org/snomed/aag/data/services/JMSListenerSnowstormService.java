@@ -3,6 +3,10 @@ package org.snomed.aag.data.services;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import net.rcarz.jiraclient.Field;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraClient;
@@ -25,14 +29,14 @@ import jakarta.jms.TextMessage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class JMSListenerSnowstormService {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JMSListenerSnowstormService.class);
+	private static final int FULL_COMPONENT_MAX_LENGTH = 1000;
 	public static final int JIRA_SUMMARY_MAX_LENGTH = 255;
 
 	@Value("${snowstorm.url}")
@@ -85,26 +89,37 @@ public class JMSListenerSnowstormService {
 			final String codeSystemShortname = (String) message.get("codeSystemShortName");
 			final String codeSystemBranchPath = (String) message.get("codeSystemBranchPath");
 			final String effectiveDate = (String) message.get("effectiveDate");
-			List <WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(codeSystemBranchPath, null, WhitelistItem.WhitelistItemType.TEMPORARY, true, Constants.LARGE_PAGE);
-			for (WhitelistItem whitelistItem : whitelistItems) {
-				Issue newIssue = createJiraIssue(codeSystemShortname, generateSummary(whitelistItem, codeSystemShortname, effectiveDate), generateDescription(whitelistItem));
+			List<WhitelistItem> whitelistItems = whitelistService.findAllByBranchAndMinimumCreationDate(codeSystemBranchPath, null, WhitelistItem.WhitelistItemType.TEMPORARY, true, Constants.LARGE_PAGE);
+			Map<String, List<WhitelistItem>> assertionToWhitelistItemsMap = whitelistItems.stream().collect(
+					Collectors.groupingBy(WhitelistItem::getValidationRuleId, Collectors.toCollection(ArrayList::new))
+			);
+			for (Map.Entry<String, List<WhitelistItem>> entry : assertionToWhitelistItemsMap.entrySet()) {
+				Issue newIssue = createJiraIssue(codeSystemShortname, generateSummary(entry, codeSystemShortname, effectiveDate), generateDescription(entry));
 				LOGGER.info("New {} ticket has been created.", newIssue.getKey());
-				whitelistService.delete(whitelistItem);
+
+				// Add attachment and update JIRA custom fields
+				Issue.NewAttachment[] attachments = new Issue.NewAttachment[1];
+				attachments[0] = new Issue.NewAttachment(entry.getKey() + ".json", getPrettyString(generateAttachment(entry)).getBytes());
+				newIssue.addAttachments(attachments);
+
+				whitelistService.deleteAll(entry.getValue());
 			}
 		} catch (IOException e) {
 			LOGGER.error("Failed to parse message. Message: {}.", textMessage);
-		}
-	}
+		} catch (JiraException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	private String generateSummary(WhitelistItem whitelistItem, String codeSystemShortname, String effectiveDate) {
+	private String generateSummary(Map.Entry<String, List<WhitelistItem>> entry, String codeSystemShortname, String effectiveDate) {
 		String date = effectiveDate.substring(0, 4) + "-" + effectiveDate.substring(4,6) + "-" + effectiveDate.substring(6,8);
 		String product = null;
 		if (!CollectionUtils.isEmpty(jiraConfigMapping.getSnomedCtProducts()) &&
 				jiraConfigMapping.getSnomedCtProducts().containsKey(codeSystemShortname)) {
 			product = jiraConfigMapping.getSnomedCtProducts().get(codeSystemShortname);
 		}
-
-		String summary = product + ", " + date + ", " + whitelistItem.getValidationRuleId() + ", " + whitelistItem.getAssertionFailureText();
+		WhitelistItem firstItem = entry.getValue().get(0);
+		String summary = product + ", " + date + ", " + entry.getKey() + ", " + firstItem.getAssertionFailureText();
 		if (summary.length() > JIRA_SUMMARY_MAX_LENGTH) {
 			summary = summary.substring(0, JIRA_SUMMARY_MAX_LENGTH - 1);
 		}
@@ -112,20 +127,47 @@ public class JMSListenerSnowstormService {
 		return summary;
 	}
 
-	private String generateDescription(WhitelistItem whitelistItem) {
-		StringBuilder result = new StringBuilder();
-		result.append(whitelistItem.getAssertionFailureText()).append("\n")
-				.append("Concept ID: ").append(whitelistItem.getConceptId()).append("\n")
-				.append("Component ID: ").append(whitelistItem.getComponentId()).append("\n")
-				.append("Full Component: ").append(whitelistItem.getAdditionalFields()).append("\n")
-				.append("Branch Path: ").append(whitelistItem.getBranch()).append("\n");
-		if (whitelistItem.getReason() != null) {
-			result.append("Reason: ").append(whitelistItem.getReason()).append("\n");
+	private String generateDescription(Map.Entry<String, List<WhitelistItem>> entry) {
+		WhitelistItem firstItem = entry.getValue().get(0);
+		StringBuilder result = new StringBuilder(firstItem.getAssertionFailureText() + "\n"
+				+ "Total number of failures: " + entry.getValue().size() + "\n");
+		result.append("Environment: ").append(getEnvironment()).append("\n");
+		List<WhitelistItem> firstNInstances = getFirstNInstances(entry.getValue(), 10);
+		if (!firstNInstances.isEmpty()) {
+			result.append("First ").append(firstNInstances.size()).append(" failures: \n");
+			for (WhitelistItem whitelistItem: firstNInstances) {
+				result.append("* ").append(whitelistItem.toString(true, FULL_COMPONENT_MAX_LENGTH)).append("\n");
+			}
+		}
+		return result.toString();
+	}
+
+	private String generateAttachment(Map.Entry<String, List<WhitelistItem>> entry) {
+		WhitelistItem firstItem = entry.getValue().get(0);
+		return "{" +
+				"\"assertionUuid\": \"" + firstItem.getValidationRuleId() + '\"' +
+				", \"assertionText\": \"" + firstItem.getAssertionFailureText() + '\"' +
+				", \"failureCount\": " + entry.getValue().size() +
+				", \"firstNInstances\": [" + entry.getValue().stream().map(item -> item.toString(false, FULL_COMPONENT_MAX_LENGTH)).collect(Collectors.joining(",")) + "]" +
+				'}';
+	}
+
+	private List<WhitelistItem> getFirstNInstances(List<WhitelistItem> instances, int numberOfItem) {
+		if (instances == null) {
+			return Collections.emptyList();
+		}
+		if (numberOfItem < 0) {
+			return instances;
 		}
 
-		result.append("Environment: ").append(getEnvironment()).append("\n");
+		int firstNCount = Math.min(numberOfItem, instances.size());
+		return instances.subList(0, firstNCount);
+	}
 
-		return result.toString();
+	private String getPrettyString(String input) {
+		Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
+		JsonElement je = JsonParser.parseString(input);
+		return gson.toJson(je);
 	}
 
 	private String getEnvironment() {

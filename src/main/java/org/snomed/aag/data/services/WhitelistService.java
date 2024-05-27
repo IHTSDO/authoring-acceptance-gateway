@@ -152,4 +152,8 @@ public class WhitelistService {
 	public void delete(WhitelistItem item) {
 		repository.delete(item);
 	}
+
+	public void deleteAll(List<WhitelistItem> items) {
+		repository.deleteAll(items);
+	}
 }
