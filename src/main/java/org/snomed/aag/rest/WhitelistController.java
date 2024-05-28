@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 @RestController
 @Tag(name = "Whitelist")
@@ -101,7 +100,7 @@ public class WhitelistController {
     private boolean validateSingleWhiteListItem(WhitelistItem whitelistItem) {
         String error = "";
 
-        if (StringUtils.isEmpty(whitelistItem.getComponentId()) || !whitelistItem.getComponentId().matches("^\\d+$")) {
+        if (StringUtils.isEmpty(whitelistItem.getComponentId())) {
             error += "Invalid component ID: '" + whitelistItem.getComponentId() + "'.\n";
         }
 

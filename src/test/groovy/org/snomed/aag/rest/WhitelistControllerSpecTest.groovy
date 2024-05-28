@@ -21,8 +21,9 @@ class WhitelistControllerSpecTest extends Specification {
             result
 
         where:
-            testName | userId | componentId | conceptId | branch
-            "All OK" | "jco"  | "2"         | "3"       | "MAIN"
+            testName               | userId | componentId | conceptId | branch
+            "All OK"               | "jco"  | "2"         | "3"       | "MAIN"
+            "Component ID is text" | "jco"  | "A"         | "3"       | "MAIN"
     }
 
     def "test invalid whitelist content #testName"() {
@@ -48,7 +49,7 @@ class WhitelistControllerSpecTest extends Specification {
             "Component ID missing"    | "jco"  | null        | "3"       | "MAIN" || "Invalid component ID: 'null'.\n"
             "Concept ID missing"      | "jco"  | "2"         | null      | "MAIN" || "Invalid concept ID: 'null'.\n"
             "Branch missing"          | "jco"  | "2"         | "3"       | null   || "Branch is mandatory.\n"
-            "Component ID not number" | "jco"  | "A"         | "3"       | "MAIN" || "Invalid component ID: 'A'.\n"
+            "Component ID is empty"   | "jco"  | ""         | "3"       | "MAIN" || "Invalid component ID: ''.\n"
             "Concept ID not number"   | "jco"  | "2"         | "A"       | "MAIN" || "Invalid concept ID: 'A'.\n"
     }
 }
