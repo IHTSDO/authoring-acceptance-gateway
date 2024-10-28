@@ -38,6 +38,7 @@ public class WhitelistController {
     }
 
     @GetMapping
+    @Operation(summary = "Get page of whitelist items")
     public Page<WhitelistItem> findWhitelistItems(
             @RequestParam(required = false, defaultValue = "0") int page,
             @RequestParam(required = false, defaultValue = "100") int size) {
@@ -45,6 +46,7 @@ public class WhitelistController {
     }
 
     @GetMapping(value = "/item/{id}")
+    @Operation(summary = "Find whitelist item by id")
     public ResponseEntity<WhitelistItem> retrieveWhitelistItem(@PathVariable String id) {
         WhitelistItem item = whitelistService.findOrThrow(id);
         return ResponseEntity
@@ -74,6 +76,7 @@ public class WhitelistController {
     }
 
     @PostMapping
+    @Operation(summary = "Create a new whitelist item")
     public ResponseEntity<WhitelistItem> addWhitelistItemOld(@RequestBody WhitelistItem whitelistItem) {
         try {
             validateSingleWhiteListItem(whitelistItem);
@@ -120,6 +123,7 @@ public class WhitelistController {
     }
 
     @PutMapping(value = "/item/{id}")
+    @Operation(summary = "Update an existing whitelist item by id")
     public ResponseEntity<WhitelistItem> updateWhitelistItem(@PathVariable String id, @RequestBody WhitelistItem whitelistItem) {
         WhitelistItem persistedWhitelistItem = whitelistService.findOrThrow(id);
         persistedWhitelistItem.setAdditionalFields(whitelistItem.getAdditionalFields());
@@ -137,13 +141,14 @@ public class WhitelistController {
     }
 
     @DeleteMapping(value = "/item/{id}")
+    @Operation(summary = "Delete an existing whitelist item by id")
     public void deleteWhitelistItem(@PathVariable String id) {
         WhitelistItem item = whitelistService.findOrThrow(id);
         whitelistService.delete(item);
     }
 
     @GetMapping("/{branch}")
-    @Operation(summary = "When including descendant branches the search will not include branches from other code systems.")
+    @Operation(summary = "Find whitelist items by branch path")
     public ResponseEntity<?> findForBranch(@PathVariable String branch, @RequestParam(required = false) Long creationDate,
                                            @RequestParam(required = false, defaultValue = "true") boolean includeDescendants,
                                            @RequestParam(required = false, defaultValue = "ALL") WhitelistItem.WhitelistItemType type,
