@@ -69,6 +69,9 @@ public class JMSListenerSnowstormService {
 	@Value("${aag.jira.ticket.customField.reporting.stage.default.value}")
 	private String reportingStageDefaultValue;
 
+	@Value("${aag.jira.ticket.customField.product.release.date}")
+	private String productReleaseDate;
+
 	@Autowired
 	private WhitelistService whitelistService;
 
@@ -94,7 +97,7 @@ public class JMSListenerSnowstormService {
 					Collectors.groupingBy(WhitelistItem::getValidationRuleId, Collectors.toCollection(ArrayList::new))
 			);
 			for (Map.Entry<String, List<WhitelistItem>> entry : assertionToWhitelistItemsMap.entrySet()) {
-				Issue newIssue = createJiraIssue(codeSystemShortname, generateSummary(entry, codeSystemShortname, effectiveDate), generateDescription(entry));
+				Issue newIssue = createJiraIssue(codeSystemShortname, generateSummary(entry, codeSystemShortname, effectiveDate), generateDescription(entry), effectiveDate);
 				LOGGER.info("New {} ticket has been created.", newIssue.getKey());
 
 				// Add attachment and update JIRA custom fields
@@ -112,7 +115,7 @@ public class JMSListenerSnowstormService {
     }
 
 	private String generateSummary(Map.Entry<String, List<WhitelistItem>> entry, String codeSystemShortname, String effectiveDate) {
-		String date = effectiveDate.substring(0, 4) + "-" + effectiveDate.substring(4,6) + "-" + effectiveDate.substring(6,8);
+		String date = getDateAsString(effectiveDate);
 		String product = null;
 		if (!CollectionUtils.isEmpty(jiraConfigMapping.getSnomedCtProducts()) &&
 				jiraConfigMapping.getSnomedCtProducts().containsKey(codeSystemShortname)) {
@@ -125,6 +128,10 @@ public class JMSListenerSnowstormService {
 		}
 
 		return summary;
+	}
+
+	private String getDateAsString(String effectiveDate) {
+		return effectiveDate.substring(0, 4) + "-" + effectiveDate.substring(4,6) + "-" + effectiveDate.substring(6,8);
 	}
 
 	private String generateDescription(Map.Entry<String, List<WhitelistItem>> entry) {
@@ -183,7 +190,7 @@ public class JMSListenerSnowstormService {
 		return (domain.contains("-") ? domain.substring(0, domain.lastIndexOf("-")) : domain.substring(0, domain.indexOf("."))).toUpperCase();
 	}
 
-	private Issue createJiraIssue(String codeSystemShortname, String summary, String description) throws BusinessServiceException {
+	private Issue createJiraIssue(String codeSystemShortname, String summary, String description, String releaseDate) throws BusinessServiceException {
 		Issue jiraIssue;
 		try {
 			jiraIssue = getJiraClient().createIssue(project, issueType)
@@ -198,6 +205,7 @@ public class JMSListenerSnowstormService {
 
 			updateRequest.field(reportingEntity, Arrays.asList(reportingEntityDefaultValue));
 			updateRequest.field(reportingStage, Arrays.asList(reportingStageDefaultValue));
+			updateRequest.field(productReleaseDate, getDateAsString(releaseDate));
 
 			if (!CollectionUtils.isEmpty(jiraConfigMapping.getSnomedCtProducts()) &&
 				jiraConfigMapping.getSnomedCtProducts().containsKey(codeSystemShortname)) {
