@@ -1,6 +1,7 @@
 package org.snomed.aag.rest;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.snomed.aag.data.domain.CriteriaItem;
 import org.snomed.aag.data.pojo.CriteriaItemBulkLoadRequest;
@@ -26,6 +27,7 @@ public class CriteriaItemLibraryController {
 	private CriteriaItemService service;
 
 	@GetMapping(value = "/{branch}")
+	@Operation(summary = "Get page of criteria items by branch")
 	public Page<CriteriaItem> findCriteriaItems(
 			@PathVariable String branch,
 			@RequestParam(required = false, defaultValue = "0") int page,
@@ -36,6 +38,7 @@ public class CriteriaItemLibraryController {
 
 	@PostMapping
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
+	@Operation(summary = "Create new criteria item")
 	public ResponseEntity<Void> createCriteriaItem(@RequestBody @Valid CriteriaItem item) {
 		service.create(item);
 		return ControllerHelper.getCreatedResponse(item.getId());
@@ -43,6 +46,7 @@ public class CriteriaItemLibraryController {
 
 	@PostMapping(value = "/bulk-load")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
+	@Operation(summary = "Create batch of new criteria items")
 	public Collection<String> createCriteriaItemsInBulk(@RequestBody @Valid CriteriaItemBulkLoadRequest bulkItems) {
 		List<String> idList = new ArrayList<>();
 
@@ -55,6 +59,7 @@ public class CriteriaItemLibraryController {
 
 	@PutMapping(value = "/{id}")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
+	@Operation(summary = "Update existing criteria item by id")
 	public CriteriaItem updateCriteriaItem(@PathVariable String id, @RequestBody @Valid CriteriaItem item) {
 		if (!id.equals(item.getId())) {
 			throw new IllegalArgumentException("The id in the request URI does not match the id in the body.");
@@ -64,6 +69,7 @@ public class CriteriaItemLibraryController {
 
 	@DeleteMapping(value = "/{id}")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
+	@Operation(summary = "Delete existing criteria item by id")
 	public void deleteCriteriaItem(@PathVariable String id) {
 		CriteriaItem item = service.findByIdOrThrow(id);
 		service.delete(item);

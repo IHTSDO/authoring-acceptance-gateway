@@ -1,6 +1,7 @@
 package org.snomed.aag.rest;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.snomed.aag.data.domain.CriteriaItemSignOff;
@@ -24,6 +25,7 @@ public class AdminController {
 
 	@PostMapping("/criteria/{branchPath}/accept")
 	@PreAuthorize("hasPermission('ADMIN', #branchPath)")
+	@Operation(summary = "Approve all criteria by branch")
 	public ResponseEntity<?> signOffAllCriteriaItems(@PathVariable(name = "branchPath") String branchPath) throws RestClientException {
 		branchPath = BranchPathUriUtil.decodePath(branchPath);
 		Set<CriteriaItemSignOff> criteriaItemSignOffs = acceptanceService.acceptAllItemsForBranch(branchPath);
@@ -35,6 +37,7 @@ public class AdminController {
 
 	@DeleteMapping("/criteria/{branchPath}/accept")
 	@PreAuthorize("hasPermission('ADMIN', #branchPath)")
+	@Operation(summary = "Reject all criteria by branch")
 	public ResponseEntity<?> rejectAllCriteriaItems(@PathVariable(name = "branchPath") String branchPath) throws RestClientException {
 		branchPath = BranchPathUriUtil.decodePath(branchPath);
 		acceptanceService.rejectAllItemsForBranch(branchPath);

@@ -1,6 +1,7 @@
 package org.snomed.aag.rest;
 
 import io.kaicode.rest.util.branchpathrewrite.BranchPathUriUtil;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class AcceptanceCriteriaController {
 	}
 
 	@GetMapping
+	@Operation(summary = "Get page of criteria")
 	public Page<ProjectAcceptanceCriteria> findAll(
 			@RequestParam(required = false, defaultValue = "0") int page,
 			@RequestParam(required = false, defaultValue = "100") int size) {
@@ -38,6 +40,7 @@ public class AcceptanceCriteriaController {
 	}
 
 	@GetMapping("/{branch}")
+	@Operation(summary = "Get criteria by branch")
 	public ProjectAcceptanceCriteria findForBranch(@PathVariable String branch, @RequestParam(required = false) Integer projectIteration) {
 		branch = BranchPathUriUtil.decodePath(branch);
 		LOGGER.info("Finding ProjectAcceptanceCriteria for branch {}.", branch);
@@ -53,6 +56,7 @@ public class AcceptanceCriteriaController {
 
 	@PostMapping
 	@PreAuthorize("hasPermission('PROJECT_LEAD', #criteria.branchPath)")
+	@Operation(summary = "Create new criteria")
 	public ResponseEntity<Void> createProjectCriteria(@RequestBody @Valid ProjectAcceptanceCriteria criteria) {
 		LOGGER.info("Creating ProjectAcceptanceCriteria.");
 		LOGGER.debug("Creating {}.", criteria);
@@ -62,6 +66,7 @@ public class AcceptanceCriteriaController {
 
 	@PutMapping("/{branch}")
 	@PreAuthorize("hasPermission('PROJECT_LEAD', #branch)")
+	@Operation(summary = "Update existing criteria by branch")
 	public ProjectAcceptanceCriteria updateProjectCriteria(@PathVariable String branch, @RequestBody @Valid ProjectAcceptanceCriteria criteria,
 														   @RequestParam(required = false) Integer projectIteration) {
 		branch = BranchPathUriUtil.decodePath(branch);
@@ -83,6 +88,7 @@ public class AcceptanceCriteriaController {
 
 	@DeleteMapping("/{branch}")
 	@PreAuthorize("hasPermission('ADMIN', 'global')")
+	@Operation(summary = "Delete existing criteria by branch")
 	public void deleteProjectCriteria(@PathVariable String branch, @RequestParam(required = false) Integer projectIteration) {
 		branch = BranchPathUriUtil.decodePath(branch);
 		LOGGER.info("Deleting ProjectAcceptanceCriteria on branch {}.", branch);
