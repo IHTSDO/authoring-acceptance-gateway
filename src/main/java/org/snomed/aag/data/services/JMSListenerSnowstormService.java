@@ -48,9 +48,6 @@ public class JMSListenerSnowstormService {
 	@Value("${aag.jira.ticket.issueType}")
 	private String issueType;
 
-	@Value("${aag.jira.ticket.priority}")
-	private String priority;
-
 	@Value("${aag.jira.ticket.reporter}")
 	private String reporter;
 
@@ -199,7 +196,6 @@ public class JMSListenerSnowstormService {
 					.execute();
 
 			final Issue.FluentUpdate updateRequest = jiraIssue.update();
-			updateRequest.field(Field.PRIORITY, priority);
 			updateRequest.field(Field.ASSIGNEE, "");
 			updateRequest.field(Field.REPORTER, reporter);
 
