@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.aag.data.client.RVFClientFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -11,19 +13,19 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class ValidationService {
 
-	private final RestTemplate rvfRestTemplate;
+	private final RVFClientFactory rvfClientFactory;
 	private final ObjectMapper objectMapper;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ValidationService() {
-		rvfRestTemplate = new RestTemplate();
+	public ValidationService(@Autowired RVFClientFactory rvfClientFactory) {
+		this.rvfClientFactory = rvfClientFactory;
 		this.objectMapper = Jackson2ObjectMapperBuilder.json().failOnUnknownProperties(false).build();
 	}
 
 	public boolean isReportClean(String reportUrl, long headTimestampNow, String branchPath) {
 		// Check execution status, not stale and no failures
-		String validationReportString = rvfRestTemplate.getForObject(reportUrl, String.class);
+		String validationReportString = rvfClientFactory.getClient().getValidationReport(reportUrl);
 
 		try {
 			return doIsReportClean(validationReportString, reportUrl, headTimestampNow, branchPath);

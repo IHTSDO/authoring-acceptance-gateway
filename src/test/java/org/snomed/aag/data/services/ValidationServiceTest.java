@@ -2,6 +2,7 @@ package org.snomed.aag.data.services;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.snomed.aag.data.client.RVFClientFactory;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
@@ -15,7 +16,7 @@ class ValidationServiceTest {
 
 	@BeforeEach
 	void setup() {
-		validationService = new ValidationService();
+		validationService = new ValidationService(new RVFClientFactory());
 	}
 
 	@Test
