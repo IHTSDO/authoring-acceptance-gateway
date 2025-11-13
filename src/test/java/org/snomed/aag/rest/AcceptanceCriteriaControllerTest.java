@@ -612,7 +612,7 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
     }
 
     private String createProjectCriteria() {
-        return "/criteria/";
+        return "/criteria";
     }
 
     private String updateProjectCriteria(String branchPath, Integer projectIteration) {
