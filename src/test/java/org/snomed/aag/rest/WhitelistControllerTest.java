@@ -210,7 +210,7 @@ class WhitelistControllerTest extends AbstractTest {
     }
 
     private String addWhitelistItem() {
-        return "/whitelist-items/";
+        return "/whitelist-items";
     }
 
     private List<WhitelistItem> toWhitelistItems(String response) throws JsonProcessingException {

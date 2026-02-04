@@ -5,7 +5,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import co.elastic.clients.json.JsonData;
 
 import java.util.Collection;
-import java.util.function.BiFunction;
 
 public class QueryHelper {
 	public static Query termsQuery(String field, Collection<?> values) {
@@ -24,7 +23,14 @@ public class QueryHelper {
 		return new WildcardQuery.Builder().field(field).value(value).build()._toQuery();
 	}
 
-	public static Query rangeQuery(String field, Object value, BiFunction<RangeQuery.Builder, JsonData, RangeQuery.Builder> fn) {
-		return fn.apply(new RangeQuery.Builder().field(field), JsonData.of(value)).build()._toQuery();
+	public static Query rangeQueryGte(String field, Object value) {
+		JsonData jsonValue = JsonData.of(value);
+		return new RangeQuery.Builder()
+				.untyped(u -> {
+					u.field(field);
+					u.gte(jsonValue);
+					return u;
+				})
+				.build()._toQuery();
 	}
 }

@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
@@ -68,8 +67,7 @@ public class SecurityAndSwaggerConfig {
 					.anyRequest().authenticated());
 		}
 
-		http.exceptionHandling(c -> c.accessDeniedHandler(new AccessDeniedExceptionHandler()))
-				.httpBasic(Customizer.withDefaults());
+		http.exceptionHandling(c -> c.accessDeniedHandler(new AccessDeniedExceptionHandler()));
 
 		return http.build();
 	}

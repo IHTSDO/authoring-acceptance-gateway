@@ -1,7 +1,6 @@
 package org.snomed.aag.data.services;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import org.ihtsdo.sso.integration.SecurityUtil;
 import org.snomed.aag.data.domain.WhitelistItem;
 import org.snomed.aag.data.repositories.WhitelistItemRepository;
@@ -83,7 +82,7 @@ public class WhitelistService {
 		}
 
 		Query creationDateQuery = bool(b -> b
-				.must(rangeQuery(WhitelistItem.Fields.CREATION_DATE, creationDate.getTime(), RangeQuery.Builder::gte)));
+				.must(rangeQueryGte(WhitelistItem.Fields.CREATION_DATE, creationDate.getTime())));
 
 		NativeQueryBuilder nativeQueryBuilder = new NativeQueryBuilder()
 				.withQuery(bool(b -> b

@@ -1,5 +1,6 @@
 package org.snomed.aag.rest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -7,9 +8,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.util.UriComponentsBuilder;
 
 public class ControllerHelper {
 
@@ -24,7 +23,7 @@ public class ControllerHelper {
 
 		String requestUrl = request.getRequestURL().toString();
 		HttpHeaders httpHeaders = new HttpHeaders();
-		httpHeaders.setLocation(ServletUriComponentsBuilder.fromHttpUrl(requestUrl).path("/{id}").buildAndExpand(id).toUri());
+		httpHeaders.setLocation(UriComponentsBuilder.fromUriString(requestUrl).path("/{id}").buildAndExpand(id).toUri());
 		return httpHeaders;
 	}
 }
