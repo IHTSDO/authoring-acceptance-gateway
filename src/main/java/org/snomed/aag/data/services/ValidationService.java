@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.client.RVFClientFactory;
+import org.snomed.aag.data.pojo.ValidationReport;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 public class ValidationService {
@@ -70,79 +70,5 @@ public class ValidationService {
 		}
 
 		return validationReport.hasNoErrorsOrWarnings();
-	}
-
-	private static final class ValidationReport {
-
-		public static final String COMPLETE = "COMPLETE";
-
-		private String status;
-		private RvfValidationResult rvfValidationResult;
-
-		public boolean isComplete() {
-			return COMPLETE.equals(status);
-		}
-
-		public Long getContentHeadTimestamp() {
-			return rvfValidationResult.getContentHeadTimestamp();
-		}
-
-		public boolean hasNoErrorsOrWarnings() {
-			return rvfValidationResult.hasNoErrorsOrWarnings();
-		}
-
-		public String getStatus() {
-			return status;
-		}
-
-		public RvfValidationResult getRvfValidationResult() {
-			return rvfValidationResult;
-		}
-
-		private static final class RvfValidationResult {
-
-			private ValidationConfig validationConfig;
-			private TestResult testResult;
-
-			public Long getContentHeadTimestamp() {
-				return validationConfig.getContentHeadTimestamp();
-			}
-
-			public boolean hasNoErrorsOrWarnings() {
-				return getTestResult().getTotalFailures() == 0 && getTestResult().getTotalWarnings() == 0;
-			}
-
-			public ValidationConfig getValidationConfig() {
-				return validationConfig;
-			}
-
-			public TestResult getTestResult() {
-				return testResult;
-			}
-
-			private static final class ValidationConfig {
-
-				private String contentHeadTimestamp;
-
-				public Long getContentHeadTimestamp() {
-					return contentHeadTimestamp != null ? Long.parseLong(contentHeadTimestamp) : null;
-				}
-			}
-
-			private static final class TestResult {
-
-				private Integer totalFailures;
-				private Integer totalWarnings;
-
-				public Integer getTotalFailures() {
-					return totalFailures;
-				}
-
-				public Integer getTotalWarnings() {
-					return totalWarnings;
-				}
-			}
-		}
-
 	}
 }
