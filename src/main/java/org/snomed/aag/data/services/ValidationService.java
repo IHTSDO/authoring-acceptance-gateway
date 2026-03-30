@@ -57,6 +57,11 @@ public class ValidationService {
 			return false;
 		}
 
+		if (validationReport.getRvfValidationResult() == null) {
+			logger.warn("Validation report on {} completed but the rvfValidationResult is null", branchPath);
+			return false;
+		}
+
 		final Long reportContentHeadTimestamp = validationReport.getContentHeadTimestamp();
 		if (reportContentHeadTimestamp == null) {
 			logger.info("Validation report on {} completed but contentHeadTimestamp is missing.", branchPath);
