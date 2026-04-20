@@ -7,29 +7,30 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import net.rcarz.jiraclient.Field;
-import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.JiraClient;
-import net.rcarz.jiraclient.JiraException;
+import jakarta.jms.JMSException;
+import jakarta.jms.TextMessage;
+import net.sf.json.JSONObject;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.Constants;
 import org.snomed.aag.data.domain.WhitelistItem;
-import org.snomed.aag.data.jira.ImpersonatingJiraClientFactory;
+import org.snomed.aag.data.jira.JiraCloudClient;
 import org.snomed.aag.data.jira.JiraConfigMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.TextMessage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -39,6 +40,11 @@ public class JMSListenerSnowstormService {
 	private static final int FULL_COMPONENT_MAX_LENGTH = 1000;
 	public static final int JIRA_SUMMARY_MAX_LENGTH = 255;
 
+	public static final String VALUE = "value";
+
+	@Value("${aag.jira.ticket.generation.enabled}")
+	private boolean ticketGenrationEnabled;
+
 	@Value("${snowstorm.url}")
 	private String snowstormUrl;
 
@@ -47,6 +53,9 @@ public class JMSListenerSnowstormService {
 
 	@Value("${aag.jira.ticket.issueType}")
 	private String issueType;
+
+	@Value("${jira.cloud.reporter-accountid}")
+	private String reporterAccountId;
 
 	@Value("${aag.jira.ticket.reporter}")
 	private String reporter;
@@ -70,18 +79,20 @@ public class JMSListenerSnowstormService {
 	private String productReleaseDate;
 
 	@Autowired
-	private WhitelistService whitelistService;
-
-	@Autowired
 	private JiraConfigMapping jiraConfigMapping;
 
 	@Autowired
-	private ImpersonatingJiraClientFactory jiraClientFactory;
+	private WhitelistService whitelistService;
+
+	@Autowired
+	private JiraCloudClient jiraCloudClient;
 
 	@JmsListener(destination = "${snowstorm.jms.queue.prefix}.versioning.complete", containerFactory = "topicJmsListenerContainerFactory")
 	void messageConsumer(TextMessage textMessage) throws JMSException, BusinessServiceException {
 		try {
 			LOGGER.info("receiveVersionCompleteEvent {}", textMessage);
+			if (!ticketGenrationEnabled) return;
+
 			ObjectMapper objectMapper =  new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
 					.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 			final Map <String, Object> message = objectMapper.readValue(textMessage.getText(), Map.class);
@@ -94,21 +105,20 @@ public class JMSListenerSnowstormService {
 					Collectors.groupingBy(WhitelistItem::getValidationRuleId, Collectors.toCollection(ArrayList::new))
 			);
 			for (Map.Entry<String, List<WhitelistItem>> entry : assertionToWhitelistItemsMap.entrySet()) {
-				Issue newIssue = createJiraIssue(codeSystemShortname, generateSummary(entry, codeSystemShortname, effectiveDate), generateDescription(entry), effectiveDate);
-				LOGGER.info("New {} ticket has been created.", newIssue.getKey());
+				String issueKey = createJiraIssue(generateSummary(entry, codeSystemShortname, effectiveDate), generateDescription(entry));
+				LOGGER.info("New {} ticket has been created.", issueKey);
 
 				// Add attachment and update JIRA custom fields
-				Issue.NewAttachment[] attachments = new Issue.NewAttachment[1];
-				attachments[0] = new Issue.NewAttachment(entry.getKey() + ".json", getPrettyString(generateAttachment(entry)).getBytes());
-				newIssue.addAttachments(attachments);
+				jiraCloudClient.addAttachment(issueKey, entry.getKey() + ".json", getPrettyString(generateAttachment(entry)).getBytes());
+
+				// Update other fields
+				updateJiraIssue(issueKey, codeSystemShortname, effectiveDate);
 
 				whitelistService.deleteAll(entry.getValue());
 			}
 		} catch (IOException e) {
 			LOGGER.error("Failed to parse message. Message: {}.", textMessage);
-		} catch (JiraException e) {
-            throw new RuntimeException(e);
-        }
+		}
     }
 
 	private String generateSummary(Map.Entry<String, List<WhitelistItem>> entry, String codeSystemShortname, String effectiveDate) {
@@ -119,7 +129,7 @@ public class JMSListenerSnowstormService {
 			product = jiraConfigMapping.getSnomedCtProducts().get(codeSystemShortname);
 		}
 		WhitelistItem firstItem = entry.getValue().get(0);
-		String summary = product + ", " + date + ", " + entry.getKey() + ", " + firstItem.getAssertionFailureText();
+		String summary = (product != null ? product : codeSystemShortname) + ", " + date + ", " + entry.getKey() + ", " + firstItem.getAssertionFailureText();
 		if (summary.length() > JIRA_SUMMARY_MAX_LENGTH) {
 			summary = summary.substring(0, JIRA_SUMMARY_MAX_LENGTH - 1);
 		}
@@ -128,14 +138,16 @@ public class JMSListenerSnowstormService {
 	}
 
 	private String getDateAsString(String effectiveDate) {
-		return effectiveDate.substring(0, 4) + "-" + effectiveDate.substring(4,6) + "-" + effectiveDate.substring(6,8);
+		return effectiveDate != null ?  effectiveDate.substring(0, 4) + "-" + effectiveDate.substring(4,6) + "-" + effectiveDate.substring(6,8) : null;
 	}
 
 	private String generateDescription(Map.Entry<String, List<WhitelistItem>> entry) {
 		WhitelistItem firstItem = entry.getValue().get(0);
-		StringBuilder result = new StringBuilder(firstItem.getAssertionFailureText() + "\n"
-				+ "Total number of failures: " + entry.getValue().size() + "\n");
+		StringBuilder result = new StringBuilder();
 		result.append("Environment: ").append(getEnvironment()).append("\n");
+		result.append("User: ").append(reporter).append("\n").append("\n");
+
+		result.append(firstItem.getAssertionFailureText()).append("\n").append("Total number of failures: ").append(entry.getValue().size()).append("\n");
 		List<WhitelistItem> firstNInstances = getFirstNInstances(entry.getValue(), 10);
 		if (!firstNInstances.isEmpty()) {
 			result.append("First ").append(firstNInstances.size()).append(" failures: \n");
@@ -187,37 +199,38 @@ public class JMSListenerSnowstormService {
 		return (domain.contains("-") ? domain.substring(0, domain.lastIndexOf("-")) : domain.substring(0, domain.indexOf("."))).toUpperCase();
 	}
 
-	private Issue createJiraIssue(String codeSystemShortname, String summary, String description, String releaseDate) throws BusinessServiceException {
-		Issue jiraIssue;
+	private String createJiraIssue(String summary, String description) throws BusinessServiceException {
 		try {
-			jiraIssue = getJiraClient().createIssue(project, issueType)
-					.field(Field.SUMMARY, summary)
-					.field(Field.DESCRIPTION, description)
-					.execute();
-
-			final Issue.FluentUpdate updateRequest = jiraIssue.update();
-			updateRequest.field(Field.ASSIGNEE, "");
-			updateRequest.field(Field.REPORTER, reporter);
-
-			updateRequest.field(reportingEntity, Arrays.asList(reportingEntityDefaultValue));
-			updateRequest.field(reportingStage, Arrays.asList(reportingStageDefaultValue));
-			updateRequest.field(productReleaseDate, getDateAsString(releaseDate));
-
-			if (!CollectionUtils.isEmpty(jiraConfigMapping.getSnomedCtProducts()) &&
-				jiraConfigMapping.getSnomedCtProducts().containsKey(codeSystemShortname)) {
-				updateRequest.field(snomedCtProduct, Arrays.asList(jiraConfigMapping.getSnomedCtProducts().get(codeSystemShortname)));
-			}
-
-			updateRequest.execute();
-		} catch (JiraException e) {
-			LOGGER.error(e.getMessage());
-			throw new BusinessServiceException("Failed to create Jira task. Error: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()), e);
+			JSONObject issue = jiraCloudClient.createIssue(project, summary, description, issueType, reporterAccountId);
+			return issue.getString("key");
+		} catch (IOException e) {
+			throw new BusinessServiceException("Failed to create Jira ticket. Error: " + e.getMessage(), e);
 		}
-
-		return jiraIssue;
 	}
 
-	private JiraClient getJiraClient() {
-		return jiraClientFactory.getImpersonatingInstance(reporter);
+	private void updateJiraIssue(String issueKey, String codeSystemShortname, String releaseDate) throws BusinessServiceException {
+		try {
+			JSONObject issueFields = new JSONObject();
+
+			issueFields.put(productReleaseDate, getDateAsString(releaseDate));
+
+			JSONObject reportingEntityField = new JSONObject();
+			reportingEntityField.put(VALUE, reportingEntityDefaultValue);
+			issueFields.put(reportingEntity, reportingEntityField);
+
+			JSONObject reportingStageField = new JSONObject();
+			reportingStageField.put(VALUE, reportingStageDefaultValue);
+			issueFields.put(reportingStage, Collections.singletonList(reportingStageField));
+
+			if (StringUtils.hasLength(codeSystemShortname) && jiraConfigMapping.getSnomedCtProducts().containsKey(codeSystemShortname)) {
+				JSONObject snomedCtProductField = new JSONObject();
+				snomedCtProductField.put(VALUE, jiraConfigMapping.getSnomedCtProducts().get(codeSystemShortname));
+				issueFields.put(snomedCtProduct, snomedCtProductField);
+			}
+
+			jiraCloudClient.updateIssue(issueKey, issueFields);
+		} catch (IOException e) {
+			throw new BusinessServiceException("Jira ticket has been created successfully but failed to update. Error: " + e.getMessage(), e);
+		}
 	}
 }
