@@ -78,20 +78,21 @@ public class JMSListenerSnowstormService {
 	@Value("${aag.jira.ticket.customField.product.release.date}")
 	private String productReleaseDate;
 
-	@Autowired
-	private JiraConfigMapping jiraConfigMapping;
+	private final JiraConfigMapping jiraConfigMapping;
+	private final WhitelistService whitelistService;
+	private final JiraCloudClient jiraCloudClient;
 
 	@Autowired
-	private WhitelistService whitelistService;
-
-	@Autowired
-	private JiraCloudClient jiraCloudClient;
+	public JMSListenerSnowstormService(JiraConfigMapping jiraConfigMapping, WhitelistService whitelistService, JiraCloudClient jiraCloudClient) {
+		this.jiraConfigMapping = jiraConfigMapping;
+		this.whitelistService = whitelistService;
+		this.jiraCloudClient = jiraCloudClient;
+	}
 
 	@JmsListener(destination = "${snowstorm.jms.queue.prefix}.versioning.complete", containerFactory = "topicJmsListenerContainerFactory")
 	void messageConsumer(TextMessage textMessage) throws JMSException, BusinessServiceException {
 		try {
 			LOGGER.info("receiveVersionCompleteEvent {}", textMessage);
-			if (!ticketGenrationEnabled) return;
 
 			ObjectMapper objectMapper =  new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT)
 					.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -105,15 +106,17 @@ public class JMSListenerSnowstormService {
 					Collectors.groupingBy(WhitelistItem::getValidationRuleId, Collectors.toCollection(ArrayList::new))
 			);
 			for (Map.Entry<String, List<WhitelistItem>> entry : assertionToWhitelistItemsMap.entrySet()) {
-				String issueKey = createJiraIssue(generateSummary(entry, codeSystemShortname, effectiveDate), generateDescription(entry));
-				LOGGER.info("New {} ticket has been created.", issueKey);
+				if (ticketGenrationEnabled) {
+					String issueKey = createJiraIssue(generateSummary(entry, codeSystemShortname, effectiveDate), generateDescription(entry));
+					LOGGER.info("New {} ticket has been created.", issueKey);
 
-				// Add attachment and update JIRA custom fields
-				jiraCloudClient.addAttachment(issueKey, entry.getKey() + ".json", getPrettyString(generateAttachment(entry)).getBytes());
+					// Add attachment and update JIRA custom fields
+					jiraCloudClient.addAttachment(issueKey, entry.getKey() + ".json", getPrettyString(generateAttachment(entry)).getBytes());
 
-				// Update other fields
-				updateJiraIssue(issueKey, codeSystemShortname, effectiveDate);
-
+					// Update other fields
+					updateJiraIssue(issueKey, codeSystemShortname, effectiveDate);
+				}
+				// Delete TEMPORARY exceptions
 				whitelistService.deleteAll(entry.getValue());
 			}
 		} catch (IOException e) {
