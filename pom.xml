@@ -13,6 +13,7 @@
 	<name>Authoring Acceptance Gateway</name>
 	<description>Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.</description>
 	<properties>
+		<java.version>25</java.version>
 		<packageName>${project.artifactId}</packageName>
 	</properties>
 	<dependencies>
