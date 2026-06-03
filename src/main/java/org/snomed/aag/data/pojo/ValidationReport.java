@@ -11,11 +11,11 @@ public class ValidationReport {
     }
 
     public Long getContentHeadTimestamp() {
-        return rvfValidationResult.getContentHeadTimestamp();
+        return rvfValidationResult == null ? null : rvfValidationResult.getContentHeadTimestamp();
     }
 
     public boolean hasNoErrorsOrWarnings() {
-        return rvfValidationResult.hasNoErrorsOrWarnings();
+        return rvfValidationResult != null && rvfValidationResult.hasNoErrorsOrWarnings();
     }
 
     public String getStatus() {

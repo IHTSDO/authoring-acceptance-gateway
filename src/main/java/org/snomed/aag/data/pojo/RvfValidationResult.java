@@ -9,7 +9,7 @@ public class RvfValidationResult {
     }
 
     public boolean hasNoErrorsOrWarnings() {
-        return getTestResult().getTotalFailures() == 0 && getTestResult().getTotalWarnings() == 0;
+        return testResult != null && testResult.getTotalFailures() == 0 && testResult.getTotalWarnings() == 0;
     }
 
     public ValidationConfig getValidationConfig() {

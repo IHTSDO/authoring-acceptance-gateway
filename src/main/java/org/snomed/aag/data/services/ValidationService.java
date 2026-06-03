@@ -49,7 +49,7 @@ public class ValidationService {
 		try {
 			logger.info("Fetched {}", objectMapper.writeValueAsString(validationReport));
 		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+			logger.warn("Failed to serialise validation report for logging", e);
 		}
 
 		if (!validationReport.isComplete()) {
