@@ -1,5 +1,7 @@
 package org.snomed.aag.data.pojo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class ValidationReport {
     public static final String COMPLETE = "COMPLETE";
 
@@ -10,10 +12,12 @@ public class ValidationReport {
         return COMPLETE.equals(status);
     }
 
+    @JsonIgnore
     public Long getContentHeadTimestamp() {
         return rvfValidationResult == null ? null : rvfValidationResult.getContentHeadTimestamp();
     }
 
+    @JsonIgnore
     public boolean hasNoErrorsOrWarnings() {
         return rvfValidationResult != null && rvfValidationResult.hasNoErrorsOrWarnings();
     }

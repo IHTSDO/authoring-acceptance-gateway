@@ -5,7 +5,7 @@ public class RvfValidationResult {
     private TestResult testResult;
 
     public Long getContentHeadTimestamp() {
-        return validationConfig.getContentHeadTimestamp();
+        return validationConfig != null ? validationConfig.getContentHeadTimestamp() : null;
     }
 
     public boolean hasNoErrorsOrWarnings() {
