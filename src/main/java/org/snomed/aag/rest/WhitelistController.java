@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.domain.WhitelistItem;
@@ -77,7 +78,7 @@ public class WhitelistController {
 
     @PostMapping
     @Operation(summary = "Create a new whitelist item")
-    public ResponseEntity<WhitelistItem> addWhitelistItemOld(@RequestBody WhitelistItem whitelistItem) {
+    public ResponseEntity<WhitelistItem> addWhitelistItemOld(@RequestBody WhitelistItem whitelistItem) throws BadRequestException {
         try {
             validateSingleWhiteListItem(whitelistItem);
 
@@ -97,10 +98,9 @@ public class WhitelistController {
      * Validates a single WhitelistItem.
      *
      * @param whitelistItem The WhitelistItem to validate.
-     * @return true if the WhitelistItem is valid.
      * @throws ServiceRuntimeException if the WhitelistItem is invalid.
      */
-    private boolean validateSingleWhiteListItem(WhitelistItem whitelistItem) {
+    private void validateSingleWhiteListItem(WhitelistItem whitelistItem) throws BadRequestException {
         String error = "";
 
         if (StringUtils.isEmpty(whitelistItem.getComponentId())) {
@@ -116,10 +116,8 @@ public class WhitelistController {
         }
 
         if (!error.isEmpty()) {
-            throw new ServiceRuntimeException(error);
+            throw new BadRequestException(error);
         }
-
-        return true;
     }
 
     @PutMapping(value = "/item/{id}")

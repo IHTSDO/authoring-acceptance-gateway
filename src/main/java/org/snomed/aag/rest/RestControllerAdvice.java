@@ -1,5 +1,6 @@
 package org.snomed.aag.rest;
 
+import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.services.NotFoundException;
@@ -33,7 +34,8 @@ public class RestControllerAdvice {
 			HttpMediaTypeNotSupportedException.class,
 			MethodArgumentNotValidException.class,
 			MethodArgumentTypeMismatchException.class,
-			MissingServletRequestParameterException.class
+			MissingServletRequestParameterException.class,
+			BadRequestException.class
 	})
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
 	@ResponseBody

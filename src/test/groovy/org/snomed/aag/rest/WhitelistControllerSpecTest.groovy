@@ -1,7 +1,7 @@
 package org.snomed.aag.rest
 
+import org.ihtsdo.otf.rest.exception.BadRequestException
 import org.snomed.aag.data.domain.WhitelistItem
-import org.snomed.aag.data.services.ServiceRuntimeException
 import spock.lang.Specification
 
 class WhitelistControllerSpecTest extends Specification {
@@ -15,10 +15,10 @@ class WhitelistControllerSpecTest extends Specification {
             ])
 
         when:
-            def result = (new WhitelistController(null, null)).validateSingleWhiteListItem(wli)
+            (new WhitelistController(null, null)).validateSingleWhiteListItem(wli)
 
         then:
-            result
+            noExceptionThrown()
 
         where:
             testName               | userId | componentId | conceptId | branch
@@ -39,7 +39,7 @@ class WhitelistControllerSpecTest extends Specification {
             (new WhitelistController(null, null)).validateSingleWhiteListItem(wli)
 
         then:
-            def error = thrown(ServiceRuntimeException)
+            def error = thrown(BadRequestException)
             error.message == expectedMessage
 
         where:
