@@ -1,8 +1,7 @@
 package org.snomed.aag.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +29,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = TestConfig.class)
 class AcceptanceControllerTest extends AbstractTest {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private AcceptanceController acceptanceController;
     private AcceptanceCriteriaController acceptanceCriteriaController;
@@ -1020,7 +1018,7 @@ class AcceptanceControllerTest extends AbstractTest {
         assertResponseStatus(resultActions, 200);
     }
 
-    private ProjectAcceptanceCriteriaDTO toProjectAcceptCriteria(String response) throws JsonProcessingException {
+    private ProjectAcceptanceCriteriaDTO toProjectAcceptCriteria(String response) throws JacksonException {
         return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
     }

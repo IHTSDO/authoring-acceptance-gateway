@@ -41,7 +41,7 @@ public class RestControllerAdvice {
 	@ResponseBody
 	public Map<String, Object> handleIllegalArgumentException(Exception exception) {
 		HashMap<String, Object> result = new HashMap<>();
-		result.put("error", HttpStatus.BAD_REQUEST);
+		result.put("error", HttpStatus.BAD_REQUEST.name());
 		result.put("message", exception.getMessage());
 		if (exception.getCause() != null) {
 			result.put("causeMessage", exception.getCause().getMessage());
@@ -56,7 +56,7 @@ public class RestControllerAdvice {
 	@ResponseBody
 	public Map<String,Object> handleNotFoundException(Exception exception) {
 		HashMap<String, Object> result = new HashMap<>();
-		result.put("error", HttpStatus.NOT_FOUND);
+		result.put("error", HttpStatus.NOT_FOUND.name());
 		result.put("message", exception.getMessage());
 		logger.debug("Not Found {}", exception.getMessage(), exception);
 		return result;
@@ -67,7 +67,7 @@ public class RestControllerAdvice {
 	@ResponseBody
 	public Map<String,Object> handleAccessDeniedException(AccessDeniedException exception) {
 		HashMap<String, Object> result = new HashMap<>();
-		result.put("error", HttpStatus.FORBIDDEN);
+		result.put("error", HttpStatus.FORBIDDEN.name());
 		result.put("message", exception.getMessage());
 		return result;
 	}
@@ -79,7 +79,7 @@ public class RestControllerAdvice {
 		logger.error("Failed to run Elasticsearch query; returning {} to client.", HttpStatus.INTERNAL_SERVER_ERROR.value());
 		logger.debug("ElasticsearchStatusException: " + exception.toString());
 		HashMap<String, Object> result = new HashMap<>();
-		result.put("error", HttpStatus.INTERNAL_SERVER_ERROR);
+		result.put("error", HttpStatus.INTERNAL_SERVER_ERROR.name());
 		result.put("message", exception.getMessage());
 		return result;
 	}

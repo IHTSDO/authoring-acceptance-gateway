@@ -1,8 +1,9 @@
 package org.snomed.aag;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.pojo.Branch;
 import org.junit.jupiter.api.AfterEach;
@@ -39,12 +40,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ContextConfiguration(classes = TestConfig.class)
 public abstract class AbstractTest {
-	protected static final ObjectMapper OBJECT_MAPPER;
-
-	static {
-		OBJECT_MAPPER = new ObjectMapper();
-		OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-	}
+	protected static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	@Autowired
 	protected CriteriaItemRepository criteriaItemRepository;
@@ -159,15 +157,15 @@ public abstract class AbstractTest {
 		SecurityContextHolder.setContext(securityContext);
 	}
 
-	protected String buildErrorResponse(HttpStatus error, String message) throws JsonProcessingException {
+	protected String buildErrorResponse(HttpStatus error, String message) throws JacksonException {
 		Map<String, Object> response = new HashMap<>();
-		response.put("error", error);
+		response.put("error", error.name());
 		response.put("message", message);
 
 		return OBJECT_MAPPER.writeValueAsString(response);
 	}
 
-	protected String buildErrorResponse(int error, String message) throws JsonProcessingException {
+	protected String buildErrorResponse(int error, String message) throws JacksonException {
 		Map<String, Object> response = new HashMap<>();
 		response.put("error", error);
 		response.put("message", message);
@@ -196,7 +194,7 @@ public abstract class AbstractTest {
 		return branch.replaceAll("/", "|");
 	}
 
-	protected String asJson(Object input) throws JsonProcessingException {
+	protected String asJson(Object input) throws JacksonException {
 		return OBJECT_MAPPER.writeValueAsString(input);
 	}
 

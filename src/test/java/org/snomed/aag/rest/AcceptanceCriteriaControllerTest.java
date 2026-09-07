@@ -1,7 +1,7 @@
 package org.snomed.aag.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import org.ihtsdo.otf.rest.client.traceability.RestResponsePage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -645,13 +645,13 @@ class AcceptanceCriteriaControllerTest extends AbstractTest {
         criteriaItemRepository.save(criteriaItem);
     }
 
-    private List<ProjectAcceptanceCriteria> toProjectAcceptCriterias(String response) throws JsonProcessingException {
+    private List<ProjectAcceptanceCriteria> toProjectAcceptCriterias(String response) throws JacksonException {
         RestResponsePage<ProjectAcceptanceCriteria> restResponsePage = OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
         return restResponsePage.getContent();
     }
 
-    private ProjectAcceptanceCriteria toProjectAcceptCriteria(String response) throws JsonProcessingException {
+    private ProjectAcceptanceCriteria toProjectAcceptCriteria(String response) throws JacksonException {
         return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
     }

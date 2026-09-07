@@ -27,7 +27,7 @@ public class AccessDeniedExceptionHandler implements AccessDeniedHandler {
 
 	private Map<String, String> getErrorPayload(Exception exception, HttpStatus httpStatus) {
 		Map<String, String> result = new HashMap<>();
-		result.put("error", httpStatus.toString());
+		result.put("error", httpStatus.name());
 		result.put("message", exception.getMessage());
 		return result;
 	}
