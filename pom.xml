@@ -5,11 +5,11 @@
 	<parent>
 		<groupId>org.snomed</groupId>
 		<artifactId>snomed-parent-bom</artifactId>
-		<version>4.1.0-SNAPSHOT</version>
+		<version>5.0.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>authoring-acceptance-gateway</artifactId>
-	<version>4.1.0-SNAPSHOT</version>
+	<version>5.0.0-SNAPSHOT</version>
 	<name>Authoring Acceptance Gateway</name>
 	<description>Microservice to ensure service acceptance criteria are met before content promotion within the SNOMED CT Authoring Platform.</description>
 	<properties>
@@ -23,6 +23,23 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<!--
+		Spring Boot 4 split spring-boot-autoconfigure into per-feature modules.
+		These are referenced directly (RestTemplateBuilder / auto-config exclusions),
+		so the modules have to be declared explicitly.
+		-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-restclient</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-elasticsearch</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-data-elasticsearch</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -136,12 +153,12 @@
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>elasticsearch</artifactId>
+			<artifactId>testcontainers-elasticsearch</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>junit-jupiter</artifactId>
+			<artifactId>testcontainers-junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

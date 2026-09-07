@@ -1,25 +1,23 @@
 package org.snomed.aag.config.elasticsearch;
 
 import com.google.common.base.Strings;
-import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheInterceptor;
-import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
+import io.github.acm19.aws.interceptor.http.AwsRequestSigningApacheV5Interceptor;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.util.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
-import org.springframework.data.elasticsearch.client.elc.ElasticsearchClients;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
+import org.springframework.data.elasticsearch.client.elc.rest5_client.Rest5Clients;
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchCustomConversions;
 import org.springframework.data.elasticsearch.support.HttpHeaders;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.signer.Aws4Signer;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,28 +54,40 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 		logger.info("Elasticsearch index prefix: {}", indexNamePrefix);
 		logger.info("Elasticsearch index application prefix: {}", indexNameApplicationPrefix);
 
+		boolean useApiKey = !Strings.isNullOrEmpty(apiKey);
 		HttpHeaders apiKeyHeaders = new HttpHeaders();
-		if (!Strings.isNullOrEmpty(apiKey)) {
+		if (useApiKey) {
 			logger.info("Using API key authentication.");
-			apiKeyHeaders.add(HttpHeaders.AUTHORIZATION, "ApiKey " + apiKey);
+			apiKeyHeaders.add("Authorization", "ApiKey " + apiKey);
 		}
 
-		if (useHttps(urls)) {
-			return ClientConfiguration.builder()
-					.connectedTo(getHosts(urls))
-					.usingSsl()
-					.withDefaultHeaders(apiKeyHeaders)
-					.withClientConfigurer(
-							configureHttpClient())
-					.build();
-		} else {
-			return ClientConfiguration.builder()
-					.connectedTo(getHosts(urls))
-					.withDefaultHeaders(apiKeyHeaders)
-					.withClientConfigurer(
-							configureHttpClient())
-					.build();
+		ClientConfiguration.MaybeSecureClientConfigurationBuilder hostBuilder =
+				ClientConfiguration.builder().connectedTo(getHosts(urls));
+		ClientConfiguration.TerminalClientConfigurationBuilder builder =
+				useHttps(urls) ? hostBuilder.usingSsl() : hostBuilder;
+
+		builder.withDefaultHeaders(apiKeyHeaders)
+				// Disable lease handling for the connection pool! See https://github.com/elastic/elasticsearch/issues/24069
+				.withClientConfigurer(connectionRequestTimeout());
+
+		if (!Strings.isNullOrEmpty(elasticsearchUsername) && !Strings.isNullOrEmpty(elasticsearchPassword)) {
+			// withBasicAuth is applied as an Authorization header when the configuration is built, which would replace
+			// the API key header set above, so only apply it when no API key is configured. The API key takes precedence.
+			if (useApiKey) {
+				logger.warn("Both elasticsearch.api-key and elasticsearch.username/password are set. " +
+						"The API key takes precedence and basic authentication will not be used.");
+			} else {
+				logger.info("Using basic authentication.");
+				builder.withBasicAuth(elasticsearchUsername, elasticsearchPassword);
+			}
 		}
+
+		if (awsRequestSigning != null && awsRequestSigning) {
+			logger.info("Signing Elasticsearch requests with AWS credentials.");
+			builder.withClientConfigurer(awsRequestSigning());
+		}
+
+		return builder.build();
 	}
 
 	private boolean useHttps(String[] urls) {
@@ -89,29 +99,18 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 		return false;
 	}
 
-	private ElasticsearchClients.ElasticsearchRestClientConfigurationCallback configureHttpClient() {
-		return ElasticsearchClients.ElasticsearchRestClientConfigurationCallback.from(clientBuilder -> {
-			clientBuilder.setRequestConfigCallback(builder -> {
-				builder.setConnectionRequestTimeout(0);//Disable lease handling for the connection pool! See https://github.com/elastic/elasticsearch/issues/24069
-				return builder;
-			});
-			final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-			if (!Strings.isNullOrEmpty(elasticsearchUsername) && !Strings.isNullOrEmpty(elasticsearchPassword)) {
-				credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(elasticsearchUsername, elasticsearchPassword));
-			}
-			clientBuilder.setHttpClientConfigCallback(httpClientBuilder -> {
-				httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-				if (awsRequestSigning != null && awsRequestSigning) {
-					httpClientBuilder.addInterceptorFirst(awsInterceptor("es"));
-				}
-				return httpClientBuilder;
-			});
-			return clientBuilder;
-		});
+	private Rest5Clients.ElasticsearchRequestConfigCallback connectionRequestTimeout() {
+		return Rest5Clients.ElasticsearchRequestConfigCallback.from(requestConfigBuilder ->
+				requestConfigBuilder.setConnectionRequestTimeout(Timeout.ofMilliseconds(0)));
 	}
 
-	private AwsRequestSigningApacheInterceptor awsInterceptor(String serviceName) {
-		return new AwsRequestSigningApacheInterceptor(
+	private Rest5Clients.ElasticsearchHttpClientConfigurationCallback awsRequestSigning() {
+		return Rest5Clients.ElasticsearchHttpClientConfigurationCallback.from(httpClientBuilder ->
+				httpClientBuilder.addRequestInterceptorFirst(awsInterceptor("es")));
+	}
+
+	private AwsRequestSigningApacheV5Interceptor awsInterceptor(String serviceName) {
+		return new AwsRequestSigningApacheV5Interceptor(
 				serviceName,
 				Aws4Signer.create(),
 				DefaultCredentialsProvider.create(),
@@ -122,7 +121,11 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
 	private String[] getHosts(String[] urls) {
 		List<String> hosts = new ArrayList<>();
 		for (String url : urls) {
-			hosts.add(HttpHost.create(url).toHostString());
+			try {
+				hosts.add(HttpHost.create(url).toHostString());
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException("Invalid Elasticsearch URL configured: " + url, e);
+			}
 		}
 		return hosts.toArray(new String[]{});
 	}
