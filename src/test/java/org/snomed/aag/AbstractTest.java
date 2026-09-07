@@ -15,7 +15,7 @@ import org.snomed.aag.data.services.*;
 import org.snomed.aag.data.validators.CommitInformationValidator;
 import org.snomed.aag.data.validators.ProjectAcceptanceCriteriaUpdateValidator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -79,10 +79,10 @@ public abstract class AbstractTest {
 	@Autowired
 	protected CommitInformationValidator commitInformationValidator;
 
-	@MockBean
+	@MockitoBean
 	protected BranchSecurityService securityService;
 
-	@MockBean
+	@MockitoBean
 	protected ValidationService validationService;
 
 	@AfterEach

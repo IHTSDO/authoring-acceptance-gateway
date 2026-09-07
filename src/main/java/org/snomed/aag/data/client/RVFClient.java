@@ -1,7 +1,7 @@
 package org.snomed.aag.data.client;
 
 import org.ihtsdo.otf.rest.client.ExpressiveErrorHandler;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestTemplate;
 
