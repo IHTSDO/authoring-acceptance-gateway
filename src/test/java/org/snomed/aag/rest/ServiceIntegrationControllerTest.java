@@ -1,7 +1,7 @@
 package org.snomed.aag.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.snomed.aag.AbstractTest;
@@ -685,12 +685,12 @@ class ServiceIntegrationControllerTest extends AbstractTest {
 		assertResponseStatus(resultActions, 200);
 	}
 
-	private ProjectAcceptanceCriteria toProjectAcceptanceCriteria(String response) throws JsonProcessingException {
+	private ProjectAcceptanceCriteria toProjectAcceptanceCriteria(String response) throws JacksonException {
 		return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
 		});
 	}
 
-	private ProjectAcceptanceCriteriaDTO toProjectAcceptanceCriteriaDTO(String response) throws JsonProcessingException {
+	private ProjectAcceptanceCriteriaDTO toProjectAcceptanceCriteriaDTO(String response) throws JacksonException {
 		return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
 		});
 	}

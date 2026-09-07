@@ -11,8 +11,11 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.testcontainers.DockerClientFactory;
+import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
+
+import java.time.Duration;
 
 @PropertySource("classpath:/application.properties")
 @PropertySource("classpath:/application-test.properties")
@@ -60,7 +63,14 @@ public class TestConfig extends Config {
 			this.addFixedExposedPort(9235, 9235);
 			this.addFixedExposedPort(9330, 9330);
 			this.addEnv("xpack.security.enabled", "false");
+			this.addEnv("xpack.security.http.ssl.enabled", "false");
+			this.addEnv("xpack.security.enrollment.enabled", "false");
+			// Keep heap modest so Docker Desktop / CI hosts can start ES 9 reliably.
+			this.addEnv("ES_JAVA_OPTS", "-Xms512m -Xmx512m");
 			this.addEnv("cluster.name", "integration-test-cluster");
+			// Same "started" regex as ElasticsearchContainer, but with a longer timeout for ES 9 cold starts.
+			this.setWaitStrategy(Wait.forLogMessage(".*(\"message\":\\s?\"started[\\s?|\"].*|] started\\n$)", 1)
+					.withStartupTimeout(Duration.ofMinutes(3)));
 		}
 	}
 

@@ -1,7 +1,7 @@
 package org.snomed.aag.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -213,7 +213,7 @@ class WhitelistControllerTest extends AbstractTest {
         return "/whitelist-items";
     }
 
-    private List<WhitelistItem> toWhitelistItems(String response) throws JsonProcessingException {
+    private List<WhitelistItem> toWhitelistItems(String response) throws JacksonException {
         return OBJECT_MAPPER.readValue(response, new TypeReference<>() {
         });
     }
