@@ -1,14 +1,15 @@
 package org.snomed.aag.data.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.aag.data.client.RVFClientFactory;
 import org.snomed.aag.data.pojo.ValidationReport;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Service
 public class ValidationService {
@@ -20,7 +21,9 @@ public class ValidationService {
 
 	public ValidationService(@Autowired RVFClientFactory rvfClientFactory) {
 		this.rvfClientFactory = rvfClientFactory;
-		this.objectMapper = Jackson2ObjectMapperBuilder.json().failOnUnknownProperties(false).build();
+		this.objectMapper = JsonMapper.builder()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
 	}
 
 	public boolean isReportClean(String reportUrl, long headTimestampNow, String branchPath) {
@@ -29,14 +32,14 @@ public class ValidationService {
 
 		try {
 			return doIsReportClean(validationReportString, reportUrl, headTimestampNow, branchPath);
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			final String message = String.format("Failed to deserialise RVF report from URL '%s'", reportUrl);
 			logger.error(message, e);
 			throw new ServiceRuntimeException(message);
 		}
 	}
 
-	boolean doIsReportClean(String validationReportString, String reportUrl, long headTimestampNow, String branchPath) throws JsonProcessingException {
+	boolean doIsReportClean(String validationReportString, String reportUrl, long headTimestampNow, String branchPath) {
 
 		validationReportString = validationReportString.replace("\"TestResult\"", "\"testResult\"");
 
@@ -48,7 +51,7 @@ public class ValidationService {
 
 		try {
 			logger.info("Fetched {}", objectMapper.writeValueAsString(validationReport));
-		} catch (JsonProcessingException e) {
+		} catch (JacksonException e) {
 			logger.warn("Failed to serialise validation report for logging", e);
 		}
 
