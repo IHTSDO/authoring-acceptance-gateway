@@ -52,7 +52,7 @@ public class SecurityAndSwaggerConfig {
 	}
 
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain filterChain(HttpSecurity http) {
 		http.csrf(AbstractHttpConfigurer::disable);// lgtm [java/spring-disabled-csrf-protection]
 
 		http.addFilterBefore(new RequestHeaderAuthenticationDecorator(), AuthorizationFilter.class);
